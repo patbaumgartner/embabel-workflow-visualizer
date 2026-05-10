@@ -1,0 +1,31 @@
+### Resume Screening — ResumeScreeningAgent
+### POST /api/recruitment/screen
+@baseUrl = http://localhost:8080
+
+### Strong candidate: 8 years of Java experience → direct INTERVIEW path
+POST {{baseUrl}}/api/recruitment/screen
+Content-Type: application/json
+
+{
+  "candidateId": "CAND-5001",
+  "fullName": "Sophie Keller",
+  "position": "Senior Backend Engineer",
+  "department": "Platform Engineering",
+  "resumeText": "Sophie Keller — Senior Software Engineer\n\nExperience:\n- 8 years of Java / Spring Boot development\n- 3 years leading a team of 5 engineers\n- Built microservices processing 10M events/day on AWS (ECS, RDS, SQS)\n- Contributed to open-source Spring Boot projects\n- Strong TDD/BDD background, 95% code coverage on all projects\n\nEducation: MSc Computer Science, ETH Zurich\n\nSkills: Java 21, Spring Boot, Kafka, PostgreSQL, Docker, Kubernetes, CI/CD",
+  "coverLetter": "I am excited about joining your platform team. I have followed the Embabel project and believe my distributed systems background aligns perfectly with your roadmap."
+}
+
+###
+
+### Borderline candidate: career switcher → deeper review path
+POST {{baseUrl}}/api/recruitment/screen
+Content-Type: application/json
+
+{
+  "candidateId": "CAND-5002",
+  "fullName": "Tom Fischer",
+  "position": "Senior Backend Engineer",
+  "department": "Platform Engineering",
+  "resumeText": "Tom Fischer — Software Developer\n\nExperience:\n- 4 years as a Python data engineer (ETL pipelines, Spark, Airflow)\n- 1 year Java side-projects and online courses (Spring Boot, REST APIs)\n- No production Java/Spring experience\n- Good understanding of distributed systems from data engineering work\n\nEducation: BSc Information Systems, University of Bern\n\nSkills: Python, Spark, Airflow, SQL, basic Java, Git",
+  "coverLetter": "I am transitioning from data engineering to backend development and have been self-studying Java and Spring Boot intensively for the past year."
+}

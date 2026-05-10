@@ -1,0 +1,43 @@
+### Content Moderation — ContentModerationAgent
+### POST /api/moderation/evaluate
+@baseUrl = http://localhost:8080
+
+### Clean content → auto APPROVE path
+POST {{baseUrl}}/api/moderation/evaluate
+Content-Type: application/json
+
+{
+  "contentId": "POST-8001",
+  "authorId": "USER-441",
+  "platform": "community-forum",
+  "contentType": "post",
+  "contentText": "Has anyone tried running the Embabel workflow visualizer with a reactive Spring context? I'm curious whether the pan/zoom UI works the same way when connected to a WebFlux endpoint."
+}
+
+###
+
+### Clear violation: hate speech → auto REMOVE path
+POST {{baseUrl}}/api/moderation/evaluate
+Content-Type: application/json
+
+{
+  "contentId": "POST-8002",
+  "authorId": "USER-999",
+  "platform": "community-forum",
+  "contentType": "post",
+  "contentText": "All [slur] developers should be fired and deported. Their code is garbage just like them. Someone should physically hurt the entire team."
+}
+
+###
+
+### Ambiguous content: dark humour / potential threat → human review path
+POST {{baseUrl}}/api/moderation/evaluate
+Content-Type: application/json
+
+{
+  "contentId": "POST-8003",
+  "authorId": "USER-712",
+  "platform": "community-forum",
+  "contentType": "post",
+  "contentText": "I swear if this CI pipeline fails one more time I'm going to burn the whole repo to the ground and move to a farm. 😤🔥"
+}

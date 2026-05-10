@@ -1,0 +1,71 @@
+### Sentiment Analysis — SentimentAnalysisAgent
+### POST /api/sentiment/analyze
+@baseUrl = http://localhost:8080
+
+### Positive feedback → auto-response path
+POST {{baseUrl}}/api/sentiment/analyze
+Content-Type: application/json
+
+{
+  "feedbackId": "FB-3001",
+  "customerName": "Laura Schneider",
+  "productName": "Embabel Workflow Visualizer",
+  "feedbackText": "Absolutely love the new workflow visualizer! The pan and zoom feature makes it so much easier to understand complex agent flows. Great work!",
+  "channel": "web"
+}
+
+###
+
+### Urgent negative feedback → escalation path
+POST {{baseUrl}}/api/sentiment/analyze
+Content-Type: application/json
+
+{
+  "feedbackId": "FB-3002",
+  "customerName": "Marco Bianchi",
+  "productName": "Embabel Workflow Visualizer",
+  "feedbackText": "This is completely broken! I deployed your starter to production and it crashed our entire application. We lost 3 hours of customer data. I demand an immediate response and compensation. If this isn't resolved today I'm contacting our lawyers.",
+  "channel": "email"
+}
+
+###
+
+### Edge case: NEUTRAL feedback with no urgency — @Cost for deepAnalysis should be low
+POST {{baseUrl}}/api/sentiment/analyze
+Content-Type: application/json
+
+{
+  "feedbackId": "FB-3003",
+  "customerName": "Sophie Bernard",
+  "productName": "Embabel Workflow Visualizer",
+  "feedbackText": "The tool works fine. Nothing special to report.",
+  "channel": "web"
+}
+
+###
+
+### Edge case: MIXED feedback — positive about feature, negative about performance
+POST {{baseUrl}}/api/sentiment/analyze
+Content-Type: application/json
+
+{
+  "feedbackId": "FB-3004",
+  "customerName": "James O'Brien",
+  "productName": "Embabel Workflow Visualizer",
+  "feedbackText": "I love the graph layout feature — it's very intuitive. But the page takes over 10 seconds to load for agents with more than 20 actions. The rendering performance needs urgent attention.",
+  "channel": "chat"
+}
+
+###
+
+### Edge case: null channel — defaults to 'web' via toDomain()
+POST {{baseUrl}}/api/sentiment/analyze
+Content-Type: application/json
+
+{
+  "feedbackId": "FB-3005",
+  "customerName": "Yuki Tanaka",
+  "productName": "Embabel Workflow Visualizer",
+  "feedbackText": "Feature request: can you add export to PNG? That would help a lot when presenting agent flows in slide decks.",
+  "channel": null
+}

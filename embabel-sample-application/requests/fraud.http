@@ -1,0 +1,113 @@
+### Fraud Detection — FraudDetectionAgent
+### POST /api/fraud/detect
+@baseUrl = http://localhost:8080
+
+### Low-risk transaction: small domestic purchase → auto APPROVE path
+POST {{baseUrl}}/api/fraud/detect
+Content-Type: application/json
+
+{
+  "transactionId": "TXN-10001",
+  "accountId": "ACC-55220",
+  "amount": 34.99,
+  "merchantName": "Migros",
+  "merchantCategory": "Grocery",
+  "location": "Zurich, Switzerland",
+  "timestamp": "2026-05-10T09:15:00Z"
+}
+
+###
+
+### High-risk transaction: large foreign luxury purchase → auto BLOCK path
+POST {{baseUrl}}/api/fraud/detect
+Content-Type: application/json
+
+{
+  "transactionId": "TXN-10002",
+  "accountId": "ACC-55220",
+  "amount": 8750.00,
+  "merchantName": "Diamond Palace Jewellery",
+  "merchantCategory": "Luxury Goods",
+  "location": "Lagos, Nigeria",
+  "timestamp": "2026-05-10T02:47:00Z"
+}
+
+###
+
+### Medium-risk transaction: borderline case → investigation path
+POST {{baseUrl}}/api/fraud/detect
+Content-Type: application/json
+
+{
+  "transactionId": "TXN-10003",
+  "accountId": "ACC-55220",
+  "amount": 620.00,
+  "merchantName": "ElectroHub",
+  "merchantCategory": "Electronics",
+  "location": "Milan, Italy",
+  "timestamp": "2026-05-10T18:30:00Z"
+}
+
+###
+
+### Edge case: null location and timestamp — cross-border and unusual-hour flags both false
+POST {{baseUrl}}/api/fraud/detect
+Content-Type: application/json
+
+{
+  "transactionId": "TXN-10004",
+  "accountId": "ACC-55220",
+  "amount": 200.00,
+  "merchantName": "Online Shop",
+  "merchantCategory": "E-commerce",
+  "location": null,
+  "timestamp": null
+}
+
+###
+
+### Edge case: exact boundary amount of 500.00 (NOT flagged as high-value per "> 500" rule)
+POST {{baseUrl}}/api/fraud/detect
+Content-Type: application/json
+
+{
+  "transactionId": "TXN-10005",
+  "accountId": "ACC-55220",
+  "amount": 500.00,
+  "merchantName": "Migros",
+  "merchantCategory": "Grocery",
+  "location": "Berne, Switzerland",
+  "timestamp": "2026-05-10T12:00:00Z"
+}
+
+###
+
+### Edge case: unusual-hour boundary — exactly 01:00 UTC (IS flagged)
+POST {{baseUrl}}/api/fraud/detect
+Content-Type: application/json
+
+{
+  "transactionId": "TXN-10006",
+  "accountId": "ACC-55220",
+  "amount": 80.00,
+  "merchantName": "Night Pharmacy",
+  "merchantCategory": "Healthcare",
+  "location": "Geneva, CH",
+  "timestamp": "2026-05-10T01:00:00Z"
+}
+
+###
+
+### Edge case: all three risk flags simultaneously (high-value + cross-border + unusual-hour)
+POST {{baseUrl}}/api/fraud/detect
+Content-Type: application/json
+
+{
+  "transactionId": "TXN-10007",
+  "accountId": "ACC-55220",
+  "amount": 12500.00,
+  "merchantName": "Casino Royale",
+  "merchantCategory": "Gambling",
+  "location": "Macau, China",
+  "timestamp": "2026-05-10T03:30:00Z"
+}

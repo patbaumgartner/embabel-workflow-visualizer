@@ -1,0 +1,76 @@
+### KYC Verification — KycVerificationAgent
+### POST /api/kyc/verify
+@baseUrl = http://localhost:8080
+
+### Low-risk case: straightforward clean customer → direct APPROVE path
+POST {{baseUrl}}/api/kyc/verify
+Content-Type: application/json
+
+{
+  "customerId": "CUST-001",
+  "fullName": "Anna Müller",
+  "dateOfBirth": "1985-03-12",
+  "nationality": "German",
+  "occupation": "Software Engineer",
+  "sourceOfFunds": "Salary"
+}
+
+###
+
+### High-risk case: PEP match → enhanced due diligence path
+POST {{baseUrl}}/api/kyc/verify
+Content-Type: application/json
+
+{
+  "customerId": "CUST-002",
+  "fullName": "Viktor Petrov",
+  "dateOfBirth": "1972-11-05",
+  "nationality": "Russian",
+  "occupation": "Government Official",
+  "sourceOfFunds": "Government salary and real estate"
+}
+
+###
+
+### Edge case: optional fields omitted — occupation and sourceOfFunds are null
+POST {{baseUrl}}/api/kyc/verify
+Content-Type: application/json
+
+{
+  "customerId": "CUST-003",
+  "fullName": "Maria Santos",
+  "dateOfBirth": "1990-07-22",
+  "nationality": "Brazilian",
+  "occupation": null,
+  "sourceOfFunds": null
+}
+
+###
+
+### Edge case: high-risk nationality with adverse media signal
+POST {{baseUrl}}/api/kyc/verify
+Content-Type: application/json
+
+{
+  "customerId": "CUST-004",
+  "fullName": "Kim Jin-ho",
+  "dateOfBirth": "1968-04-15",
+  "nationality": "North Korean",
+  "occupation": "Private Investor",
+  "sourceOfFunds": "Unknown"
+}
+
+###
+
+### Edge case: max-field customer — all fields provided
+POST {{baseUrl}}/api/kyc/verify
+Content-Type: application/json
+
+{
+  "customerId": "CUST-005",
+  "fullName": "François Dupont",
+  "dateOfBirth": "1979-12-01",
+  "nationality": "French",
+  "occupation": "Hedge Fund Manager",
+  "sourceOfFunds": "Investment returns, dividends, and carried interest from private equity"
+}

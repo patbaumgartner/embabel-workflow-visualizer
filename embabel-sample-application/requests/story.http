@@ -1,0 +1,77 @@
+### Story Writer — StoryWriterAgent
+### POST /api/story/write
+### Demonstrates: canRerun, @LlmTool, PersonaSpec, LlmOptions.withTemperature(),
+###               ActionException.Permanent / .Transient, Bean Validation (JSR-380)
+@baseUrl = http://localhost:8080
+
+### Short adventure story — full pipeline: validate → draft → review → revise → finalize
+POST {{baseUrl}}/api/story/write
+Content-Type: application/json
+
+{
+  "storyId": "STORY-001",
+  "theme": "A seasoned sea captain discovers a hidden island that appears only during a solar eclipse.",
+  "genre": "Adventure",
+  "targetAudience": "Young adults aged 16–25",
+  "minWords": 200,
+  "maxWords": 500
+}
+
+###
+
+### Science fiction story — LLM gets higher temperature on draftStory
+POST {{baseUrl}}/api/story/write
+Content-Type: application/json
+
+{
+  "storyId": "STORY-002",
+  "theme": "In a distant future, humanity's last AI chooses to erase itself to protect free will.",
+  "genre": "Science Fiction",
+  "targetAudience": "Adults 25–45",
+  "minWords": 400,
+  "maxWords": 800
+}
+
+###
+
+### Mystery story — shorter form
+POST {{baseUrl}}/api/story/write
+Content-Type: application/json
+
+{
+  "storyId": "STORY-003",
+  "theme": "A librarian finds a handwritten note inside a book returned 40 years overdue.",
+  "genre": "Mystery",
+  "targetAudience": "General audience",
+  "minWords": 150,
+  "maxWords": 350
+}
+
+###
+
+### Validation failure — missing storyId → ActionException.Permanent
+### Expected: 400 Bad Request or 5xx depending on platform error propagation
+POST {{baseUrl}}/api/story/write
+Content-Type: application/json
+
+{
+  "storyId": "",
+  "theme": "A blank slate.",
+  "genre": "Drama",
+  "minWords": 100,
+  "maxWords": 300
+}
+
+###
+
+### Validation failure — maxWords too large → ActionException.Permanent
+POST {{baseUrl}}/api/story/write
+Content-Type: application/json
+
+{
+  "storyId": "STORY-BAD",
+  "theme": "Over the limit.",
+  "genre": "Drama",
+  "minWords": 100,
+  "maxWords": 9999
+}

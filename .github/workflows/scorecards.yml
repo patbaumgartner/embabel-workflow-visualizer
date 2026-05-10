@@ -1,0 +1,41 @@
+name: Scorecards
+
+# OSSF Scorecard assesses the security posture of the repository by checking
+# branch protection, dependency pinning, code review practices, and more.
+# Results are published to GitHub Security tab and the Scorecard badge.
+# Runs weekly and on every push to the default branch.
+
+on:
+  branch_protection_rule:
+  schedule:
+    - cron: '30 5 * * 1'
+  push:
+    branches: [main]
+
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      id-token: write   # required for scorecard token signing
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Run Scorecard analysis
+        uses: ossf/scorecard-action@v2.4.3
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+
+      - name: Upload results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif

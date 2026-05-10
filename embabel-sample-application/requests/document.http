@@ -1,0 +1,92 @@
+### Document Processing — DocumentProcessingAgent
+### POST /api/documents/process
+@baseUrl = http://localhost:8080
+
+### Basic document — no caller hints (MetadataHints = null, @Nullable path)
+POST {{baseUrl}}/api/documents/process
+Content-Type: application/json
+
+{
+  "documentId": "DOC-001",
+  "title": "Q1 Sales Report 2025",
+  "rawContent": "  Total sales for Q1 2025 reached $4.2 million, representing a 12% increase over Q1 2024.  The APAC region outperformed all others with $1.8 million in bookings.  New customer acquisition was up 18% driven by the mid-market segment.  Churn remained stable at 2.1%.  Product mix shifted toward enterprise licences.  The sales team added 14 new logos including three Fortune-500 accounts.  ",
+  "language": "en",
+  "targetAudience": "executive"
+}
+
+###
+
+### Document with caller MetadataHints — hints guide extractMetadata (@Nullable non-null path)
+POST {{baseUrl}}/api/documents/process
+Content-Type: application/json
+
+{
+  "documentId": "DOC-002",
+  "title": "Kubernetes Security Hardening Guide",
+  "rawContent": "Kubernetes clusters must be hardened before production deployment. Begin by enabling RBAC and restricting anonymous access. Use PodSecurityAdmission to enforce Pod Security Standards. Scan all container images with Trivy or Grype before pushing to the registry. Enable audit logging on the API server to capture all requests. Use network policies to isolate namespaces. Rotate service account tokens regularly. Disable the default service account in each namespace. Store secrets in an external vault rather than Kubernetes Secrets. Monitor cluster activity with Falco for runtime threat detection.",
+  "language": "en",
+  "targetAudience": "DevOps engineers",
+  "expectedTopics": "kubernetes, security, cloud-native",
+  "domainContext": "infrastructure security and DevSecOps",
+  "requireKeywords": true
+}
+
+###
+
+### Short document — below SpEL word count threshold (analyzeContent step is SKIPPED)
+### The pre={"spel:cleanDoc.wordCount > 50"} guard on analyzeContent prevents it from running.
+POST {{baseUrl}}/api/documents/process
+Content-Type: application/json
+
+{
+  "documentId": "DOC-003",
+  "title": "Quick Note",
+  "rawContent": "Meeting moved to 3pm on Tuesday. Please update your calendars.",
+  "language": "en",
+  "targetAudience": "team"
+}
+
+###
+
+### Non-English document — language detection exercised in extractMetadata
+POST {{baseUrl}}/api/documents/process
+Content-Type: application/json
+
+{
+  "documentId": "DOC-004",
+  "title": "Nachhaltigkeitsbericht 2024",
+  "rawContent": "Das Unternehmen hat im Jahr 2024 seinen CO2-Fussabdruck um 23 Prozent reduziert. Der Anteil erneuerbarer Energien am Gesamtverbrauch stieg auf 67 Prozent. Lieferketten wurden auf Nachhaltigkeit geprüft und 42 Lieferanten wurden nach neuen ESG-Kriterien bewertet. Die Wassernutzung sank dank effizienter Produktionsanlagen um 31 Prozent. Mitarbeiterzufriedenheit erreichte einen Rekordwert von 87 Prozent laut interner Umfrage. Das Unternehmen ist auf dem Weg, bis 2030 klimaneutral zu werden.",
+  "language": "de",
+  "targetAudience": "Stakeholder"
+}
+
+###
+
+### Heavily padded whitespace — preprocessDocument normalisation exercised
+POST {{baseUrl}}/api/documents/process
+Content-Type: application/json
+
+{
+  "documentId": "DOC-005",
+  "title": "Whitespace   Test   Document",
+  "rawContent": "  Line one.   Line two is here.    \n\n\n   Line three follows.   \t\t   The fourth line wraps with tabs.   ",
+  "language": null,
+  "targetAudience": null
+}
+
+###
+
+### Document with only hints, no language — language defaults to 'en'
+POST {{baseUrl}}/api/documents/process
+Content-Type: application/json
+
+{
+  "documentId": "DOC-006",
+  "title": "Machine Learning Primer",
+  "rawContent": "Machine learning is a subfield of artificial intelligence where algorithms learn patterns from data without being explicitly programmed. Supervised learning uses labelled training examples to map inputs to outputs. Unsupervised learning finds structure in unlabelled data through clustering and dimensionality reduction. Reinforcement learning optimises a policy through reward signals. Deep learning uses multi-layer neural networks to automatically extract features from raw inputs such as images, text, and audio. Pre-trained large language models like GPT-4 and Claude can be fine-tuned or prompted for a wide range of downstream tasks. Model evaluation uses metrics such as accuracy, F1 score, AUC-ROC, and perplexity depending on the task.",
+  "language": null,
+  "targetAudience": "data scientists and ML engineers",
+  "expectedTopics": "machine learning, AI, deep learning",
+  "domainContext": "artificial intelligence and data science",
+  "requireKeywords": false
+}

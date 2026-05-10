@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.patbaumgartner.embabel</groupId>
+    <artifactId>embabel-workflow-visualizer-parent</artifactId>
+    <version>0.1.1</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>embabel-workflow-visualizer-starter</artifactId>
+  <name>embabel-workflow-visualizer-starter</name>
+  <description>Spring Boot starter that provides a workflow visualizer UI and API for Embabel agents.</description>
+  <url>https://github.com/patbaumgartner/embabel-workflow-visualizer</url>
+
+  <!--
+      This is a library / starter — it must NOT be packaged as an executable jar.
+      Do NOT add the spring-boot-maven-plugin here.
+    -->
+
+
+  <dependencies>
+    <!-- Core starter: brings spring-boot-autoconfigure + logging -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+
+    <!-- Web layer for the visualizer UI and REST API (Spring Boot 3.5 name) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+      <version>3.5.14</version>
+    </dependency>
+
+    <!-- Actuator for the embabel endpoint -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <!--
+          Auto-configure support — optional so it is NOT pulled into the
+          consuming application's compile classpath transitively.
+        -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!--
+        Generate spring-autoconfigure-metadata.properties so that
+        Spring Boot can filter non-matching auto-configurations eagerly
+        at startup, improving application start time.
+    -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-autoconfigure-processor</artifactId>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+      </plugin>
+
+      <!--
+        Flatten the POM before deploying so that the artifact uploaded to
+        Maven Central is a clean, profile-free POM (profiles are stripped by
+        flattenMode=oss). This ensures no SNAPSHOT dependencies and no
+        <repositories> blocks appear in the published POM.
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <version>1.7.0</version>
+        <configuration>
+          <flattenMode>oss</flattenMode>
+          <pomElements>
+            <profiles>remove</profiles>
+          </pomElements>
+        </configuration>
+        <executions>
+          <execution>
+            <id>flatten</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>flatten</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>flatten.clean</id>
+            <phase>clean</phase>
+            <goals>
+              <goal>clean</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!--
+      embabel-agent-api snapshots are hosted on the Embabel Artifactory instance.
+      This profile is NOT active by default so neither the SNAPSHOT repository nor
+      the SNAPSHOT test dependency appear in the POM deployed to Maven Central.
+      Activate explicitly during local development and CI snapshot builds: -Pembabel-dev
+  -->
+  <profiles>
+    <profile>
+      <id>embabel-dev</id>
+      <properties>
+        <embabel-agent.version>0.4.0-SNAPSHOT</embabel-agent.version>
+      </properties>
+      <repositories>
+        <repository>
+          <releases>
+            <enabled>false</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+          <id>embabel-snapshots</id>
+          <name>Embabel Snapshot Repository</name>
+          <url>https://repo.embabel.com/artifactory/libs-snapshot</url>
+        </repository>
+      </repositories>
+      <dependencies>
+        <!--
+            embabel-agent-api is needed ONLY in tests so the SampleEmbabelAgent
+            test fixture can use @Agent, @Action, etc. annotations.
+        -->
+        <dependency>
+          <groupId>com.embabel.agent</groupId>
+          <artifactId>embabel-agent-api</artifactId>
+          <version>${embabel-agent.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+</project>

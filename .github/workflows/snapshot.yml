@@ -1,0 +1,32 @@
+name: CI Build
+
+# Runs a full build (compile + test) on every push to main.
+# Snapshot versions are no longer published to GitHub Packages.
+# Release artifacts are published to Maven Central via JReleaser (see release.yml).
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Snapshot (Java 21)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build and test
+        run: mvn -B verify -Pembabel-dev
+        env:
+          OPENAI_API_KEY: dummy
+

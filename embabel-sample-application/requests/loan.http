@@ -1,0 +1,55 @@
+### Loan Application — LoanApplicationAgent
+### POST /api/loan/apply
+@baseUrl = http://localhost:8080
+
+### Excellent credit: strong applicant → auto APPROVED path
+POST {{baseUrl}}/api/loan/apply
+Content-Type: application/json
+
+{
+  "applicantId": "APP-2001",
+  "fullName": "Julia Meier",
+  "requestedAmount": 25000.00,
+  "annualIncome": 95000.00,
+  "employmentStatus": "Permanent full-time",
+  "creditScore": 780,
+  "existingMonthlyDebt": 450.00,
+  "loanTermMonths": 48,
+  "loanPurpose": "Home renovation"
+}
+
+###
+
+### Very poor credit: high debt, unstable income → auto REJECTED path
+POST {{baseUrl}}/api/loan/apply
+Content-Type: application/json
+
+{
+  "applicantId": "APP-2002",
+  "fullName": "Kevin Müller",
+  "requestedAmount": 40000.00,
+  "annualIncome": 28000.00,
+  "employmentStatus": "Part-time, contract",
+  "creditScore": 420,
+  "existingMonthlyDebt": 1800.00,
+  "loanTermMonths": 60,
+  "loanPurpose": "Debt consolidation"
+}
+
+###
+
+### Fair credit: borderline case → underwriting path
+POST {{baseUrl}}/api/loan/apply
+Content-Type: application/json
+
+{
+  "applicantId": "APP-2003",
+  "fullName": "Carla Rossi",
+  "requestedAmount": 15000.00,
+  "annualIncome": 52000.00,
+  "employmentStatus": "Permanent full-time",
+  "creditScore": 620,
+  "existingMonthlyDebt": 900.00,
+  "loanTermMonths": 36,
+  "loanPurpose": "Education"
+}

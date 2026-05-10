@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.5.14</version>
+    <relativePath></relativePath>
+  </parent>
+
+  <groupId>com.patbaumgartner.embabel</groupId>
+  <artifactId>embabel-sample-application</artifactId>
+  <version>0.1.0</version>
+  <name>embabel-sample-application</name>
+  <description>Sample Embabel application that uses embabel-workflow-visualizer-starter</description>
+
+  <properties>
+    <embabel-agent.version>0.4.0-SNAPSHOT</embabel-agent.version>
+    <embabel-workflow-visualizer.version>0.1.0</embabel-workflow-visualizer.version>
+    <java.version>21</java.version>
+    <!-- This module is a runnable application, not a deployable library artifact. -->
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.embabel.agent</groupId>
+        <artifactId>embabel-agent-dependencies</artifactId>
+        <version>${embabel-agent.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <!-- Embabel Workflow Visualizer Starter -->
+    <dependency>
+      <groupId>com.patbaumgartner.embabel</groupId>
+      <artifactId>embabel-workflow-visualizer-starter</artifactId>
+      <version>${embabel-workflow-visualizer.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
+    <!-- Spring Boot Web Starter -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+
+    <!-- Embabel Agent dependencies -->
+    <dependency>
+      <groupId>com.embabel.agent</groupId>
+      <artifactId>embabel-agent-starter</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.embabel.agent</groupId>
+      <artifactId>embabel-agent-starter-openai</artifactId>
+    </dependency>
+
+    <!-- Spring Boot Test Starter -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.embabel.agent</groupId>
+      <artifactId>embabel-agent-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+  <repositories>
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>embabel-snapshots</id>
+      <name>Embabel Snapshot Repository</name>
+      <url>https://repo.embabel.com/artifactory/libs-snapshot</url>
+    </repository>
+  </repositories>
+</project>

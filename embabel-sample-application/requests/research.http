@@ -1,0 +1,72 @@
+### Product Research — ProductResearchAgent
+### POST /api/research/analyze
+### Demonstrates: PlannerType.SUPERVISOR, @EmbabelComponent (ResearchUtils),
+###               SpEL preconditions (spel:marketData.confidenceScore > 0.6),
+###               @Action(outputBinding = "marketData")
+@baseUrl = http://localhost:8080
+
+### Well-established market: EV sector — high confidence expected → full pipeline runs
+### (gatherMarketData → analyzeCompetitors [SpEL gate passes] → generateReport)
+POST {{baseUrl}}/api/research/analyze
+Content-Type: application/json
+
+{
+  "requestId": "RES-001",
+  "productCategory": "Electric Vehicles",
+  "targetMarket": "United States",
+  "researchDepth": "comprehensive"
+}
+
+###
+
+### APAC smartwatch market
+POST {{baseUrl}}/api/research/analyze
+Content-Type: application/json
+
+{
+  "requestId": "RES-002",
+  "productCategory": "Smartwatches",
+  "targetMarket": "Asia-Pacific",
+  "researchDepth": "standard"
+}
+
+###
+
+### Emerging / niche market — lower confidence data expected.
+### If confidenceScore ≤ 0.6 the SpEL gate blocks analyzeCompetitors;
+### generateReport runs with competitorAnalysis = null and notes the omission.
+POST {{baseUrl}}/api/research/analyze
+Content-Type: application/json
+
+{
+  "requestId": "RES-003",
+  "productCategory": "Edible Insect Protein Snacks",
+  "targetMarket": "Europe",
+  "researchDepth": "quick"
+}
+
+###
+
+### B2B SaaS — platform tooling
+POST {{baseUrl}}/api/research/analyze
+Content-Type: application/json
+
+{
+  "requestId": "RES-004",
+  "productCategory": "AI-powered Developer Tools",
+  "targetMarket": "Global",
+  "researchDepth": "comprehensive"
+}
+
+###
+
+### Validation failure — blank requestId → Bean Validation (JSR-380) error (400)
+POST {{baseUrl}}/api/research/analyze
+Content-Type: application/json
+
+{
+  "requestId": "",
+  "productCategory": "Coffee Machines",
+  "targetMarket": "Germany",
+  "researchDepth": "quick"
+}

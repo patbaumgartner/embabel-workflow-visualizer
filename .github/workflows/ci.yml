@@ -1,0 +1,38 @@
+name: CI
+
+# Runs on every push to any branch and on all pull requests.
+# Builds and verifies the starter only; the sample application requires
+# external Embabel snapshot artifacts and an OpenAI API key, so it is
+# excluded from automated CI.
+
+on:
+  pull_request:
+  push:
+    branches: ['**']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & Test (Java 21)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Install parent POM
+        run: mvn -N install -q
+
+      - name: Build and verify starter
+        run: mvn -B verify -pl embabel-workflow-visualizer-starter

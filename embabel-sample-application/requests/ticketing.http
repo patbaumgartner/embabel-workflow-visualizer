@@ -1,0 +1,93 @@
+### Ticket Routing — TicketRoutingAgent (UTILITY planner + @State)
+### POST /api/tickets/route
+@baseUrl = http://localhost:8080
+
+### Billing ticket — CRITICAL priority → BillingState handler
+### High urgency: classificationValue=1.0, routed to BillingState → handleBilling()
+POST {{baseUrl}}/api/tickets/route
+Content-Type: application/json
+
+{
+  "ticketId": "TKT-1001",
+  "customerId": "CUST-88001",
+  "subject": "I was charged twice for my subscription",
+  "description": "My credit card was charged $99 twice on 1st June 2025. I only have one subscription. Please refund the duplicate charge immediately. My card ending in 4532.",
+  "channel": "web",
+  "priority": "critical"
+}
+
+###
+
+### Technical ticket — HIGH priority → TechnicalState handler
+### High urgency: classificationValue=0.8, routed to TechnicalState → handleTechnical()
+POST {{baseUrl}}/api/tickets/route
+Content-Type: application/json
+
+{
+  "ticketId": "TKT-1002",
+  "customerId": "CUST-88002",
+  "subject": "Application crashes on startup after the latest update",
+  "description": "Since updating to version 4.2.1 yesterday, the mobile app crashes immediately on launch. I have tried reinstalling twice. Device: iPhone 15 Pro, iOS 17.4. Error code: SIGKILL-0x0000c. This is blocking my entire workflow.",
+  "channel": "mobile-app",
+  "priority": "high"
+}
+
+###
+
+### General inquiry — LOW priority → GeneralState handler → auto-resolve
+POST {{baseUrl}}/api/tickets/route
+Content-Type: application/json
+
+{
+  "ticketId": "TKT-1003",
+  "customerId": "CUST-88003",
+  "subject": "What are your business hours for phone support?",
+  "description": "I would like to know the telephone support hours for your enterprise tier. I am based in CEST timezone.",
+  "channel": "email",
+  "priority": "low"
+}
+
+###
+
+### Billing ticket — MEDIUM priority with ambiguous category signal
+POST {{baseUrl}}/api/tickets/route
+Content-Type: application/json
+
+{
+  "ticketId": "TKT-1004",
+  "customerId": "CUST-88004",
+  "subject": "Invoice shows wrong VAT rate",
+  "description": "The invoice number INV-2025-0489 shows a 20% VAT rate but we are a registered business in Switzerland and should be charged 8.1%. We need a corrected invoice for our accounting records.",
+  "channel": "email",
+  "priority": "medium"
+}
+
+###
+
+### Technical ticket — missing channel defaults to 'web'
+POST {{baseUrl}}/api/tickets/route
+Content-Type: application/json
+
+{
+  "ticketId": "TKT-1005",
+  "customerId": "CUST-88005",
+  "subject": "SSO login fails with SAML assertion error",
+  "description": "Our SAML 2.0 integration stopped working after we updated our IdP to Okta. We get 'SAML assertion validation failed' on every login attempt. Affects all 240 users in our organisation. SAML response metadata is attached.",
+  "channel": null,
+  "priority": "critical"
+}
+
+###
+
+### General ticket — feature request routed as general enquiry
+POST {{baseUrl}}/api/tickets/route
+Content-Type: application/json
+
+{
+  "ticketId": "TKT-1006",
+  "customerId": "CUST-88006",
+  "subject": "Feature request: export to PDF",
+  "description": "It would be very useful to be able to export reports directly to PDF from the dashboard. Currently we have to copy-paste into Word and then save as PDF. Is this on the roadmap?",
+  "channel": "chat",
+  "priority": "low"
+}

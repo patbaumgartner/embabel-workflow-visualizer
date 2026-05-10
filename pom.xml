@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+      Build the starter against Spring Boot 3.5 (minimum supported version).
+      The library is also compatible with Spring Boot 4.0.x.
+    -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.5.14</version>
+    <relativePath></relativePath>
+  </parent>
+
+  <groupId>com.patbaumgartner.embabel</groupId>
+  <artifactId>embabel-workflow-visualizer-parent</artifactId>
+  <version>0.1.0</version>
+  <packaging>pom</packaging>
+
+  <name>embabel-workflow-visualizer-parent</name>
+  <description>Spring Boot starter that visualizes Embabel agent workflows as an actuator endpoint and interactive UI.</description>
+
+  <modules>
+    <module>embabel-workflow-visualizer-starter</module>
+    <module>embabel-sample-application</module>
+  </modules>
+
+  <properties>
+    <java.version>21</java.version>
+    <jreleaser.version>1.24.0</jreleaser.version>
+  </properties>
+
+  <build>
+    <plugins>
+      <!--
+        Attach sources jar to every module so consumers can navigate to library
+        source code in their IDE and so that GitHub Packages / Maven Central serve them.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
+        Attach javadoc jar for the same reason.
+        Javadoc failures are treated as errors during the release lifecycle.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <doclint>none</doclint>
+          <source>${java.version}</source>
+          <release>${java.version}</release>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
+        JReleaser Maven plugin — used locally to stage, sign, and publish
+        releases to Maven Central. In CI the jreleaser/release-action@v2
+        GitHub Action is used instead, reading jreleaser.yml at the root.
+      -->
+      <plugin>
+        <groupId>org.jreleaser</groupId>
+        <artifactId>jreleaser-maven-plugin</artifactId>
+        <version>${jreleaser.version}</version>
+        <inherited>false</inherited>
+      </plugin>
+    </plugins>
+  </build>
+
+  <url>https://github.com/patbaumgartner/embabel-workflow-visualizer</url>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>patbaumgartner</id>
+      <name>Patrick Baumgartner</name>
+      <url>https://github.com/patbaumgartner</url>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/patbaumgartner/embabel-workflow-visualizer.git</connection>
+    <developerConnection>scm:git:https://github.com/patbaumgartner/embabel-workflow-visualizer.git</developerConnection>
+    <url>https://github.com/patbaumgartner/embabel-workflow-visualizer</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <issueManagement>
+    <system>GitHub Issues</system>
+    <url>https://github.com/patbaumgartner/embabel-workflow-visualizer/issues</url>
+  </issueManagement>
+
+</project>

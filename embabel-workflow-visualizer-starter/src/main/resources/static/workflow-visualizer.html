@@ -1,0 +1,1431 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Embabel Workflow Visualizer</title>
+    <!-- Restore theme before first paint to prevent flash of wrong theme -->
+    <script>
+        try {
+            var _t = localStorage.getItem('embabel-theme');
+            if (_t === 'light' || _t === 'dark')
+                document.documentElement.setAttribute('data-theme', _t);
+        } catch (_) { }
+    </script>
+    <style>
+        /* ── Theme tokens ──────────────────────────────────────────────── */
+        :root {
+            color-scheme: dark;
+            --brand-cyan: #2bb7e0;
+            --brand-pink: #e4457d;
+            --brand-green: #6ec829;
+            --brand-yellow: #ffc600;
+            --brand-orange: #ff6c2c;
+            --brand-purple: #9b59b6;
+            --bg: #0a1220;
+            --bg-2: #0c1630;
+            --card: #111a2a;
+            --ink: #e5e7eb;
+            --muted: #cbd5e1;
+            --line: rgba(255, 255, 255, .14);
+            --hdr-bg: rgba(10, 18, 32, 0.88);
+            --shadow: rgba(0, 0, 0, 0.35);
+            --action: var(--brand-cyan);
+            --condition: var(--brand-yellow);
+            --goal: var(--brand-green);
+            --cost: var(--brand-pink);
+            --llmtool: var(--brand-purple);
+            --type-col: var(--brand-orange);
+        }
+
+        body {
+            background:
+                radial-gradient(1200px 800px at 10% -10%, color-mix(in oklab, var(--brand-cyan) 18%, transparent), transparent 60%),
+                radial-gradient(1000px 700px at 110% 20%, color-mix(in oklab, var(--brand-pink) 14%, transparent), transparent 60%),
+                radial-gradient(900px 700px at 80% 110%, color-mix(in oklab, var(--brand-green) 9%, transparent), transparent 55%),
+                var(--bg);
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root:not([data-theme="dark"]) {
+                color-scheme: light;
+                --bg: #f0f4fa;
+                --bg-2: #ffffff;
+                --card: #ffffff;
+                --ink: #0f172a;
+                --muted: #475569;
+                --line: rgba(0, 0, 0, .12);
+                --hdr-bg: rgba(248, 250, 252, 0.92);
+                --shadow: rgba(0, 0, 0, 0.10);
+            }
+
+            :root:not([data-theme="dark"]) body {
+                background:
+                    radial-gradient(1200px 800px at 10% -10%, color-mix(in oklab, var(--brand-cyan) 12%, transparent), transparent 60%),
+                    radial-gradient(1000px 700px at 110% 20%, color-mix(in oklab, var(--brand-pink) 8%, transparent), transparent 60%),
+                    var(--bg);
+            }
+        }
+
+        :root[data-theme="light"] {
+            color-scheme: light;
+            --bg: #f0f4fa;
+            --bg-2: #ffffff;
+            --card: #ffffff;
+            --ink: #0f172a;
+            --muted: #475569;
+            --line: rgba(0, 0, 0, .12);
+            --hdr-bg: rgba(248, 250, 252, 0.92);
+            --shadow: rgba(0, 0, 0, 0.10);
+        }
+
+        :root[data-theme="light"] body {
+            background:
+                radial-gradient(1200px 800px at 10% -10%, color-mix(in oklab, var(--brand-cyan) 12%, transparent), transparent 60%),
+                radial-gradient(1000px 700px at 110% 20%, color-mix(in oklab, var(--brand-pink) 8%, transparent), transparent 60%),
+                var(--bg);
+        }
+
+        :root[data-theme="dark"] {
+            color-scheme: dark;
+            --bg: #0a1220;
+            --bg-2: #0c1630;
+            --card: #111a2a;
+            --ink: #e5e7eb;
+            --muted: #cbd5e1;
+            --line: rgba(255, 255, 255, .14);
+            --hdr-bg: rgba(10, 18, 32, 0.88);
+            --shadow: rgba(0, 0, 0, 0.35);
+        }
+
+        :root[data-theme="dark"] body {
+            background:
+                radial-gradient(1200px 800px at 10% -10%, color-mix(in oklab, var(--brand-cyan) 18%, transparent), transparent 60%),
+                radial-gradient(1000px 700px at 110% 20%, color-mix(in oklab, var(--brand-pink) 14%, transparent), transparent 60%),
+                radial-gradient(900px 700px at 80% 110%, color-mix(in oklab, var(--brand-green) 9%, transparent), transparent 55%),
+                var(--bg);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", "SF Pro Text", "Inter", Roboto, Ubuntu, Cantarell, sans-serif;
+            color: var(--ink);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.2s;
+        }
+
+        /* ── Header ────────────────────────────────────────────────────── */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            padding: 0.875rem 1.5rem;
+            border-bottom: 1px solid var(--line);
+            position: sticky;
+            top: 0;
+            background: var(--hdr-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 10;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        header h1 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: -0.015em;
+        }
+
+        .hdr-right {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            flex-wrap: wrap;
+        }
+
+        .hint {
+            font-size: 0.76rem;
+            color: var(--muted);
+        }
+
+        .hint code {
+            font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+            background: var(--bg-2);
+            border: 1px solid var(--line);
+            padding: 1px 5px;
+            border-radius: 4px;
+        }
+
+        .theme-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--bg-2);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 0.26rem 0.75rem;
+            font-size: 0.78rem;
+            font-family: inherit;
+            color: var(--ink);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: border-color 0.15s, background 0.2s;
+        }
+
+        .theme-btn:hover {
+            border-color: var(--muted);
+        }
+
+        /* ── Main canvas ───────────────────────────────────────────────── */
+        main {
+            padding: 1.5rem;
+            max-width: none;
+            margin: 0 auto;
+        }
+
+        /* ── Agent panel ───────────────────────────────────────────────── */
+        .agent {
+            margin-bottom: 2rem;
+            border: 1px solid var(--line);
+            background: var(--bg-2);
+            border-radius: 14px;
+            padding: 1.25rem 1.5rem;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .agent-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+
+        .agent-title-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .agent-header h2 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--action);
+        }
+
+        /* Planner type badge */
+        .planner-badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            padding: 2px 9px;
+            border-radius: 20px;
+            border: 1.5px solid;
+            white-space: nowrap;
+        }
+
+        .planner-goap {
+            color: var(--brand-cyan);
+            border-color: var(--brand-cyan);
+            background: rgba(43, 183, 224, 0.12);
+        }
+
+        .planner-utility {
+            color: var(--brand-yellow);
+            border-color: var(--brand-yellow);
+            background: rgba(255, 198, 0, 0.12);
+        }
+
+        .planner-supervisor {
+            color: var(--brand-pink);
+            border-color: var(--brand-pink);
+            background: rgba(228, 69, 125, 0.12);
+        }
+
+        .planner-component {
+            color: var(--brand-green);
+            border-color: var(--brand-green);
+            background: rgba(110, 200, 41, 0.12);
+        }
+
+        /* Opaque badge */
+        .opaque-badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.63rem;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 20px;
+            background: rgba(148, 163, 184, 0.15);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .agent-meta {
+            font-size: 0.72rem;
+            color: var(--muted);
+            font-family: ui-monospace, Consolas, monospace;
+            margin-top: 0.15rem;
+        }
+
+        .agent .desc {
+            font-size: 0.88rem;
+            color: var(--muted);
+            margin-bottom: 0.85rem;
+            line-height: 1.5;
+        }
+
+        /* ── Legend ────────────────────────────────────────────────────── */
+        .legend {
+            display: flex;
+            gap: 0.875rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.85rem;
+            font-size: 0.72rem;
+            color: var(--muted);
+        }
+
+        .leg-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .swatch {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        /* ── Flow container ────────────────────────────────────────────── */
+        .flow {
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            background: var(--bg);
+            height: min(72vh, 660px);
+            min-height: 200px;
+            cursor: default;
+            transition: border-color 0.2s;
+        }
+
+        .flow-svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        /* ── Zoom controls ─────────────────────────────────────────────── */
+        .flow-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 0.45rem;
+            flex-wrap: wrap;
+        }
+
+        .flow-btn {
+            display: inline-flex;
+            align-items: center;
+            background: var(--bg-2);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 0.22rem 0.65rem;
+            font-size: 0.73rem;
+            font-family: inherit;
+            color: var(--ink);
+            cursor: pointer;
+            transition: border-color 0.15s, color 0.15s;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .flow-btn:hover {
+            border-color: var(--action);
+            color: var(--action);
+        }
+
+        .flow-hint {
+            font-size: 0.68rem;
+            color: var(--muted);
+            margin-left: 0.25rem;
+        }
+
+        /* ── SVG node rect ─────────────────────────────────────────────── */
+        .node-card {
+            fill: var(--card);
+            stroke-width: 2;
+            filter: drop-shadow(0 2px 8px var(--shadow));
+        }
+
+        .node-card.action {
+            stroke: var(--action);
+        }
+
+        .node-card.condition {
+            stroke: var(--condition);
+        }
+
+        .node-card.achievesgoal {
+            stroke: var(--goal);
+            filter: drop-shadow(0 2px 8px var(--shadow)) drop-shadow(0 0 10px color-mix(in oklab, var(--goal) 44%, transparent));
+        }
+
+        .node-card.cost {
+            stroke: var(--cost);
+        }
+
+        .node-card.llmtool {
+            stroke: var(--llmtool);
+            stroke-dasharray: 5 3;
+        }
+
+        /* ── SVG edges ─────────────────────────────────────────────────── */
+        .edge {
+            fill: none;
+            stroke-width: 1.5;
+        }
+
+        .edge.pre {
+            stroke: var(--condition);
+            stroke-dasharray: 5 4;
+        }
+
+        .edge.post {
+            stroke: var(--goal);
+        }
+
+        .edge.type {
+            stroke: var(--type-col);
+            stroke-opacity: 0.75;
+        }
+
+        .edge.cost {
+            stroke: var(--cost);
+            stroke-dasharray: 3 3;
+            stroke-opacity: 0.85;
+        }
+
+        .edge-lbl {
+            font-size: 9.5px;
+            fill: var(--muted);
+            font-family: ui-monospace, Consolas, monospace;
+        }
+
+        /* ── foreignObject node content ─────────────────────────────────── */
+        .nfo {
+            font-family: Inter, system-ui, sans-serif;
+            padding: 10px 12px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            box-sizing: border-box;
+        }
+
+        .ntype-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .ntype {
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            line-height: 1;
+        }
+
+        .ntype.action {
+            color: var(--action);
+        }
+
+        .ntype.condition {
+            color: var(--condition);
+        }
+
+        .ntype.achievesgoal {
+            color: var(--goal);
+        }
+
+        .ntype.cost {
+            color: var(--cost);
+        }
+
+        .ntype.llmtool {
+            color: var(--llmtool);
+        }
+
+        /* Micro-badges inside node */
+        .nb {
+            display: inline-flex;
+            align-items: center;
+            font-size: 7.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 1px 5px;
+            border-radius: 3px;
+            line-height: 1.5;
+            white-space: nowrap;
+        }
+
+        .nb-rerun {
+            background: rgba(255, 108, 44, 0.22);
+            color: var(--brand-orange);
+        }
+
+        .nb-readonly {
+            background: rgba(43, 183, 224, 0.18);
+            color: var(--brand-cyan);
+        }
+
+        .nb-llmtool {
+            background: rgba(155, 89, 182, 0.22);
+            color: var(--brand-purple);
+        }
+
+        .nb-clearbb {
+            background: rgba(239, 68, 68, 0.18);
+            color: #fca5a5;
+        }
+
+        .nb-goal {
+            background: rgba(110, 200, 41, 0.18);
+            color: var(--brand-green);
+        }
+
+        .nname {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--ink);
+            line-height: 1.25;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .nmeth {
+            font-size: 9px;
+            color: var(--muted);
+            font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+            line-height: 1.3;
+            opacity: 0.85;
+            word-break: break-all;
+        }
+
+        .nio {
+            font-size: 10px;
+            color: var(--type-col);
+            font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+            line-height: 1.4;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .nio .obind {
+            color: var(--brand-orange);
+            font-style: italic;
+        }
+
+        .nio .alt {
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        .nrow {
+            font-size: 9.5px;
+            line-height: 1.4;
+            color: var(--muted);
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .nrow .lbl {
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 8px;
+            margin-right: 4px;
+            opacity: 0.85;
+        }
+
+        .nrow.cpre .lbl,
+        .nrow.cpre .val {
+            color: var(--condition);
+        }
+
+        .nrow.cpost .lbl,
+        .nrow.cpost .val {
+            color: var(--goal);
+        }
+
+        .nrow.ccost .lbl,
+        .nrow.ccost .val {
+            color: var(--cost);
+        }
+
+        .nrow.cval .lbl,
+        .nrow.cval .val {
+            color: var(--cost);
+        }
+
+        .nrow.cspel .val {
+            font-family: ui-monospace, Consolas, monospace;
+            font-size: 9px;
+            color: var(--brand-orange);
+        }
+
+        .nrow code {
+            font-family: ui-monospace, Consolas, monospace;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0 3px;
+            border-radius: 3px;
+        }
+
+        .ndesc {
+            font-size: 9.5px;
+            color: var(--muted);
+            line-height: 1.4;
+            font-style: italic;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .nexs {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .nex {
+            font-size: 8.5px;
+            color: var(--muted);
+            line-height: 1.35;
+            padding-left: 8px;
+            position: relative;
+        }
+
+        .nex::before {
+            content: '\201C';
+            position: absolute;
+            left: 0;
+            color: var(--brand-cyan);
+        }
+
+        .ntags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+        }
+
+        .ntag {
+            display: inline-flex;
+            font-size: 8px;
+            font-weight: 600;
+            padding: 1px 5px;
+            border-radius: 10px;
+            background: rgba(110, 200, 41, 0.15);
+            color: var(--brand-green);
+            border: 1px solid rgba(110, 200, 41, 0.3);
+            white-space: nowrap;
+        }
+
+        /* Off-screen measuring container */
+        .measure-host {
+            position: absolute;
+            left: -10000px;
+            top: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .measure-host .nfo-wrap {
+            display: inline-block;
+        }
+
+        /* ── Utility ───────────────────────────────────────────────────── */
+        .empty {
+            color: var(--muted);
+            border: 1px dashed var(--line);
+            border-radius: 8px;
+            padding: 1.25rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .error {
+            color: #fca5a5;
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.35);
+        }
+
+        /* ── Footer ────────────────────────────────────────────────────── */
+        footer {
+            margin-top: 2.5rem;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--line);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            font-size: 0.76rem;
+            color: var(--muted);
+            background: var(--hdr-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        footer a {
+            color: var(--action);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+
+        footer a:hover {
+            color: var(--brand-cyan);
+            text-decoration: underline;
+        }
+
+        .footer-heart {
+            color: var(--brand-pink);
+        }
+
+        /* ── Node drag / hover ──────────────────────────────────────────── */
+        .node-hit {
+            cursor: move;
+        }
+
+        .node-g.dragging .node-card {
+            filter: drop-shadow(0 2px 6px var(--shadow)) drop-shadow(0 0 20px color-mix(in oklab, var(--action) 55%, transparent));
+        }
+
+        .flow-svg.has-hover .node-g {
+            opacity: 0.18;
+            transition: opacity 0.15s;
+        }
+
+        .flow-svg.has-hover .node-g.node-hi {
+            opacity: 1;
+        }
+
+        .flow-svg.has-hover .node-g.dragging {
+            opacity: 1;
+        }
+
+        .flow-svg.has-hover .edge {
+            stroke-opacity: 0.07;
+            transition: stroke-opacity 0.15s;
+        }
+
+        .flow-svg.has-hover .edge.edge-hi {
+            stroke-opacity: 1 !important;
+            stroke-width: 2.5;
+        }
+
+        .flow-svg.has-hover .edge-lbl {
+            opacity: 0.07;
+        }
+
+        .flow-svg.has-hover .edge-lbl.edge-hi {
+            opacity: 1;
+        }
+
+        @keyframes dash-flow {
+            to {
+                stroke-dashoffset: -18;
+            }
+        }
+
+        .edge.pre {
+            animation: dash-flow 1.3s linear infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Embabel Workflow Visualizer</h1>
+        <div class="hdr-right">
+            <span class="hint">
+                Actuator <code>/actuator/embabel</code> &middot; API <code>/embabel-workflows/api</code>
+            </span>
+            <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">
+                <span id="theme-icon"></span><span id="theme-lbl"></span>
+            </button>
+        </div>
+    </header>
+    <main id="canvas">
+        <p class="empty">Loading workflows&hellip;</p>
+    </main>
+
+    <script>
+        // ── Theme ──────────────────────────────────────────────────────────
+        function isDark() {
+            var t = document.documentElement.getAttribute('data-theme');
+            if (t === 'dark') return true;
+            if (t === 'light') return false;
+            return window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+        function syncThemeIcon() {
+            var dark = isDark();
+            document.getElementById('theme-icon').textContent = dark ? '\u2600\uFE0F\u00A0' : '\uD83C\uDF19\u00A0';
+            document.getElementById('theme-lbl').textContent = dark ? 'Light' : 'Dark';
+        }
+        function toggleTheme() {
+            var next = isDark() ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            try { localStorage.setItem('embabel-theme', next); } catch (_) { }
+            syncThemeIcon();
+        }
+        syncThemeIcon();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+            if (!document.documentElement.hasAttribute('data-theme')) syncThemeIcon();
+        });
+
+        // ── Layout constants ──────────────────────────────────────────────
+        var NW = 340;   // node width (fixed for predictable layout)
+        var NH_MIN = 110;   // minimum node height
+        var NH_FALLB = 200;   // fallback height if measurement is unavailable
+        var CG = 110;   // column gap
+        var RG = 36;    // row gap
+        var PAD = 28;    // svg outer padding
+
+        // ── HTML escaping ─────────────────────────────────────────────────
+        function esc(v) {
+            return String(v == null ? '' : v)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // ── Layout ────────────────────────────────────────────────────────
+        function computeLayout(steps, heights) {
+            var condProd = new Map();
+            var typeProd = new Map();
+            var costProd = new Map();
+
+            steps.forEach(function (s, i) {
+                (s.post || []).forEach(function (c) {
+                    if (!condProd.has(c)) condProd.set(c, []);
+                    condProd.get(c).push(i);
+                });
+                if (s.output && s.output !== 'void' && s.output !== 'boolean') {
+                    if (!typeProd.has(s.output)) typeProd.set(s.output, []);
+                    typeProd.get(s.output).push(i);
+                }
+                // outputBinding also acts as a type producer for dependency resolution
+                if (s.outputBinding) {
+                    if (!typeProd.has(s.outputBinding)) typeProd.set(s.outputBinding, []);
+                    typeProd.get(s.outputBinding).push(i);
+                }
+                (s.possibleOutputs || []).forEach(function (t) {
+                    if (!typeProd.has(t)) typeProd.set(t, []);
+                    typeProd.get(t).push(i);
+                });
+                if (s.type === 'Condition') {
+                    if (!condProd.has(s.name)) condProd.set(s.name, []);
+                    condProd.get(s.name).push(i);
+                }
+                if (s.type === 'Cost') costProd.set(s.name, i);
+            });
+
+            var deps = steps.map(function () { return new Set(); });
+            var rawEdges = [];
+
+            function addEdge(src, dst, kind, label) {
+                if (src === dst) return;
+                deps[dst].add(src);
+                rawEdges.push({ from: src, to: dst, kind: kind, label: label });
+            }
+
+            steps.forEach(function (s, i) {
+                (s.pre || []).forEach(function (c) {
+                    // Strip SpEL prefix for matching ("spel:foo > 0.5" → don't try to match)
+                    if (typeof c === 'string' && c.indexOf('spel:') === 0) return;
+                    (condProd.get(c) || []).forEach(function (src) { addEdge(src, i, 'pre', c); });
+                });
+                (s.inputs || []).forEach(function (t) {
+                    (typeProd.get(t) || []).forEach(function (src) { addEdge(src, i, 'type', t); });
+                });
+                if (s.costMethod && costProd.has(s.costMethod)) addEdge(costProd.get(s.costMethod), i, 'cost', 'costMethod');
+                if (s.valueMethod && costProd.has(s.valueMethod)) addEdge(costProd.get(s.valueMethod), i, 'cost', 'valueMethod');
+            });
+
+            // Deduplicate edges
+            var edgeMap = new Map();
+            rawEdges.forEach(function (e) {
+                var key = e.from + '-' + e.to + '-' + e.kind;
+                if (!edgeMap.has(key)) {
+                    edgeMap.set(key, { from: e.from, to: e.to, kind: e.kind, label: e.label });
+                } else {
+                    var ex = edgeMap.get(key);
+                    if (e.label && ex.label && ex.label.indexOf(e.label) === -1) ex.label += ', ' + e.label;
+                }
+            });
+            var edges = Array.from(edgeMap.values());
+
+            // Topological column assignment (iterative, cycle-safe).
+            // Hard cap at steps.length - 1 so cycles cannot inflate the column count.
+            var maxCol = Math.max(0, steps.length - 1);
+            var col = steps.map(function () { return 0; });
+            for (var pass = 0; pass < steps.length + 6; pass++) {
+                var changed = false;
+                steps.forEach(function (_, i) {
+                    var c = 0;
+                    deps[i].forEach(function (d) { c = Math.max(c, col[d] + 1); });
+                    if (c > maxCol) c = maxCol;
+                    if (col[i] !== c) { col[i] = c; changed = true; }
+                });
+                if (!changed) break;
+            }
+
+            var cols = {};
+            steps.forEach(function (_, i) {
+                if (!cols[col[i]]) cols[col[i]] = [];
+                cols[col[i]].push(i);
+            });
+
+            var numCols = Math.max.apply(null, Object.keys(cols).map(Number)) + 1;
+
+            // Per-column height (sum of node heights + row gaps)
+            var colHeights = {};
+            var maxColH = 0;
+            Object.keys(cols).forEach(function (c) {
+                var idxs = cols[c];
+                var sum = 0;
+                idxs.forEach(function (idx, k) {
+                    sum += heights[idx];
+                    if (k < idxs.length - 1) sum += RG;
+                });
+                colHeights[c] = sum;
+                if (sum > maxColH) maxColH = sum;
+            });
+            var svgH = maxColH + PAD * 2;
+            var svgW = numCols * (NW + CG) - CG + PAD * 2;
+
+            // Vertically centre each column
+            var pos = steps.map(function () { return { x: 0, y: 0 }; });
+            Object.keys(cols).forEach(function (c) {
+                var idxs = cols[c];
+                var startY = PAD + (svgH - PAD * 2 - colHeights[c]) / 2;
+                var y = startY;
+                idxs.forEach(function (idx) {
+                    pos[idx] = { x: Number(c) * (NW + CG) + PAD, y: y };
+                    y += heights[idx] + RG;
+                });
+            });
+
+            return { pos: pos, edges: edges, svgW: svgW, svgH: svgH };
+        }
+
+        // ── Edge geometry ─────────────────────────────────────────────────
+        function edgePath(fp, fh, tp, th) {
+            var x1 = fp.x + NW, y1 = fp.y + fh / 2;
+            var x2 = tp.x, y2 = tp.y + th / 2;
+            if (x2 <= x1 + 20) {
+                var bend = 80 + Math.abs(y1 - y2) * 0.12;
+                return 'M ' + x1 + ' ' + y1 +
+                    ' C ' + (x1 + bend) + ' ' + y1 + ', ' + (x2 - bend) + ' ' + y2 + ', ' + x2 + ' ' + y2;
+            }
+            var cx = (x1 + x2) / 2;
+            return 'M ' + x1 + ' ' + y1 + ' C ' + cx + ' ' + y1 + ', ' + cx + ' ' + y2 + ', ' + x2 + ' ' + y2;
+        }
+        function edgeMidpoint(fp, fh, tp, th) {
+            return { x: (fp.x + NW + tp.x) / 2, y: (fp.y + fh / 2 + tp.y + th / 2) / 2 - 8 };
+        }
+
+        // ── Build node inner HTML (foreignObject content) ─────────────────
+        function buildNodeHtml(step) {
+            var tc = (step.type || '').toLowerCase();
+            var typeLabel = step.goal && step.type !== 'AchievesGoal' ? step.type + ' \u00b7 GOAL' : step.type;
+
+            // Micro-badges
+            var badges = '';
+            if (step.goal && step.type !== 'AchievesGoal') badges += '<span class="nb nb-goal">\u2605 GOAL</span>';
+            if (step.canRerun) badges += '<span class="nb nb-rerun">\u21ba canRerun</span>';
+            if (step.readOnly) badges += '<span class="nb nb-readonly">\u26d4 readOnly</span>';
+            if (step.llmTool && step.type !== 'LlmTool') badges += '<span class="nb nb-llmtool">\u2699 LLM Tool</span>';
+            if (step.clearBlackboard) badges += '<span class="nb nb-clearbb">\u2715 clears BB</span>';
+
+            var html = '<div xmlns="http://www.w3.org/1999/xhtml" class="nfo">';
+            html += '<div class="ntype-row"><span class="ntype ' + tc + '">' + esc(typeLabel) + '</span>' + badges + '</div>';
+            html += '<div class="nname">' + esc(step.name) + '</div>';
+
+            // Method (when distinct from name — almost always identical, but useful for state-bound actions)
+            if (step.method && step.method !== step.name) {
+                html += '<div class="nmeth">\u0192 ' + esc(step.method) + '()</div>';
+            }
+
+            // Input / output / outputBinding / possibleOutputs
+            var inputs = (step.inputs || []).length ? step.inputs.join(', ') : '\u2014';
+            var outputLabel = step.output || 'void';
+            var nioHtml = esc(inputs) + ' \u2192 ' + esc(outputLabel);
+            if (step.outputBinding && step.outputBinding !== 'it')
+                nioHtml += ' <span class="obind">\u00bb ' + esc(step.outputBinding) + '</span>';
+            else if (step.outputBinding === 'it')
+                nioHtml += ' <span class="obind">\u00bb it</span>';
+            if (step.possibleOutputs && step.possibleOutputs.length)
+                nioHtml += '<br/><span class="alt">alt: ' + esc(step.possibleOutputs.join(' | ')) + '</span>';
+            html += '<div class="nio">' + nioHtml + '</div>';
+
+            // Pre-conditions (split SpEL from plain)
+            var preList = (step.pre || []).filter(function (c) { return !(typeof c === 'string' && c.indexOf('spel:') === 0); });
+            var preSpelList = (step.pre || []).filter(function (c) { return (typeof c === 'string' && c.indexOf('spel:') === 0); });
+            if (preList.length)
+                html += '<div class="nrow cpre"><span class="lbl">pre</span><span class="val">' + esc(preList.join(', ')) + '</span></div>';
+            preSpelList.forEach(function (sp) {
+                html += '<div class="nrow cspel"><span class="lbl">SpEL</span><span class="val">' + esc(sp.substring(5)) + '</span></div>';
+            });
+
+            // Post-conditions
+            if ((step.post || []).length)
+                html += '<div class="nrow cpost"><span class="lbl">post</span><span class="val">' + esc(step.post.join(', ')) + '</span></div>';
+
+            // Cost / value methods
+            if (step.costMethod)
+                html += '<div class="nrow ccost"><span class="lbl">cost</span><span class="val">\u00a7 ' + esc(step.costMethod) + '()</span></div>';
+            if (step.valueMethod)
+                html += '<div class="nrow cval"><span class="lbl">value</span><span class="val">\u00a7 ' + esc(step.valueMethod) + '()</span></div>';
+
+            // Description
+            if (step.description)
+                html += '<div class="ndesc">' + esc(step.description) + '</div>';
+
+            // LLM Tool description
+            if (step.llmToolDescription)
+                html += '<div class="nrow"><span class="lbl">tool</span>' + esc(step.llmToolDescription) + '</div>';
+
+            // Examples
+            if (step.examples && step.examples.length) {
+                html += '<div class="nexs">';
+                step.examples.forEach(function (ex) {
+                    html += '<div class="nex">' + esc(ex) + '</div>';
+                });
+                html += '</div>';
+            }
+
+            // Tags
+            if (step.tags && step.tags.length) {
+                html += '<div class="ntags">';
+                step.tags.forEach(function (t) { html += '<span class="ntag">' + esc(t) + '</span>'; });
+                html += '</div>';
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        // ── Measure heights for nodes (offscreen DOM) ─────────────────────
+        function measureHeights(steps) {
+            var host = document.createElement('div');
+            host.className = 'measure-host';
+            // Wrap inner with width-constrained div to match foreignObject width
+            var wraps = steps.map(function (s) {
+                var w = document.createElement('div');
+                w.className = 'nfo-wrap';
+                w.style.width = NW + 'px';
+                w.innerHTML = buildNodeHtml(s);
+                host.appendChild(w);
+                return w;
+            });
+            document.body.appendChild(host);
+            var heights = wraps.map(function (w) {
+                var h = Math.ceil(w.firstChild.getBoundingClientRect().height);
+                return Math.max(NH_MIN, h + 2);
+            });
+            document.body.removeChild(host);
+            return heights;
+        }
+
+        // ── Draggable flow canvas ─────────────────────────────────────────
+        var agentSeq = 0;
+
+        function makeFlowCanvas(steps) {
+            var id = agentSeq++;
+            var xns = 'http://www.w3.org/2000/svg';
+            var heights = measureHeights(steps);
+            var layout = computeLayout(steps, heights);
+            var mpos = layout.pos.map(function (p) { return { x: p.x, y: p.y }; });
+            var origPos = layout.pos.map(function (p) { return { x: p.x, y: p.y }; });
+            var edges = layout.edges;
+            var svgW = layout.svgW, svgH = layout.svgH;
+
+            var svg = document.createElementNS(xns, 'svg');
+            svg.setAttribute('class', 'flow-svg');
+
+            // Arrow markers
+            var defs = document.createElementNS(xns, 'defs');
+            var mkColors = { pre: 'var(--condition)', post: 'var(--goal)', type: 'var(--type-col)', cost: 'var(--cost)' };
+            ['pre', 'post', 'type', 'cost'].forEach(function (k) {
+                defs.insertAdjacentHTML('beforeend',
+                    '<marker id="a' + id + '-' + k + '" viewBox="0 0 10 10" refX="9" refY="5"' +
+                    ' markerWidth="6" markerHeight="6" orient="auto-start-reverse">' +
+                    '<path d="M0,0 L10,5 L0,10 Z" fill="' + mkColors[k] + '"/></marker>');
+            });
+            svg.appendChild(defs);
+
+            var vp = document.createElementNS(xns, 'g');
+            svg.appendChild(vp);
+            var edgesG = document.createElementNS(xns, 'g');
+            vp.appendChild(edgesG);
+            var nodesG = document.createElementNS(xns, 'g');
+            vp.appendChild(nodesG);
+
+            var vpS = 1, vpTx = 0, vpTy = 0;
+            function applyVp() {
+                vp.setAttribute('transform',
+                    'translate(' + vpTx.toFixed(1) + ',' + vpTy.toFixed(1) + ') scale(' + vpS.toFixed(4) + ')');
+            }
+            function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+            // Build edge elements
+            var pathEls = [], lblEls = [];
+            edges.forEach(function (e) {
+                var path = document.createElementNS(xns, 'path');
+                path.setAttribute('class', 'edge ' + e.kind);
+                path.setAttribute('marker-end', 'url(#a' + id + '-' + e.kind + ')');
+                edgesG.appendChild(path);
+                pathEls.push(path);
+                var lbl = null;
+                if (e.label) {
+                    lbl = document.createElementNS(xns, 'text');
+                    lbl.setAttribute('class', 'edge-lbl');
+                    lbl.setAttribute('text-anchor', 'middle');
+                    lbl.textContent = e.label;
+                    edgesG.appendChild(lbl);
+                }
+                lblEls.push(lbl);
+            });
+
+            function refreshEdges(onlyIdx) {
+                edges.forEach(function (e, ei) {
+                    if (onlyIdx != null && e.from !== onlyIdx && e.to !== onlyIdx) return;
+                    pathEls[ei].setAttribute('d', edgePath(mpos[e.from], heights[e.from], mpos[e.to], heights[e.to]));
+                    if (lblEls[ei]) {
+                        var m = edgeMidpoint(mpos[e.from], heights[e.from], mpos[e.to], heights[e.to]);
+                        lblEls[ei].setAttribute('x', m.x);
+                        lblEls[ei].setAttribute('y', m.y);
+                    }
+                });
+            }
+            refreshEdges(null);
+
+            var nodeAdj = steps.map(function () { return []; });
+            edges.forEach(function (e, ei) {
+                nodeAdj[e.from].push({ ei: ei, peer: e.to });
+                nodeAdj[e.to].push({ ei: ei, peer: e.from });
+            });
+
+            // Build node elements
+            var nodeGs = [];
+            steps.forEach(function (step, i) {
+                var tc = (step.type || '').toLowerCase();
+                var nh = heights[i];
+                var g = document.createElementNS(xns, 'g');
+                g.setAttribute('class', 'node-g');
+                g.setAttribute('transform', 'translate(' + mpos[i].x + ',' + mpos[i].y + ')');
+
+                var rect = document.createElementNS(xns, 'rect');
+                rect.setAttribute('class', 'node-card ' + tc);
+                rect.setAttribute('width', NW);
+                rect.setAttribute('height', nh);
+                rect.setAttribute('rx', 11);
+                g.appendChild(rect);
+
+                var fo = document.createElementNS(xns, 'foreignObject');
+                fo.setAttribute('x', 0); fo.setAttribute('y', 0);
+                fo.setAttribute('width', NW); fo.setAttribute('height', nh);
+                fo.style.pointerEvents = 'none';
+                fo.innerHTML = buildNodeHtml(step);
+                g.appendChild(fo);
+
+                // Transparent hit rect (sole target for mouse events)
+                var hit = document.createElementNS(xns, 'rect');
+                hit.setAttribute('class', 'node-hit');
+                hit.setAttribute('width', NW); hit.setAttribute('height', nh); hit.setAttribute('rx', 11);
+                hit.setAttribute('fill', 'transparent'); hit.setAttribute('stroke', 'none');
+                g.appendChild(hit);
+
+                nodesG.appendChild(g);
+                nodeGs.push(g);
+            });
+
+            // Viewport pan + zoom
+            svg.addEventListener('wheel', function (e) {
+                e.preventDefault();
+                var r = svg.getBoundingClientRect();
+                var mx = e.clientX - r.left, my = e.clientY - r.top;
+                var factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+                var ns2 = clamp(vpS * factor, 0.05, 8);
+                vpTx = mx - (mx - vpTx) * (ns2 / vpS);
+                vpTy = my - (my - vpTy) * (ns2 / vpS);
+                vpS = ns2; applyVp();
+            }, { passive: false });
+
+            var panning = false, panOX = 0, panOY = 0, panOTx = 0, panOTy = 0;
+            function isOnNode(target) {
+                var t = target;
+                while (t && t !== svg) { if (t.classList && t.classList.contains('node-g')) return true; t = t.parentNode; }
+                return false;
+            }
+            svg.addEventListener('mousedown', function (e) {
+                if (e.button !== 0 || isOnNode(e.target)) return;
+                panning = true; panOX = e.clientX; panOY = e.clientY; panOTx = vpTx; panOTy = vpTy;
+                svg.style.cursor = 'grabbing'; e.preventDefault();
+            });
+            function doPanMove(e) { if (!panning) return; vpTx = panOTx + e.clientX - panOX; vpTy = panOTy + e.clientY - panOY; applyVp(); }
+            function doPanUp() { if (panning) { panning = false; svg.style.cursor = ''; } }
+            window.addEventListener('mousemove', doPanMove);
+            window.addEventListener('mouseup', doPanUp);
+            svg.addEventListener('dblclick', function (e) { if (!isOnNode(e.target)) fit(); });
+
+            var ltx = 0, lty = 0;
+            svg.addEventListener('touchstart', function (e) {
+                if (e.touches.length === 1) { ltx = e.touches[0].clientX; lty = e.touches[0].clientY; }
+                e.preventDefault();
+            }, { passive: false });
+            svg.addEventListener('touchmove', function (e) {
+                if (e.touches.length === 1) {
+                    vpTx += e.touches[0].clientX - ltx; vpTy += e.touches[0].clientY - lty;
+                    ltx = e.touches[0].clientX; lty = e.touches[0].clientY; applyVp();
+                }
+                e.preventDefault();
+            }, { passive: false });
+
+            function fit() {
+                var cw = svg.clientWidth || svg.parentElement.clientWidth || 800;
+                var ch = svg.clientHeight || svg.parentElement.clientHeight || 400;
+                var scale = Math.min(cw / svgW, ch / svgH, 1) * 0.92;
+                vpS = scale; vpTx = (cw - svgW * vpS) / 2; vpTy = Math.max(10, (ch - svgH * vpS) / 2);
+                applyVp();
+            }
+            function zoomBy(f) {
+                var cw = svg.clientWidth, ch = svg.clientHeight;
+                var ns2 = clamp(vpS * f, 0.05, 8);
+                vpTx = cw / 2 - (cw / 2 - vpTx) * (ns2 / vpS);
+                vpTy = ch / 2 - (ch / 2 - vpTy) * (ns2 / vpS);
+                vpS = ns2; applyVp();
+            }
+
+            // Per-node drag
+            nodeGs.forEach(function (g, i) {
+                var hit = g.querySelector('.node-hit');
+                hit.addEventListener('mousedown', function (e) {
+                    if (e.button !== 0) return;
+                    e.stopPropagation(); e.preventDefault();
+                    var sx = e.clientX, sy = e.clientY, ox = mpos[i].x, oy = mpos[i].y;
+                    g.classList.add('dragging'); document.body.style.userSelect = 'none';
+                    function onM(e) {
+                        mpos[i].x = ox + (e.clientX - sx) / vpS; mpos[i].y = oy + (e.clientY - sy) / vpS;
+                        g.setAttribute('transform', 'translate(' + mpos[i].x.toFixed(1) + ',' + mpos[i].y.toFixed(1) + ')');
+                        refreshEdges(i);
+                    }
+                    function onU() {
+                        g.classList.remove('dragging'); document.body.style.userSelect = '';
+                        window.removeEventListener('mousemove', onM); window.removeEventListener('mouseup', onU);
+                    }
+                    window.addEventListener('mousemove', onM); window.addEventListener('mouseup', onU);
+                });
+            });
+
+            // Hover spotlight
+            nodeGs.forEach(function (g, i) {
+                g.addEventListener('mouseenter', function () {
+                    svg.classList.add('has-hover');
+                    nodeGs.forEach(function (ng) { ng.classList.remove('node-hi'); });
+                    pathEls.forEach(function (p) { p.classList.remove('edge-hi'); });
+                    lblEls.forEach(function (l) { if (l) l.classList.remove('edge-hi'); });
+                    g.classList.add('node-hi');
+                    nodeAdj[i].forEach(function (conn) {
+                        pathEls[conn.ei].classList.add('edge-hi');
+                        if (lblEls[conn.ei]) lblEls[conn.ei].classList.add('edge-hi');
+                        nodeGs[conn.peer].classList.add('node-hi');
+                    });
+                });
+                g.addEventListener('mouseleave', function () {
+                    svg.classList.remove('has-hover');
+                    nodeGs.forEach(function (ng) { ng.classList.remove('node-hi'); });
+                    pathEls.forEach(function (p) { p.classList.remove('edge-hi'); });
+                    lblEls.forEach(function (l) { if (l) l.classList.remove('edge-hi'); });
+                });
+            });
+
+            requestAnimationFrame(fit);
+
+            return {
+                svgEl: svg, fit: fit,
+                zoomIn: function () { zoomBy(1.25); },
+                zoomOut: function () { zoomBy(1 / 1.25); },
+                reset: function () {
+                    mpos.forEach(function (p, i) { p.x = origPos[i].x; p.y = origPos[i].y; });
+                    nodeGs.forEach(function (g, i) {
+                        g.setAttribute('transform', 'translate(' + mpos[i].x + ',' + mpos[i].y + ')');
+                    });
+                    refreshEdges(null); requestAnimationFrame(fit);
+                }
+            };
+        }
+
+        // ── Render one agent panel ────────────────────────────────────────
+        function plannerCls(pt) {
+            if (!pt) return '';
+            switch (pt.toUpperCase()) {
+                case 'GOAP': return 'planner-goap';
+                case 'UTILITY': return 'planner-utility';
+                case 'SUPERVISOR': return 'planner-supervisor';
+                case 'COMPONENT': return 'planner-component';
+                default: return 'planner-goap';
+            }
+        }
+
+        function renderAgent(agent) {
+            var panel = document.createElement('section');
+            panel.className = 'agent';
+
+            // Header row: name + planner badge + opaque badge + version/class
+            var hdr = document.createElement('div');
+            hdr.className = 'agent-header';
+
+            var titleRow = document.createElement('div');
+            titleRow.className = 'agent-title-row';
+
+            var h2 = document.createElement('h2');
+            h2.textContent = agent.agentName;
+            titleRow.appendChild(h2);
+
+            if (agent.plannerType) {
+                var pb = document.createElement('span');
+                pb.className = 'planner-badge ' + plannerCls(agent.plannerType);
+                pb.textContent = agent.plannerType;
+                titleRow.appendChild(pb);
+            }
+            if (agent.opaque) {
+                var ob = document.createElement('span');
+                ob.className = 'opaque-badge';
+                ob.textContent = 'opaque';
+                titleRow.appendChild(ob);
+            }
+            hdr.appendChild(titleRow);
+
+            var metaSpan = document.createElement('span');
+            metaSpan.className = 'agent-meta';
+            metaSpan.textContent = agent.className + (agent.version ? ' \u00b7 v' + agent.version : '');
+            hdr.appendChild(metaSpan);
+
+            panel.appendChild(hdr);
+
+            if (agent.description) {
+                var p = document.createElement('p');
+                p.className = 'desc';
+                p.textContent = agent.description;
+                panel.appendChild(p);
+            }
+
+            var steps = agent.steps || [];
+            if (!steps.length) {
+                var emptyEl = document.createElement('div');
+                emptyEl.className = 'empty';
+                emptyEl.textContent = 'No workflow steps declared on this agent.';
+                panel.appendChild(emptyEl);
+                return panel;
+            }
+
+            // Legend
+            var leg = document.createElement('div');
+            leg.className = 'legend';
+            leg.innerHTML =
+                '<span class="leg-item"><span class="swatch" style="background:var(--action)"></span>Action</span>' +
+                '<span class="leg-item"><span class="swatch" style="background:var(--condition)"></span>Condition / pre-edge</span>' +
+                '<span class="leg-item"><span class="swatch" style="background:var(--goal)"></span>AchievesGoal / post-edge</span>' +
+                '<span class="leg-item"><span class="swatch" style="background:var(--cost)"></span>Cost / cost-method edge</span>' +
+                '<span class="leg-item"><span class="swatch" style="background:var(--type-col)"></span>Type flow edge</span>' +
+                '<span class="leg-item"><span class="swatch" style="background:var(--llmtool);opacity:0.8"></span>LLM Tool</span>';
+            panel.appendChild(leg);
+
+            // Zoom controls
+            var ctrl = document.createElement('div');
+            ctrl.className = 'flow-controls';
+            var btnFit = document.createElement('button'); btnFit.className = 'flow-btn'; btnFit.textContent = '\u22a1 Fit';
+            var btnIn = document.createElement('button'); btnIn.className = 'flow-btn'; btnIn.textContent = '+ Zoom In';
+            var btnOut = document.createElement('button'); btnOut.className = 'flow-btn'; btnOut.textContent = '\u2212 Zoom Out';
+            var btnReset = document.createElement('button'); btnReset.className = 'flow-btn'; btnReset.textContent = '\u21ba Reset Layout';
+            var fhint = document.createElement('span'); fhint.className = 'flow-hint';
+            fhint.textContent = 'Drag\u00a0nodes \u00b7 Scroll\u00a0to\u00a0zoom \u00b7 Drag\u00a0background\u00a0to\u00a0pan \u00b7 Dbl-click\u00a0to\u00a0fit';
+            ctrl.append(btnFit, btnIn, btnOut, btnReset, fhint);
+            panel.appendChild(ctrl);
+
+            var flow = document.createElement('div');
+            flow.className = 'flow';
+            var canvas = makeFlowCanvas(steps);
+            flow.appendChild(canvas.svgEl);
+            panel.appendChild(flow);
+
+            btnFit.onclick = function () { canvas.fit(); };
+            btnIn.onclick = function () { canvas.zoomIn(); };
+            btnOut.onclick = function () { canvas.zoomOut(); };
+            btnReset.onclick = function () { canvas.reset(); };
+
+            return panel;
+        }
+
+        // ── Render full catalog ───────────────────────────────────────────
+        function render(catalog) {
+            var canvas = document.getElementById('canvas');
+            canvas.innerHTML = '';
+            var agents = catalog.agents || [];
+            if (!agents.length) {
+                canvas.innerHTML = '<p class="empty">No Embabel <code>@Agent</code> beans found in the application context.</p>';
+                return;
+            }
+            agents.forEach(function (a) { canvas.appendChild(renderAgent(a)); });
+        }
+
+        // ── Fetch workflow catalog ────────────────────────────────────────
+        fetch('/embabel-workflows/api')
+            .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(render)
+            .catch(function (err) {
+                document.getElementById('canvas').innerHTML =
+                    '<p class="empty error">Failed to load workflows: ' + esc(err.message) + '</p>';
+            });
+    </script>
+    <footer>
+        <span>
+            &copy; 2026 &ndash; Created with <span class="footer-heart">&#10084;&#65039;</span> by
+            <a href="https://github.com/patbaumgartner" target="_blank" rel="noopener noreferrer">Patrick
+                Baumgartner</a>
+        </span>
+        <span>
+            <a href="https://github.com/patbaumgartner/embabel-workflow-visualizer" target="_blank"
+                rel="noopener noreferrer">embabel-workflow-visualizer</a>
+            &middot; Powered by <a href="https://embabel.com" target="_blank" rel="noopener noreferrer">Embabel
+                Agent</a>
+        </span>
+    </footer>
+</body>
+
+</html>

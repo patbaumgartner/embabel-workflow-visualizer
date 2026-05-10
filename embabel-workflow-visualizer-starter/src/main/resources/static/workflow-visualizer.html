@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Embabel Workflow Visualizer</title>
+    <!-- Restore theme before first paint to prevent flash of wrong theme -->
+    <script>
+        try {
+            var _t = localStorage.getItem('embabel-theme');
+            if (_t === 'light' || _t === 'dark')
+                document.documentElement.setAttribute('data-theme', _t);
+        } catch (_) { }
+    </script>
+    <style>
+        /* ── Theme tokens ──────────────────────────────────────────────── */
+        :root {
+            color-scheme: dark;
+            /* 42talents brand palette */
+            --brand-cyan: #2bb7e0;
+            --brand-pink: #e4457d;
+            --brand-green: #6ec829;
+            --brand-yellow: #ffc600;
+            --brand-orange: #ff6c2c;
+            /* Dark defaults */
+            --bg: #0a1220;
+            --bg-2: #0c1630;
+            --card: #111a2a;
+            --ink: #e5e7eb;
+            --muted: #cbd5e1;
+            --line: rgba(255, 255, 255, .14);
+            --hdr-bg: rgba(10, 18, 32, 0.88);
+            --shadow: rgba(0, 0, 0, 0.35);
+            /* Node/edge colors — brand palette */
+            --action: var(--brand-cyan);
+            --condition: var(--brand-yellow);
+            --goal: var(--brand-green);
+            --cost: var(--brand-pink);
+            --type-col: var(--brand-orange);
+        }
+
+        /* Dark mode body gradient */
+        body {
+            background:
+                radial-gradient(1200px 800px at 10% -10%, color-mix(in oklab, var(--brand-cyan) 18%, transparent), transparent 60%),
+                radial-gradient(1000px 700px at 110% 20%, color-mix(in oklab, var(--brand-pink) 14%, transparent), transparent 60%),
+                radial-gradient(900px 700px at 80% 110%, color-mix(in oklab, var(--brand-green) 9%, transparent), transparent 55%),
+                var(--bg);
+        }
+
+        /* OS light mode (when no manual override is set to dark) */
+        @media (prefers-color-scheme: light) {
+            :root:not([data-theme="dark"]) {
+                color-scheme: light;
+                --bg: #f8fafc;
+                --bg-2: #ffffff;
+                --card: #ffffff;
+                --ink: #0f172a;
+                --muted: #475569;
+                --line: rgba(0, 0, 0, .12);
+                --hdr-bg: rgba(248, 250, 252, 0.92);
+                --shadow: rgba(0, 0, 0, 0.10);
+            }
+
+            :root:not([data-theme="dark"]) body {
+                background:
+                    radial-gradient(1200px 800px at 10% -10%, color-mix(in oklab, var(--brand-cyan) 12%, transparent), transparent 60%),
+                    radial-gradient(1000px 700px at 110% 20%, color-mix(in oklab, var(--brand-pink) 8%, transparent), transparent 60%),
+                    var(--bg);
+            }
+        }
+
+        /* Manual light override */
+        :root[data-theme="light"] {
+            color-scheme: light;
+            --bg: #f8fafc;
+            --bg-2: #ffffff;
+            --card: #ffffff;
+            --ink: #0f172a;
+            --muted: #475569;
+            --line: rgba(0, 0, 0, .12);
+            --hdr-bg: rgba(248, 250, 252, 0.92);
+            --shadow: rgba(0, 0, 0, 0.10);
+        }
+
+        :root[data-theme="light"] body {
+            background:
+                radial-gradient(1200px 800px at 10% -10%, color-mix(in oklab, var(--brand-cyan) 12%, transparent), transparent 60%),
+                radial-gradient(1000px 700px at 110% 20%, color-mix(in oklab, var(--brand-pink) 8%, transparent), transparent 60%),
+                var(--bg);
+        }
+
+        /* Manual dark override */
+        :root[data-theme="dark"] {
+            color-scheme: dark;
+            --bg: #0a1220;
+            --bg-2: #0c1630;
+            --card: #111a2a;
+            --ink: #e5e7eb;
+            --muted: #cbd5e1;
+            --line: rgba(255, 255, 255, .14);
+            --hdr-bg: rgba(10, 18, 32, 0.88);
+            --shadow: rgba(0, 0, 0, 0.35);
+        }
+
+        :root[data-theme="dark"] body {
+            background:
+                radial-gradient(1200px 800px at 10% -10%, color-mix(in oklab, var(--brand-cyan) 18%, transparent), transparent 60%),
+                radial-gradient(1000px 700px at 110% 20%, color-mix(in oklab, var(--brand-pink) 14%, transparent), transparent 60%),
+                radial-gradient(900px 700px at 80% 110%, color-mix(in oklab, var(--brand-green) 9%, transparent), transparent 55%),
+                var(--bg);
+        }
+
+        /* ── Reset ─────────────────────────────────────────────────────── */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", "SF Pro Text", "Inter", Roboto, Ubuntu, Cantarell, "Noto Sans", Helvetica, Arial, sans-serif;
+            color: var(--ink);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.2s;
+        }
+
+        /* ── Header ────────────────────────────────────────────────────── */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            padding: 0.875rem 1.5rem;
+            border-bottom: 1px solid var(--line);
+            position: sticky;
+            top: 0;
+            background: var(--hdr-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 10;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        header h1 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: -0.015em;
+        }
+
+        .hdr-right {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            flex-wrap: wrap;
+        }
+
+        .hint {
+            font-size: 0.76rem;
+            color: var(--muted);
+        }
+
+        .hint code {
+            font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+            background: var(--bg-2);
+            border: 1px solid var(--line);
+            padding: 1px 5px;
+            border-radius: 4px;
+        }
+
+        .theme-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--bg-2);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 0.26rem 0.75rem;
+            font-size: 0.78rem;
+            font-family: inherit;
+            color: var(--ink);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: border-color 0.15s, background 0.2s;
+        }
+
+        .theme-btn:hover {
+            border-color: var(--muted);
+        }
+
+        /* ── Main canvas ───────────────────────────────────────────────── */
+        main {
+            padding: 1.5rem;
+            max-width: none;
+            margin: 0 auto;
+        }
+
+        /* ── Agent panel ───────────────────────────────────────────────── */
+        .agent {
+            margin-bottom: 1.75rem;
+            border: 1px solid var(--line);
+            background: var(--bg-2);
+            border-radius: 14px;
+            padding: 1.25rem 1.5rem;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .agent-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.35rem;
+        }
+
+        .agent-header h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--action);
+        }
+
+        .agent-header .meta {
+            font-size: 0.72rem;
+            color: var(--muted);
+            font-family: ui-monospace, Consolas, monospace;
+        }
+
+        .agent .desc {
+            font-size: 0.865rem;
+            color: var(--muted);
+            margin-bottom: 0.85rem;
+        }
+
+        /* ── Legend ────────────────────────────────────────────────────── */
+        .legend {
+            display: flex;
+            gap: 0.875rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.85rem;
+            font-size: 0.72rem;
+            color: var(--muted);
+        }
+
+        .leg-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .swatch {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        /* ── Flow container (pan / zoom) ───────────────────────────────── */
+        .flow {
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            background: var(--bg);
+            height: min(70vh, 640px);
+            min-height: 180px;
+            cursor: grab;
+            transition: border-color 0.2s;
+        }
+
+        .flow:active {
+            cursor: grabbing;
+        }
+
+        .flow-svg {
+            display: block;
+            transform-origin: 0 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        /* ── Zoom controls ─────────────────────────────────────────────── */
+        .flow-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-bottom: 0.45rem;
+            flex-wrap: wrap;
+        }
+
+        .flow-btn {
+            display: inline-flex;
+            align-items: center;
+            background: var(--bg-2);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.73rem;
+            font-family: inherit;
+            color: var(--ink);
+            cursor: pointer;
+            transition: border-color 0.15s, color 0.15s;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .flow-btn:hover {
+            border-color: var(--action);
+            color: var(--action);
+        }
+
+        .flow-hint {
+            font-size: 0.68rem;
+            color: var(--muted);
+            margin-left: 0.25rem;
+        }
+
+        /* ── SVG node rect ─────────────────────────────────────────────── */
+        .node-card {
+            fill: var(--card);
+            stroke-width: 1.5;
+            filter: drop-shadow(0 2px 6px var(--shadow));
+        }
+
+        .node-card.action {
+            stroke: var(--action);
+        }
+
+        .node-card.condition {
+            stroke: var(--condition);
+        }
+
+        .node-card.achievesgoal {
+            stroke: var(--goal);
+        }
+
+        .node-card.cost {
+            stroke: var(--cost);
+        }
+
+        /* ── SVG edges ─────────────────────────────────────────────────── */
+        .edge {
+            fill: none;
+            stroke-width: 1.5;
+        }
+
+        .edge.pre {
+            stroke: var(--condition);
+            stroke-dasharray: 5 4;
+        }
+
+        .edge.post {
+            stroke: var(--goal);
+        }
+
+        .edge.type {
+            stroke: var(--type-col);
+            stroke-opacity: 0.75;
+        }
+
+        .edge-lbl {
+            font-size: 9px;
+            fill: var(--muted);
+            font-family: ui-monospace, Consolas, monospace;
+        }
+
+        /* ── foreignObject node content ────────────────────────────────── */
+        .nfo {
+            font-family: Inter, system-ui, sans-serif;
+            padding: 10px 13px 8px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .ntype {
+            font-size: 8.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 4px;
+        }
+
+        .ntype.action {
+            color: var(--action);
+        }
+
+        .ntype.condition {
+            color: var(--condition);
+        }
+
+        .ntype.achievesgoal {
+            color: var(--goal);
+        }
+
+        .ntype.cost {
+            color: var(--cost);
+        }
+
+        .nname {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--ink);
+            line-height: 1.25;
+            margin-bottom: 5px;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .nio {
+            font-size: 9.5px;
+            color: var(--type-col);
+            font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+            line-height: 1.35;
+            margin-bottom: 4px;
+            word-break: break-all;
+        }
+
+        .nconds {
+            font-size: 8.5px;
+            color: var(--muted);
+            line-height: 1.3;
+            margin-bottom: 2px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .ndesc {
+            font-size: 8.5px;
+            color: var(--muted);
+            line-height: 1.3;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        /* ── Utility ───────────────────────────────────────────────────── */
+        .empty {
+            color: var(--muted);
+            border: 1px dashed var(--line);
+            border-radius: 8px;
+            padding: 1.25rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .error {
+            color: #fca5a5;
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.35);
+        }
+
+        /* ── Footer ────────────────────────────────────────────────────── */
+        footer {
+            margin-top: 2.5rem;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--line);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            font-size: 0.76rem;
+            color: var(--muted);
+            background: var(--hdr-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        footer a {
+            color: var(--action);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+
+        footer a:hover {
+            color: var(--brand-cyan);
+            text-decoration: underline;
+        }
+
+        .footer-heart {
+            color: var(--brand-pink);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Embabel Workflow Visualizer</h1>
+        <div class="hdr-right">
+            <span class="hint">
+                Actuator <code>/actuator/embabel</code> &middot; API <code>/embabel-workflows/api</code>
+            </span>
+            <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">
+                <span id="theme-icon"></span><span id="theme-lbl"></span>
+            </button>
+        </div>
+    </header>
+    <main id="canvas">
+        <p class="empty">Loading workflows&hellip;</p>
+    </main>
+
+    <script>
+        // ── Theme ──────────────────────────────────────────────────────────
+
+        function isDark() {
+            var t = document.documentElement.getAttribute('data-theme');
+            if (t === 'dark') return true;
+            if (t === 'light') return false;
+            return window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+
+        function syncThemeIcon() {
+            var dark = isDark();
+            document.getElementById('theme-icon').textContent = dark ? '\u2600\uFE0F\u00A0' : '\uD83C\uDF19\u00A0';
+            document.getElementById('theme-lbl').textContent = dark ? 'Light' : 'Dark';
+        }
+
+        function toggleTheme() {
+            var next = isDark() ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            try { localStorage.setItem('embabel-theme', next); } catch (_) { }
+            syncThemeIcon();
+        }
+
+        syncThemeIcon();
+
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+            if (!document.documentElement.hasAttribute('data-theme')) syncThemeIcon();
+        });
+
+        // ── Layout constants ───────────────────────────────────────────────
+        var NW = 300;   // node width
+        var NH = 156;   // node height
+        var CG = 96;    // column gap
+        var RG = 56;    // row gap
+        var PAD = 24;    // svg outer padding
+
+        // ── HTML escaping ──────────────────────────────────────────────────
+        function esc(v) {
+            return String(v == null ? '' : v)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // ── Layout ────────────────────────────────────────────────────────
+        function computeLayout(steps) {
+            var condProd = new Map();
+            var typeProd = new Map();
+
+            steps.forEach(function (s, i) {
+                (s.post || []).forEach(function (c) {
+                    if (!condProd.has(c)) condProd.set(c, []);
+                    condProd.get(c).push(i);
+                });
+                if (s.output && s.output !== 'void' && s.output !== 'boolean') {
+                    if (!typeProd.has(s.output)) typeProd.set(s.output, []);
+                    typeProd.get(s.output).push(i);
+                }
+                if (s.type === 'Condition') {
+                    if (!condProd.has(s.name)) condProd.set(s.name, []);
+                    condProd.get(s.name).push(i);
+                }
+            });
+
+            var deps = steps.map(function () { return new Set(); });
+            var rawEdges = [];
+
+            function addEdge(src, dst, kind, label) {
+                if (src === dst) return;
+                deps[dst].add(src);
+                rawEdges.push({ from: src, to: dst, kind: kind, label: label });
+            }
+
+            steps.forEach(function (s, i) {
+                (s.pre || []).forEach(function (c) {
+                    (condProd.get(c) || []).forEach(function (src) { addEdge(src, i, 'pre', c); });
+                });
+                (s.inputs || []).forEach(function (t) {
+                    (typeProd.get(t) || []).forEach(function (src) { addEdge(src, i, 'type', t); });
+                });
+            });
+
+            // Deduplicate edges per (from, to, kind)
+            var edgeMap = new Map();
+            rawEdges.forEach(function (e) {
+                var key = e.from + '-' + e.to + '-' + e.kind;
+                if (!edgeMap.has(key)) {
+                    edgeMap.set(key, { from: e.from, to: e.to, kind: e.kind, label: e.label });
+                } else {
+                    var ex = edgeMap.get(key);
+                    if (e.label && ex.label && ex.label.indexOf(e.label) === -1)
+                        ex.label += ', ' + e.label;
+                }
+            });
+            var edges = Array.from(edgeMap.values());
+
+            // Topological column assignment (iterative, cycle-safe)
+            var col = steps.map(function () { return 0; });
+            for (var pass = 0; pass < steps.length + 6; pass++) {
+                var changed = false;
+                steps.forEach(function (_, i) {
+                    var c = 0;
+                    deps[i].forEach(function (d) { c = Math.max(c, col[d] + 1); });
+                    if (col[i] !== c) { col[i] = c; changed = true; }
+                });
+                if (!changed) break;
+            }
+
+            var cols = {};
+            steps.forEach(function (_, i) {
+                if (!cols[col[i]]) cols[col[i]] = [];
+                cols[col[i]].push(i);
+            });
+
+            var numCols = Math.max.apply(null, Object.keys(cols).map(Number)) + 1;
+            var maxRows = Math.max.apply(null, Object.values(cols).map(function (c) { return c.length; }));
+            var svgH = maxRows * (NH + RG) - RG + PAD * 2;
+            var svgW = numCols * (NW + CG) - CG + PAD * 2;
+
+            // Vertically centre each column relative to the tallest column
+            var pos = steps.map(function () { return { x: 0, y: 0 }; });
+            Object.keys(cols).forEach(function (c) {
+                var idxs = cols[c];
+                var colH = idxs.length * NH + (idxs.length - 1) * RG;
+                var startY = PAD + (svgH - PAD * 2 - colH) / 2;
+                idxs.forEach(function (idx, row) {
+                    pos[idx] = {
+                        x: Number(c) * (NW + CG) + PAD,
+                        y: startY + row * (NH + RG)
+                    };
+                });
+            });
+
+            return { pos: pos, edges: edges, svgW: svgW, svgH: svgH };
+        }
+
+        // ── Pan / zoom ─────────────────────────────────────────────────────
+        function attachPanZoom(container, svgEl) {
+            var s = 1, tx = 0, ty = 0;
+            var dragging = false, ox = 0, oy = 0, otx = 0, oty = 0;
+
+            function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+            function apply() {
+                svgEl.style.transform =
+                    'translate(' + tx.toFixed(1) + 'px,' + ty.toFixed(1) + 'px) scale(' + s.toFixed(4) + ')';
+            }
+
+            container.addEventListener('wheel', function (e) {
+                e.preventDefault();
+                var r = container.getBoundingClientRect();
+                var mx = e.clientX - r.left, my = e.clientY - r.top;
+                var factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+                var ns = clamp(s * factor, 0.06, 8);
+                tx = mx - (mx - tx) * (ns / s);
+                ty = my - (my - ty) * (ns / s);
+                s = ns;
+                apply();
+            }, { passive: false });
+
+            container.addEventListener('mousedown', function (e) {
+                if (e.button !== 0) return;
+                dragging = true;
+                ox = e.clientX; oy = e.clientY;
+                otx = tx; oty = ty;
+                container.style.cursor = 'grabbing';
+                e.preventDefault();
+            });
+
+            window.addEventListener('mousemove', function (e) {
+                if (!dragging) return;
+                tx = otx + e.clientX - ox;
+                ty = oty + e.clientY - oy;
+                apply();
+            });
+
+            window.addEventListener('mouseup', function () {
+                if (dragging) { dragging = false; container.style.cursor = 'grab'; }
+            });
+
+            container.addEventListener('dblclick', function () {
+                fit();
+            });
+
+            // Touch pan
+            var lastTX = 0, lastTY = 0;
+            container.addEventListener('touchstart', function (e) {
+                if (e.touches.length === 1) { lastTX = e.touches[0].clientX; lastTY = e.touches[0].clientY; }
+                e.preventDefault();
+            }, { passive: false });
+            container.addEventListener('touchmove', function (e) {
+                if (e.touches.length === 1) {
+                    tx += e.touches[0].clientX - lastTX;
+                    ty += e.touches[0].clientY - lastTY;
+                    lastTX = e.touches[0].clientX; lastTY = e.touches[0].clientY;
+                    apply();
+                }
+                e.preventDefault();
+            }, { passive: false });
+
+            function fit() {
+                var cw = container.clientWidth, ch = container.clientHeight;
+                var sw = parseFloat(svgEl.getAttribute('width'));
+                var sh = parseFloat(svgEl.getAttribute('height'));
+                var ns = Math.min(cw / sw, ch / sh, 1) * 0.94;
+                s = ns; tx = (cw - sw * s) / 2; ty = Math.max(12, (ch - sh * s) / 2);
+                apply();
+            }
+
+            function zoomBy(factor) {
+                var cw = container.clientWidth, ch = container.clientHeight;
+                var ns = clamp(s * factor, 0.06, 8);
+                tx = cw / 2 - (cw / 2 - tx) * (ns / s);
+                ty = ch / 2 - (ch / 2 - ty) * (ns / s);
+                s = ns; apply();
+            }
+
+            // Center + fit on first render
+            requestAnimationFrame(function () { fit(); });
+
+            return {
+                fit: fit,
+                reset: function () { s = 1; tx = 0; ty = 0; apply(); },
+                zoomIn: function () { zoomBy(1.25); },
+                zoomOut: function () { zoomBy(1 / 1.25); }
+            };
+        }
+
+        // ── Render one agent ───────────────────────────────────────────────
+        var agentSeq = 0;
+
+        function renderAgent(agent) {
+            var id = agentSeq++;
+            var panel = document.createElement('section');
+            panel.className = 'agent';
+
+            var hdr = document.createElement('div');
+            hdr.className = 'agent-header';
+            hdr.innerHTML =
+                '<h2>' + esc(agent.agentName) + '</h2>' +
+                '<span class="meta">' + esc(agent.className) +
+                (agent.version ? ' &middot; v' + esc(agent.version) : '') + '</span>';
+            panel.appendChild(hdr);
+
+            if (agent.description) {
+                var p = document.createElement('p');
+                p.className = 'desc';
+                p.textContent = agent.description;
+                panel.appendChild(p);
+            }
+
+            var steps = agent.steps || [];
+            if (!steps.length) {
+                var empty = document.createElement('div');
+                empty.className = 'empty';
+                empty.textContent = 'No workflow steps declared on this agent.';
+                panel.appendChild(empty);
+                return panel;
+            }
+
+            var leg = document.createElement('div');
+            leg.className = 'legend';
+            leg.innerHTML =
+                '<span class="leg-item"><span class="swatch" style="background:var(--action)"></span>Action</span>' +
+                '<span class="leg-item"><span class="swatch" style="background:var(--condition)"></span>Condition / pre-edge</span>' +
+                '<span class="leg-item"><span class="swatch" style="background:var(--goal)"></span>AchievesGoal / post-edge</span>' +
+                '<span class="leg-item"><span class="swatch" style="background:var(--type-col)"></span>Type flow</span>';
+            panel.appendChild(leg);
+
+            var layout = computeLayout(steps);
+            var pos = layout.pos;
+            var edges = layout.edges;
+            var svgW = layout.svgW;
+            var svgH = layout.svgH;
+
+            var flow = document.createElement('div');
+            flow.className = 'flow';
+
+            var ns = 'http://www.w3.org/2000/svg';
+            var svg = document.createElementNS(ns, 'svg');
+            svg.setAttribute('class', 'flow-svg');
+            svg.setAttribute('viewBox', '0 0 ' + svgW + ' ' + svgH);
+            svg.setAttribute('width', svgW);
+            svg.setAttribute('height', svgH);
+
+            // Arrow markers (unique IDs per agent panel)
+            var colors = { pre: 'var(--condition)', post: 'var(--goal)', type: 'var(--type-col)' };
+            var defs = document.createElementNS(ns, 'defs');
+            ['pre', 'post', 'type'].forEach(function (k) {
+                defs.insertAdjacentHTML('beforeend',
+                    '<marker id="a' + id + '-' + k + '" viewBox="0 0 10 10" refX="9" refY="5"' +
+                    ' markerWidth="6" markerHeight="6" orient="auto-start-reverse">' +
+                    '<path d="M0,0 L10,5 L0,10 Z" fill="' + colors[k] + '"/></marker>');
+            });
+            svg.appendChild(defs);
+
+            // Edges (drawn behind nodes)
+            edges.forEach(function (e) {
+                var f = pos[e.from];
+                var t = pos[e.to];
+                var x1 = f.x + NW, y1 = f.y + NH / 2;
+                var x2 = t.x, y2 = t.y + NH / 2;
+                var cx = (x1 + x2) / 2;
+
+                var path = document.createElementNS(ns, 'path');
+                path.setAttribute('class', 'edge ' + e.kind);
+                path.setAttribute('d', 'M ' + x1 + ' ' + y1 +
+                    ' C ' + cx + ' ' + y1 + ', ' + cx + ' ' + y2 + ', ' + x2 + ' ' + y2);
+                path.setAttribute('marker-end', 'url(#a' + id + '-' + e.kind + ')');
+                svg.appendChild(path);
+
+                if (e.label) {
+                    var lbl = document.createElementNS(ns, 'text');
+                    lbl.setAttribute('class', 'edge-lbl');
+                    lbl.setAttribute('x', cx);
+                    lbl.setAttribute('y', (y1 + y2) / 2 - 5);
+                    lbl.setAttribute('text-anchor', 'middle');
+                    lbl.textContent = e.label;
+                    svg.appendChild(lbl);
+                }
+            });
+
+            // Nodes (drawn above edges)
+            steps.forEach(function (step, i) {
+                var p = pos[i];
+                var tc = (step.type || '').toLowerCase();
+
+                var g = document.createElementNS(ns, 'g');
+                g.setAttribute('transform', 'translate(' + p.x + ',' + p.y + ')');
+
+                var rect = document.createElementNS(ns, 'rect');
+                rect.setAttribute('class', 'node-card ' + tc);
+                rect.setAttribute('width', NW);
+                rect.setAttribute('height', NH);
+                rect.setAttribute('rx', 10);
+                g.appendChild(rect);
+
+                var typeLabel = (step.goal && step.type !== 'AchievesGoal')
+                    ? step.type + ' \u00B7 GOAL' : step.type;
+                var inputs = (step.inputs || []).join(', ') || '\u2014';
+                var condParts = [];
+                if ((step.pre || []).length) condParts.push('pre: ' + step.pre.join(', '));
+                if ((step.post || []).length) condParts.push('post: ' + step.post.join(', '));
+
+                var fo = document.createElementNS(ns, 'foreignObject');
+                fo.setAttribute('x', 0);
+                fo.setAttribute('y', 0);
+                fo.setAttribute('width', NW);
+                fo.setAttribute('height', NH);
+                fo.innerHTML =
+                    '<div xmlns="http://www.w3.org/1999/xhtml" class="nfo">' +
+                    '<div class="ntype ' + tc + '">' + esc(typeLabel) + '</div>' +
+                    '<div class="nname">' + esc(step.name) + '</div>' +
+                    '<div class="nio">' + esc(inputs) + ' \u2192 ' + esc(step.output || 'void') + '</div>' +
+                    (condParts.length ? '<div class="nconds">' + esc(condParts.join('  \u00B7  ')) + '</div>' : '') +
+                    (step.description ? '<div class="ndesc">' + esc(step.description) + '</div>' : '') +
+                    '</div>';
+                g.appendChild(fo);
+
+                var title = document.createElementNS(ns, 'title');
+                title.textContent = [
+                    step.type + ': ' + step.name,
+                    'Method: ' + (step.method || ''),
+                    'Inputs: ' + ((step.inputs || []).join(', ') || '(none)'),
+                    'Output: ' + (step.output || 'void'),
+                    'Pre: ' + ((step.pre || []).join(', ') || '(none)'),
+                    'Post: ' + ((step.post || []).join(', ') || '(none)'),
+                    step.description || ''
+                ].filter(Boolean).join('\n');
+                g.appendChild(title);
+
+                svg.appendChild(g);
+            });
+
+            flow.appendChild(svg);
+
+            // Zoom / pan controls
+            var ctrl = document.createElement('div');
+            ctrl.className = 'flow-controls';
+            var btnFit = document.createElement('button');
+            btnFit.className = 'flow-btn'; btnFit.textContent = '\u22a1 Fit';
+            var btnIn = document.createElement('button');
+            btnIn.className = 'flow-btn'; btnIn.textContent = '+ Zoom In';
+            var btnOut = document.createElement('button');
+            btnOut.className = 'flow-btn'; btnOut.textContent = '\u2212 Zoom Out';
+            var btnReset = document.createElement('button');
+            btnReset.className = 'flow-btn'; btnReset.textContent = '\u21ba Reset';
+            var fhint = document.createElement('span');
+            fhint.className = 'flow-hint';
+            fhint.textContent = 'Scroll\u00a0to\u00a0zoom \u00b7 Drag\u00a0to\u00a0pan \u00b7 Dbl-click\u00a0to\u00a0fit';
+            ctrl.append(btnFit, btnIn, btnOut, btnReset, fhint);
+            panel.appendChild(ctrl);
+            panel.appendChild(flow);
+
+            var pz = attachPanZoom(flow, svg);
+            btnFit.onclick = function () { pz.fit(); };
+            btnIn.onclick = function () { pz.zoomIn(); };
+            btnOut.onclick = function () { pz.zoomOut(); };
+            btnReset.onclick = function () { pz.reset(); };
+
+            return panel;
+        }
+
+        // ── Render full catalog ────────────────────────────────────────────
+        function render(catalog) {
+            var canvas = document.getElementById('canvas');
+            canvas.innerHTML = '';
+            var agents = catalog.agents || [];
+            if (!agents.length) {
+                canvas.innerHTML =
+                    '<p class="empty">No Embabel <code>@Agent</code> beans found in the application context.</p>';
+                return;
+            }
+            agents.forEach(function (a) { canvas.appendChild(renderAgent(a)); });
+        }
+
+        // ── Fetch workflow catalog ─────────────────────────────────────────
+        fetch('/embabel-workflows/api')
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(render)
+            .catch(function (err) {
+                document.getElementById('canvas').innerHTML =
+                    '<p class="empty error">Failed to load workflows: ' + esc(err.message) + '</p>';
+            });
+    </script>
+    <footer>
+        <span>
+            &copy; 2026 &ndash; Created with <span class="footer-heart">&#10084;&#65039;</span> by
+            <a href="https://github.com/patbaumgartner" target="_blank" rel="noopener noreferrer">Patrick
+                Baumgartner</a>
+        </span>
+        <span>
+            <a href="https://github.com/patbaumgartner/embabel-workflow-visualizer" target="_blank"
+                rel="noopener noreferrer">embabel-workflow-visualizer</a>
+            &middot; Powered by <a href="https://embabel.com" target="_blank" rel="noopener noreferrer">Embabel
+                Agent</a>
+        </span>
+    </footer>
+</body>
+
+</html>

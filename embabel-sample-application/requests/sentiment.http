@@ -1,0 +1,29 @@
+### Sentiment Analysis — SentimentAnalysisAgent
+### POST /api/sentiment/analyze
+@baseUrl = http://localhost:8080
+
+### Positive feedback → auto-response path
+POST {{baseUrl}}/api/sentiment/analyze
+Content-Type: application/json
+
+{
+  "feedbackId": "FB-3001",
+  "customerName": "Laura Schneider",
+  "productName": "Embabel Workflow Visualizer",
+  "feedbackText": "Absolutely love the new workflow visualizer! The pan and zoom feature makes it so much easier to understand complex agent flows. Great work!",
+  "channel": "web"
+}
+
+###
+
+### Urgent negative feedback → escalation path
+POST {{baseUrl}}/api/sentiment/analyze
+Content-Type: application/json
+
+{
+  "feedbackId": "FB-3002",
+  "customerName": "Marco Bianchi",
+  "productName": "Embabel Workflow Visualizer",
+  "feedbackText": "This is completely broken! I deployed your starter to production and it crashed our entire application. We lost 3 hours of customer data. I demand an immediate response and compensation. If this isn't resolved today I'm contacting our lawyers.",
+  "channel": "email"
+}

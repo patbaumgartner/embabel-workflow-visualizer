@@ -1,0 +1,31 @@
+### KYC Verification — KycVerificationAgent
+### POST /api/kyc/verify
+@baseUrl = http://localhost:8080
+
+### Low-risk case: straightforward clean customer → direct APPROVE path
+POST {{baseUrl}}/api/kyc/verify
+Content-Type: application/json
+
+{
+  "customerId": "CUST-001",
+  "fullName": "Anna Müller",
+  "dateOfBirth": "1985-03-12",
+  "nationality": "German",
+  "occupation": "Software Engineer",
+  "sourceOfFunds": "Salary"
+}
+
+###
+
+### High-risk case: PEP match → enhanced due diligence path
+POST {{baseUrl}}/api/kyc/verify
+Content-Type: application/json
+
+{
+  "customerId": "CUST-002",
+  "fullName": "Viktor Petrov",
+  "dateOfBirth": "1972-11-05",
+  "nationality": "Russian",
+  "occupation": "Government Official",
+  "sourceOfFunds": "Government salary and real estate"
+}

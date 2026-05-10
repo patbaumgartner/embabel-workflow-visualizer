@@ -1,0 +1,25 @@
+name: Dependency Review
+
+# Scans new dependencies introduced in pull requests for known vulnerabilities
+# and license issues. Fails the PR if HIGH or CRITICAL severity findings are present.
+# Requires GitHub Advanced Security (free for public repositories).
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write  # allow posting review comments on the PR
+
+jobs:
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: always

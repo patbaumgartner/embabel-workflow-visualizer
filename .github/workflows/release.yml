@@ -1,0 +1,64 @@
+name: Release
+
+# Triggered by pushing a semver tag: v1.2.3
+#
+# Steps:
+#   1. Validate the tag matches the POM version (prevents accidental mismatches).
+#   2. Deploy the starter jar, sources jar, and javadoc jar to GitHub Packages.
+#   3. Create a GitHub Release with auto-generated notes and the jars attached.
+#
+# Release workflow for maintainers:
+#   mvn versions:set -DnewVersion=1.0.0 -DgenerateBackupPoms=false
+#   git commit -am "Release 1.0.0" && git tag v1.0.0 && git push --tags
+#   mvn versions:set -DnewVersion=1.1.0-SNAPSHOT -DgenerateBackupPoms=false
+#   git commit -am "Prepare 1.1.0-SNAPSHOT" && git push
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write   # create GitHub release and upload assets
+  packages: write   # publish to GitHub Packages
+
+jobs:
+  release:
+    name: Release (Java 21)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+
+      - name: Validate tag matches POM version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          POM_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          if [ "$POM_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME expects version $TAG_VERSION but POM has $POM_VERSION"
+            exit 1
+          fi
+          echo "Releasing version $POM_VERSION"
+
+      - name: Deploy to GitHub Packages
+        run: mvn -B -DskipTests deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            embabel-workflow-visualizer-starter/target/embabel-workflow-visualizer-starter-*.jar
+            embabel-workflow-visualizer-starter/target/embabel-workflow-visualizer-starter-*-sources.jar
+            embabel-workflow-visualizer-starter/target/embabel-workflow-visualizer-starter-*-javadoc.jar

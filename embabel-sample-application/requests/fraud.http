@@ -1,0 +1,49 @@
+### Fraud Detection — FraudDetectionAgent
+### POST /api/fraud/detect
+@baseUrl = http://localhost:8080
+
+### Low-risk transaction: small domestic purchase → auto APPROVE path
+POST {{baseUrl}}/api/fraud/detect
+Content-Type: application/json
+
+{
+  "transactionId": "TXN-10001",
+  "accountId": "ACC-55220",
+  "amount": 34.99,
+  "merchantName": "Migros",
+  "merchantCategory": "Grocery",
+  "location": "Zurich, Switzerland",
+  "timestamp": "2026-05-10T09:15:00Z"
+}
+
+###
+
+### High-risk transaction: large foreign luxury purchase → auto BLOCK path
+POST {{baseUrl}}/api/fraud/detect
+Content-Type: application/json
+
+{
+  "transactionId": "TXN-10002",
+  "accountId": "ACC-55220",
+  "amount": 8750.00,
+  "merchantName": "Diamond Palace Jewellery",
+  "merchantCategory": "Luxury Goods",
+  "location": "Lagos, Nigeria",
+  "timestamp": "2026-05-10T02:47:00Z"
+}
+
+###
+
+### Medium-risk transaction: borderline case → investigation path
+POST {{baseUrl}}/api/fraud/detect
+Content-Type: application/json
+
+{
+  "transactionId": "TXN-10003",
+  "accountId": "ACC-55220",
+  "amount": 620.00,
+  "merchantName": "ElectroHub",
+  "merchantCategory": "Electronics",
+  "location": "Milan, Italy",
+  "timestamp": "2026-05-10T18:30:00Z"
+}

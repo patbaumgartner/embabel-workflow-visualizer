@@ -1,0 +1,50 @@
+name: Publish Snapshot
+
+# Publishes a -SNAPSHOT build to GitHub Packages on every push to main.
+# Only the starter library is deployed; the sample application is skipped
+# via <maven.deploy.skip>true</maven.deploy.skip> in its POM.
+#
+# Consumers can resolve snapshots by adding to their build:
+#   repository: https://maven.pkg.github.com/patbaumgartner/embabel-workflow-visualizer
+#   (requires a GitHub PAT with read:packages scope)
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Deploy Snapshot (Java 21)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          # Writes ~/.m2/settings.xml with <server id="github"> credentials
+          # so that mvn deploy can authenticate with GitHub Packages.
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+
+      - name: Guard — only deploy snapshots
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          if [[ "$VERSION" != *-SNAPSHOT ]]; then
+            echo "::notice::Skipping deploy — '$VERSION' is not a -SNAPSHOT version."
+            exit 0
+          fi
+          echo "Deploying snapshot $VERSION"
+
+      - name: Deploy
+        run: mvn -B -DskipTests deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

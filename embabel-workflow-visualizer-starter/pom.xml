@@ -12,13 +12,15 @@
   <artifactId>embabel-workflow-visualizer-starter</artifactId>
   <name>embabel-workflow-visualizer-starter</name>
   <description>Spring Boot starter that provides a workflow visualizer UI and API for Embabel agents.</description>
-  <url>https://github.com/patbaumgartner/embabel-workflow-visualizer</url>
 
   <!--
       This is a library / starter — it must NOT be packaged as an executable jar.
       Do NOT add the spring-boot-maven-plugin here.
     -->
 
+  <properties>
+    <embabel-agent.version>0.4.0-SNAPSHOT</embabel-agent.version>
+  </properties>
 
   <dependencies>
     <!-- Core starter: brings spring-boot-autoconfigure + logging -->
@@ -57,6 +59,16 @@
       <scope>test</scope>
     </dependency>
 
+    <!--
+      embabel-agent-api is needed ONLY in tests so the SampleEmbabelAgent
+      test fixture can use @Agent, @Action, etc. annotations.
+    -->
+    <dependency>
+      <groupId>com.embabel.agent</groupId>
+      <artifactId>embabel-agent-api</artifactId>
+      <version>${embabel-agent.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -98,60 +110,37 @@
         <executions>
           <execution>
             <id>flatten</id>
-            <phase>process-resources</phase>
             <goals>
               <goal>flatten</goal>
             </goals>
+            <phase>process-resources</phase>
           </execution>
           <execution>
             <id>flatten.clean</id>
-            <phase>clean</phase>
             <goals>
               <goal>clean</goal>
             </goals>
+            <phase>clean</phase>
           </execution>
         </executions>
       </plugin>
     </plugins>
   </build>
 
-  <!--
-      embabel-agent-api snapshots are hosted on the Embabel Artifactory instance.
-      This profile is NOT active by default so neither the SNAPSHOT repository nor
-      the SNAPSHOT test dependency appear in the POM deployed to Maven Central.
-      Activate explicitly during local development and CI snapshot builds: -Pembabel-dev
-  -->
-  <profiles>
-    <profile>
-      <id>embabel-dev</id>
-      <properties>
-        <embabel-agent.version>0.4.0-SNAPSHOT</embabel-agent.version>
-      </properties>
-      <repositories>
-        <repository>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-          <id>embabel-snapshots</id>
-          <name>Embabel Snapshot Repository</name>
-          <url>https://repo.embabel.com/artifactory/libs-snapshot</url>
-        </repository>
-      </repositories>
-      <dependencies>
-        <!--
-            embabel-agent-api is needed ONLY in tests so the SampleEmbabelAgent
-            test fixture can use @Agent, @Action, etc. annotations.
-        -->
-        <dependency>
-          <groupId>com.embabel.agent</groupId>
-          <artifactId>embabel-agent-api</artifactId>
-          <version>${embabel-agent.version}</version>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-    </profile>
-  </profiles>
+  <url>https://github.com/patbaumgartner/embabel-workflow-visualizer</url>
+
+  <repositories>
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>embabel-snapshots</id>
+      <name>Embabel Snapshot Repository</name>
+      <url>https://repo.embabel.com/artifactory/libs-snapshot</url>
+    </repository>
+  </repositories>
+
 </project>

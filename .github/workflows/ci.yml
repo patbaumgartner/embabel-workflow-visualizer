@@ -35,4 +35,4 @@ jobs:
         run: mvn -N install -q
 
       - name: Build and verify starter
-        run: mvn -B verify -pl embabel-workflow-visualizer-starter -Pembabel-dev
+        run: mvn -B verify -pl embabel-workflow-visualizer-starter

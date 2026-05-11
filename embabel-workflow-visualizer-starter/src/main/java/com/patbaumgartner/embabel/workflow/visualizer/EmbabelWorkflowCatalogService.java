@@ -31,6 +31,7 @@ import java.util.stream.Stream;
  * Discovery is purely reflective and never imports Embabel types directly so that the
  * starter remains usable without forcing the {@code embabel-agent-api} on the runtime
  * classpath.
+ * </p>
  */
 public class EmbabelWorkflowCatalogService {
 
@@ -69,10 +70,9 @@ public class EmbabelWorkflowCatalogService {
 	 */
 	public WorkflowCatalog catalog() {
 		// allowEagerInit=false prevents Spring from eagerly initialising lazy
-		// singletons
-		// and factory beans (e.g. ChatClient) just to determine whether they match
-		// Object.class — which can fail when required dependencies (ChatModel, etc.)
-		// are not available in the current profile / environment.
+		// singletons and factory beans (e.g. ChatClient) just to determine whether they
+		// match Object.class — which can fail when required dependencies (ChatModel,
+		// etc.) are not available in the current profile / environment.
 		Map<String, Object> beans;
 		try {
 			beans = applicationContext.getBeansOfType(Object.class, false, false);

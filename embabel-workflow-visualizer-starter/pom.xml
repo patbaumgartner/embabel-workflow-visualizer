@@ -19,7 +19,7 @@
     -->
 
   <properties>
-    <embabel-agent.version>0.4.0-SNAPSHOT</embabel-agent.version>
+    <embabel-agent.version>0.4.0</embabel-agent.version>
   </properties>
 
   <dependencies>

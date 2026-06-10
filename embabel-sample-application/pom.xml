@@ -11,7 +11,7 @@
 
   <groupId>com.patbaumgartner.embabel</groupId>
   <artifactId>embabel-sample-application</artifactId>
-  <version>0.2.0</version>
+  <version>0.3.0-SNAPSHOT</version>
   <name>embabel-sample-application</name>
   <description>Sample Embabel application that uses embabel-workflow-visualizer-starter</description>
 

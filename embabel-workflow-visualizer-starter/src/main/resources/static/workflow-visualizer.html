@@ -516,6 +516,11 @@
             color: var(--brand-green);
         }
 
+        .nb-mcp {
+            background: rgba(255, 198, 0, 0.2);
+            color: var(--brand-yellow);
+        }
+
         .nname {
             font-size: 13px;
             font-weight: 700;
@@ -588,6 +593,11 @@
         .nrow.cval .lbl,
         .nrow.cval .val {
             color: var(--cost);
+        }
+
+        .nrow.cgoalval .lbl,
+        .nrow.cgoalval .val {
+            color: var(--goal);
         }
 
         .nrow.cspel .val {
@@ -966,6 +976,7 @@
             // Micro-badges
             var badges = '';
             if (step.goal && step.type !== 'AchievesGoal') badges += '<span class="nb nb-goal">\u2605 GOAL</span>';
+            if (step.exportedRemote) badges += '<span class="nb nb-mcp">\u26a1 MCP' + (step.exportName ? ': ' + esc(step.exportName) : '') + '</span>';
             if (step.canRerun) badges += '<span class="nb nb-rerun">\u21ba canRerun</span>';
             if (step.readOnly) badges += '<span class="nb nb-readonly">\u26d4 readOnly</span>';
             if (step.llmTool && step.type !== 'LlmTool') badges += '<span class="nb nb-llmtool">\u2699 LLM Tool</span>';
@@ -1005,11 +1016,19 @@
             if ((step.post || []).length)
                 html += '<div class="nrow cpost"><span class="lbl">post</span><span class="val">' + esc(step.post.join(', ')) + '</span></div>';
 
-            // Cost / value methods
+            // Cost / value methods (dynamic) and static cost / value declarations
             if (step.costMethod)
                 html += '<div class="nrow ccost"><span class="lbl">cost</span><span class="val">\u00a7 ' + esc(step.costMethod) + '()</span></div>';
+            else if (step.cost != null)
+                html += '<div class="nrow ccost"><span class="lbl">cost</span><span class="val">' + esc(step.cost) + '</span></div>';
             if (step.valueMethod)
                 html += '<div class="nrow cval"><span class="lbl">value</span><span class="val">\u00a7 ' + esc(step.valueMethod) + '()</span></div>';
+            else if (step.value != null)
+                html += '<div class="nrow cval"><span class="lbl">value</span><span class="val">' + esc(step.value) + '</span></div>';
+
+            // Goal value from @AchievesGoal(value = ...)
+            if (step.goalValue != null)
+                html += '<div class="nrow cgoalval"><span class="lbl">goal value</span><span class="val">' + esc(step.goalValue) + '</span></div>';
 
             // Description
             if (step.description)

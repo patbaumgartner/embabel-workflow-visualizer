@@ -4,30 +4,36 @@ import com.embabel.agent.api.annotation.AchievesGoal;
 import com.embabel.agent.api.annotation.Action;
 import com.embabel.agent.api.annotation.Agent;
 import com.embabel.agent.api.annotation.Cost;
+import com.embabel.agent.api.annotation.Export;
 import com.embabel.agent.api.annotation.LlmTool;
 
 /**
- * Test fixture: an agent that exercises every optional attribute of the Embabel step
+ * Test fixture: an agent that exercises every optional attribute of the Embabel
+ * step
  * annotations.
  *
  * <p>
  * Covers:
  * <ul>
- * <li>{@code @Agent} with explicit {@code version} and {@code opaque = true}</li>
- * <li>{@code @Action} with {@code canRerun}, {@code readOnly}, {@code outputBinding},
+ * <li>{@code @Agent} with explicit {@code version} and
+ * {@code opaque = true}</li>
+ * <li>{@code @Action} with {@code canRerun}, {@code readOnly},
+ * {@code outputBinding},
  * {@code costMethod}, and {@code valueMethod}</li>
+ * <li>{@code @Action} with static {@code cost} and {@code value}
+ * declarations</li>
  * <li>{@code @Cost} methods referenced by the action</li>
- * <li>{@code @Action} + {@code @AchievesGoal} on the same method with {@code tags} and
- * {@code examples}</li>
+ * <li>{@code @Action} + {@code @AchievesGoal} on the same method with
+ * {@code value},
+ * {@code tags}, {@code examples}, and a remote {@code @Export}</li>
  * <li>{@code @LlmTool} with a {@code description}</li>
  * </ul>
  */
 @Agent(name = "rich-agent", description = "Rich annotation agent", version = "3.0.0", opaque = true)
 public class RichActionSampleAgent {
 
-	@Action(description = "An action with all optional attributes set", pre = { "precondition" },
-			post = { "postcondition" }, canRerun = true, readOnly = true, outputBinding = "myOutput",
-			costMethod = "calcCost", valueMethod = "calcValue")
+	@Action(description = "An action with all optional attributes set", pre = { "precondition" }, post = {
+			"postcondition" }, canRerun = true, readOnly = true, outputBinding = "myOutput", costMethod = "calcCost", valueMethod = "calcValue")
 	public String processData() {
 		return "result";
 	}
@@ -42,8 +48,14 @@ public class RichActionSampleAgent {
 		return 0.8;
 	}
 
+	@Action(description = "An action with static cost and value declarations", cost = 2.5, value = 0.4)
+	public String staticCostAction() {
+		return "static";
+	}
+
 	@Action
-	@AchievesGoal(description = "Rich goal", tags = { "tag1", "tag2" }, examples = { "example 1", "example 2" })
+	@AchievesGoal(description = "Rich goal", value = 0.9, tags = { "tag1", "tag2" }, examples = { "example 1",
+			"example 2" }, export = @Export(remote = true, name = "richGoalTool"))
 	public String achieveRichGoal() {
 		return "done";
 	}

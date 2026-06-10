@@ -33,7 +33,7 @@ mvn -pl embabel-workflow-visualizer-starter test
 
 ## Usage
 
-Compatibility note: this project is currently validated against Embabel 0.4.0-SNAPSHOT (see module POM properties). Because this is a snapshot line, behavior and APIs may change between builds.
+Compatibility note: this project is validated against [Embabel](https://github.com/embabel/embabel-agent) 0.4.0 (the latest release, available on Maven Central) and supports all Embabel annotation features: `@Agent` (GOAP / UTILITY / SUPERVISOR planners, `opaque`), `@EmbabelComponent`, `@Action` (`pre`/`post`, `cost`/`value`, `costMethod`/`valueMethod`, `canRerun`, `readOnly`, `clearBlackboard`, `outputBinding`), `@Condition`, `@Cost`, `@AchievesGoal` (`value`, `tags`, `examples`, `@Export` MCP publishing), `@State`, and `@LlmTool`.
 
 ### 1. Add the dependency
 
@@ -47,7 +47,7 @@ The library is published to [Maven Central](https://central.sonatype.com/artifac
 </dependency>
 ```
 
-If your project uses Embabel snapshot dependencies, also add the Embabel snapshot repository:
+Embabel 0.4.0 and the visualizer starter are both published to Maven Central, so no extra repository configuration is needed. Only if your project uses Embabel *snapshot* dependencies, add the Embabel snapshot repository:
 
 ```xml
 <repositories>
@@ -105,14 +105,16 @@ The UI (`GET /embabel-workflows`) renders each discovered `@Agent` as an interac
 - Per-agent controls: Fit, Zoom In, Zoom Out, Reset Layout
 - Node types color-coded with the 42talents brand palette (cyan, yellow, green, pink, orange)
 - Animated flowing arrows on pre-condition edges; AchievesGoal nodes glow green
+- Node badges surface `canRerun`, `readOnly`, `clearBlackboard`, `@LlmTool`, and MCP-exported goals (`@Export(remote = true)`)
+- Cost / value rows show static `cost=` / `value=` declarations, dynamic `costMethod=` / `valueMethod=` references, and `@AchievesGoal(value=)`
 - Light / dark mode toggle, respects `prefers-color-scheme`
 
 ## Sample agents
 
-The `embabel-sample-application` module ships six demo agents covering common enterprise use cases.
+The `embabel-sample-application` module ships ten demo agents covering common enterprise use cases.
 Each agent intentionally demonstrates a **different workflow pattern** so you can see how the Embabel
-planner handles linear flows, fan-in, branching, converging branches, dynamic cost methods, and static
-cost declarations.
+planner handles linear flows, fan-in, branching, converging branches, dynamic cost methods, static
+cost declarations, Utility AI planning, @State routing, LLM-supervised planning, and revision loops.
 
 | Agent | Workflow pattern | Description | Endpoint |
 |---|---|---|---|
@@ -122,5 +124,9 @@ cost declarations.
 | `ResumeScreeningAgent` | Fan-in (no conditions) | Two independent analyses (`analyzeResume`, `assessCultureFit`) both start from the same input and converge into a single `@AchievesGoal`. | `POST /api/recruitment/screen` |
 | `ContentModerationAgent` | Converging branches → single `@AchievesGoal` | Two condition-gated branches both produce `TaggedContent`; the terminal action operates on that type regardless of which branch ran. | `POST /api/moderation/evaluate` |
 | `LoanApplicationAgent` | Branching + static `cost=` on every action | Two `@Condition`s split the flow; every `@Action` declares a static `cost=` so the planner can weigh paths. Two `@AchievesGoal` actions. | `POST /api/loan/apply` |
+| `DocumentProcessingAgent` | Default-producer for optional input + full `@AchievesGoal` | `provideDefaultMetadataHints` supplies `MetadataHints` only when the caller did not; `Ai` injection, static `value=`, `canRerun`, and `@Export(remote = true)` MCP goal publishing. | `POST /api/documents/process` |
+| `TicketRoutingAgent` | `UTILITY` planner + `@State` routing | Utility AI planner ranks actions by dynamic `valueMethod=`; `routeToCategory` returns one of three `@State` records, each containing its own `@AchievesGoal` handler. | `POST /api/tickets/route` |
+| `ProductResearchAgent` | `SUPERVISOR` planner + SpEL precondition + `@EmbabelComponent` | LLM-supervised planning; `pre = {"spel:marketData.confidenceScore > 0.6"}` gates the competitor analysis; `ResearchUtils` contributes `gatherMarketData` (with `outputBinding`) as a shared `@EmbabelComponent`. | `POST /api/research/analyze` |
+| `StoryWriterAgent` | Revision loop (`canRerun`) + `@LlmTool` + persona | Draft → review → revise loop until editorial approval; `PersonaSpec` prompt contributor, per-action `LlmOptions` temperatures, `ActionException.Transient`/`Permanent`, and an `@LlmTool` method. | `POST /api/story/write` |
 
-Ready-to-run HTTP request examples for all six agents are in [`embabel-sample-application/requests/`](embabel-sample-application/requests/).
+Ready-to-run HTTP request examples for all ten agents are in [`embabel-sample-application/requests/`](embabel-sample-application/requests/).

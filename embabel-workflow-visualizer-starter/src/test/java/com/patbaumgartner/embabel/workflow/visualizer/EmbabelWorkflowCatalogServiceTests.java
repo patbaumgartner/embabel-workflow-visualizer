@@ -19,7 +19,8 @@ class EmbabelWorkflowCatalogServiceTests {
 
 	/**
 	 * Builds a {@link WorkflowCatalog} from a fresh
-	 * {@link AnnotationConfigApplicationContext} that contains exactly the supplied bean
+	 * {@link AnnotationConfigApplicationContext} that contains exactly the supplied
+	 * bean
 	 * classes, then closes the context.
 	 */
 	private WorkflowCatalog catalogWith(Class<?>... beanClasses) {
@@ -62,7 +63,7 @@ class EmbabelWorkflowCatalogServiceTests {
 		assertThat(agent.opaque()).isFalse();
 		assertThat(agent.className()).isEqualTo(SampleEmbabelAgent.class.getName());
 		assertThat(agent.steps()).extracting(WorkflowStep::method)
-			.containsExactlyInAnyOrder("draftPlan", "hasInput", "completeGoal");
+				.containsExactlyInAnyOrder("draftPlan", "hasInput", "completeGoal");
 	}
 
 	@Test
@@ -95,17 +96,17 @@ class EmbabelWorkflowCatalogServiceTests {
 		WorkflowCatalog catalog = catalogWith(MultiGoalSampleAgent.class, SampleEmbabelAgent.class);
 
 		assertThat(catalog.agents()).extracting(AgentWorkflow::agentName)
-			.containsExactly("demo-agent", "MultiGoalAgent");
+				.containsExactly("demo-agent", "MultiGoalAgent");
 	}
 
 	@Test
 	void stepsAreSortedAlphabeticallyByName() {
 		assertThat(catalogWith(MultiGoalSampleAgent.class).agents()
-			.get(0)
-			.steps()
-			.stream()
-			.map(WorkflowStep::name)
-			.toList()).isSortedAccordingTo(String.CASE_INSENSITIVE_ORDER);
+				.get(0)
+				.steps()
+				.stream()
+				.map(WorkflowStep::name)
+				.toList()).isSortedAccordingTo(String.CASE_INSENSITIVE_ORDER);
 	}
 
 	// -------------------------------------------------------------------------
@@ -118,8 +119,8 @@ class EmbabelWorkflowCatalogServiceTests {
 		assertThat(agent.version()).isEqualTo("2.0.0");
 
 		Map<String, WorkflowStep> byMethod = agent.steps()
-			.stream()
-			.collect(Collectors.toMap(WorkflowStep::method, s -> s));
+				.stream()
+				.collect(Collectors.toMap(WorkflowStep::method, s -> s));
 
 		assertThat(byMethod).containsKeys("inspect", "isFastPath", "completeFast", "completeSlow");
 
@@ -151,10 +152,10 @@ class EmbabelWorkflowCatalogServiceTests {
 	@Test
 	void richActionAttributesAreReflected() {
 		Map<String, WorkflowStep> byMethod = catalogWith(RichActionSampleAgent.class).agents()
-			.get(0)
-			.steps()
-			.stream()
-			.collect(Collectors.toMap(WorkflowStep::method, s -> s));
+				.get(0)
+				.steps()
+				.stream()
+				.collect(Collectors.toMap(WorkflowStep::method, s -> s));
 
 		WorkflowStep step = byMethod.get("processData");
 		assertThat(step.pre()).containsExactly("precondition");
@@ -165,30 +166,54 @@ class EmbabelWorkflowCatalogServiceTests {
 		assertThat(step.costMethod()).isEqualTo("calcCost");
 		assertThat(step.valueMethod()).isEqualTo("calcValue");
 		assertThat(step.clearBlackboard()).isFalse();
+		// No static cost/value declared — must be null, not 0.0
+		assertThat(step.cost()).isNull();
+		assertThat(step.value()).isNull();
+	}
+
+	@Test
+	void staticCostAndValueAreReflected() {
+		Map<String, WorkflowStep> byMethod = catalogWith(RichActionSampleAgent.class).agents()
+				.get(0)
+				.steps()
+				.stream()
+				.collect(Collectors.toMap(WorkflowStep::method, s -> s));
+
+		WorkflowStep step = byMethod.get("staticCostAction");
+		assertThat(step.cost()).isEqualTo(2.5);
+		assertThat(step.value()).isEqualTo(0.4);
+		assertThat(step.costMethod()).isNull();
+		assertThat(step.valueMethod()).isNull();
 	}
 
 	@Test
 	void achievesGoalTagsAndExamplesAreReflected() {
 		Map<String, WorkflowStep> byMethod = catalogWith(RichActionSampleAgent.class).agents()
-			.get(0)
-			.steps()
-			.stream()
-			.collect(Collectors.toMap(WorkflowStep::method, s -> s));
+				.get(0)
+				.steps()
+				.stream()
+				.collect(Collectors.toMap(WorkflowStep::method, s -> s));
 
 		WorkflowStep step = byMethod.get("achieveRichGoal");
 		assertThat(step.type()).isEqualTo("AchievesGoal");
 		assertThat(step.goal()).isTrue();
 		assertThat(step.tags()).containsExactlyInAnyOrder("tag1", "tag2");
 		assertThat(step.examples()).containsExactlyInAnyOrder("example 1", "example 2");
+		assertThat(step.goalValue()).isEqualTo(0.9);
+		assertThat(step.exportedRemote()).isTrue();
+		assertThat(step.exportName()).isEqualTo("richGoalTool");
+		// @AchievesGoal(value=) must not leak into the @Action static cost/value
+		assertThat(step.cost()).isNull();
+		assertThat(step.value()).isNull();
 	}
 
 	@Test
 	void llmToolAnnotationIsRecognized() {
 		Map<String, WorkflowStep> byMethod = catalogWith(RichActionSampleAgent.class).agents()
-			.get(0)
-			.steps()
-			.stream()
-			.collect(Collectors.toMap(WorkflowStep::method, s -> s));
+				.get(0)
+				.steps()
+				.stream()
+				.collect(Collectors.toMap(WorkflowStep::method, s -> s));
 
 		WorkflowStep step = byMethod.get("helpTool");
 		assertThat(step.type()).isEqualTo("LlmTool");

@@ -129,18 +129,4 @@
 
   <url>https://github.com/patbaumgartner/embabel-workflow-visualizer</url>
 
-  <repositories>
-    <repository>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <id>embabel-snapshots</id>
-      <name>Embabel Snapshot Repository</name>
-      <url>https://repo.embabel.com/artifactory/libs-snapshot</url>
-    </repository>
-  </repositories>
-
 </project>

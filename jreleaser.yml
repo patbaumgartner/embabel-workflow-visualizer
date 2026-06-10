@@ -1,17 +1,17 @@
 project:
   name: embabel-workflow-visualizer
   description: Spring Boot starter that visualizes Embabel agent workflows as an actuator endpoint and interactive UI.
-  website: https://github.com/patbaumgartner/embabel-workflow-visualizer
   authors:
     - Patrick Baumgartner
   license: Apache-2.0
   links:
     homepage: https://github.com/patbaumgartner/embabel-workflow-visualizer
     bugTracker: https://github.com/patbaumgartner/embabel-workflow-visualizer/issues
-  java:
-    groupId: com.patbaumgartner.embabel
-    artifactId: embabel-workflow-visualizer-parent
-    version: 21
+  languages:
+    java:
+      groupId: com.patbaumgartner.embabel
+      artifactId: embabel-workflow-visualizer-parent
+      version: 21
   inceptionYear: '2024'
 
 release:
@@ -27,7 +27,10 @@ release:
 
 signing:
   active: ALWAYS
-  armored: true
+  pgp:
+    active: ALWAYS
+    armored: true
+    mode: MEMORY
 
 deploy:
   maven:

@@ -29,11 +29,10 @@
       <artifactId>spring-boot-starter</artifactId>
     </dependency>
 
-    <!-- Web layer for the visualizer UI and REST API (Spring Boot 3.5 name) -->
+    <!-- Web layer for the visualizer UI and REST API -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
-      <version>4.1.0</version>
     </dependency>
 
     <!-- Actuator for the embabel endpoint -->

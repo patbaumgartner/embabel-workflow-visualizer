@@ -28,7 +28,7 @@
 
   <properties>
     <java.version>21</java.version>
-    <jreleaser.version>1.24.0</jreleaser.version>
+    <jreleaser.version>1.25.0</jreleaser.version>
   </properties>
 
   <build>

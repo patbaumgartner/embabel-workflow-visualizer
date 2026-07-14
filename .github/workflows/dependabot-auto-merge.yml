@@ -1,0 +1,102 @@
+name: Dependabot Auto Merge
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  enable-auto-merge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Approve and enable auto-merge
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pullNumber = context.payload.pull_request.number;
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            try {
+              await github.rest.pulls.createReview({
+                owner,
+                repo,
+                pull_number: pullNumber,
+                event: "APPROVE",
+                body: "Auto-approving Dependabot pull request."
+              });
+            } catch (error) {
+              console.log(`Approval skipped: ${error.message}`);
+            }
+
+            const data = await github.graphql(
+              `query($owner: String!, $repo: String!, $pullNumber: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  mergeCommitAllowed
+                  rebaseMergeAllowed
+                  squashMergeAllowed
+                  pullRequest(number: $pullNumber) {
+                    id
+                  }
+                }
+              }`,
+              { owner, repo, pullNumber }
+            );
+
+            let mergeMethod = "SQUASH";
+            if (!data.repository.squashMergeAllowed) {
+              if (data.repository.rebaseMergeAllowed) {
+                mergeMethod = "REBASE";
+              } else if (data.repository.mergeCommitAllowed) {
+                mergeMethod = "MERGE";
+              } else {
+                throw new Error("No merge method is enabled for this repository.");
+              }
+            }
+
+            const mutation = `mutation($pullRequestId: ID!, $mergeMethod: PullRequestMergeMethod!) {
+              enablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId, mergeMethod: $mergeMethod }) {
+                clientMutationId
+              }
+            }`;
+
+            const variables = {
+              pullRequestId: data.repository.pullRequest.id,
+              mergeMethod
+            };
+
+            for (let attempt = 1; attempt <= 6; attempt += 1) {
+              try {
+                await github.graphql(mutation, variables);
+                core.info(`Enabled auto-merge using ${mergeMethod} on attempt ${attempt}.`);
+                return;
+              } catch (error) {
+                const unstable = error.errors?.some((entry) => entry.message?.includes("unstable status")) || error.message?.includes("unstable status");
+                const missingProtection = error.errors?.some((entry) => entry.message?.includes("Protected branch rules not configured")) || error.message?.includes("Protected branch rules not configured");
+
+                if (missingProtection) {
+                  core.info("Skipping auto-merge enablement because the base branch has no protection rules configured.");
+                  return;
+                }
+
+                if (!unstable) {
+                  throw error;
+                }
+
+                if (attempt === 6) {
+                  core.info("Skipping auto-merge enablement because the pull request remained unstable after retries.");
+                  return;
+                }
+
+                core.info(`Pull request still unstable on attempt ${attempt}; retrying in 10 seconds.`);
+                await sleep(10000);
+              }
+            }

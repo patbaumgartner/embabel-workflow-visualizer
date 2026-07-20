@@ -16,8 +16,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EmbabelWorkflowVisualizerAutoConfigurationTests {
 
 	private final WebApplicationContextRunner webRunner = new WebApplicationContextRunner()
-			.withConfiguration(AutoConfigurations.of(EmbabelWorkflowVisualizerAutoConfiguration.class,
-					EndpointAutoConfiguration.class, WebEndpointAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(EmbabelWorkflowVisualizerAutoConfiguration.class,
+				EndpointAutoConfiguration.class, WebEndpointAutoConfiguration.class));
 
 	@Test
 	void apiControllerAndUiAreAbsentByDefault() {
@@ -39,14 +39,14 @@ class EmbabelWorkflowVisualizerAutoConfigurationTests {
 	@Test
 	void allBeansRegisteredWhenFullyEnabled() {
 		webRunner
-				.withPropertyValues("management.endpoints.web.exposure.include=embabel",
-						"embabel.workflow.visualizer.enabled=true")
-				.run(ctx -> {
-					assertThat(ctx).hasSingleBean(EmbabelWorkflowCatalogService.class);
-					assertThat(ctx).hasSingleBean(EmbabelWorkflowApiController.class);
-					assertThat(ctx).hasSingleBean(WorkflowVisualizerPageController.class);
-					assertThat(ctx).hasSingleBean(EmbabelWorkflowActuatorEndpoint.class);
-				});
+			.withPropertyValues("management.endpoints.web.exposure.include=embabel",
+					"embabel.workflow.visualizer.enabled=true")
+			.run(ctx -> {
+				assertThat(ctx).hasSingleBean(EmbabelWorkflowCatalogService.class);
+				assertThat(ctx).hasSingleBean(EmbabelWorkflowApiController.class);
+				assertThat(ctx).hasSingleBean(WorkflowVisualizerPageController.class);
+				assertThat(ctx).hasSingleBean(EmbabelWorkflowActuatorEndpoint.class);
+			});
 	}
 
 	@Test
@@ -60,19 +60,19 @@ class EmbabelWorkflowVisualizerAutoConfigurationTests {
 	@Test
 	void doesNotActivateInNonWebContext() {
 		new ApplicationContextRunner()
-				.withConfiguration(AutoConfigurations.of(EmbabelWorkflowVisualizerAutoConfiguration.class))
-				.run(ctx -> {
-					assertThat(ctx).doesNotHaveBean(EmbabelWorkflowCatalogService.class);
-					assertThat(ctx).doesNotHaveBean(EmbabelWorkflowApiController.class);
-					assertThat(ctx).doesNotHaveBean(WorkflowVisualizerPageController.class);
-				});
+			.withConfiguration(AutoConfigurations.of(EmbabelWorkflowVisualizerAutoConfiguration.class))
+			.run(ctx -> {
+				assertThat(ctx).doesNotHaveBean(EmbabelWorkflowCatalogService.class);
+				assertThat(ctx).doesNotHaveBean(EmbabelWorkflowApiController.class);
+				assertThat(ctx).doesNotHaveBean(WorkflowVisualizerPageController.class);
+			});
 	}
 
 	@Test
 	void doesNotActivateInReactiveWebContext() {
 		new ReactiveWebApplicationContextRunner()
-				.withConfiguration(AutoConfigurations.of(EmbabelWorkflowVisualizerAutoConfiguration.class))
-				.run(ctx -> assertThat(ctx).doesNotHaveBean(EmbabelWorkflowCatalogService.class));
+			.withConfiguration(AutoConfigurations.of(EmbabelWorkflowVisualizerAutoConfiguration.class))
+			.run(ctx -> assertThat(ctx).doesNotHaveBean(EmbabelWorkflowCatalogService.class));
 	}
 
 	@Test

@@ -16,28 +16,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Document Processing Agent — covers Embabel annotation features not
- * demonstrated
+ * Document Processing Agent — covers Embabel annotation features not demonstrated
  * elsewhere.
  *
  * <p>
  * <b>New features demonstrated:</b>
  * <ul>
  * <li>Default-producer action — {@code provideDefaultMetadataHints} supplies
- * {@code MetadataHints} only when the caller did not put one on the blackboard;
- * the
+ * {@code MetadataHints} only when the caller did not put one on the blackboard; the
  * idiomatic Embabel pattern for optional inputs</li>
- * <li>{@code value = 0.3} on an intermediate action — signals relative value
- * for
+ * <li>{@code value = 0.3} on an intermediate action — signals relative value for
  * utility-style ranking</li>
- * <li>{@code canRerun = true} — allows content analysis to be re-run without
- * restarting
+ * <li>{@code canRerun = true} — allows content analysis to be re-run without restarting
  * the whole pipeline</li>
- * <li>{@link Ai} injected directly — lighter alternative to OperationContext
- * when only
+ * <li>{@link Ai} injected directly — lighter alternative to OperationContext when only
  * LLM capabilities are needed</li>
- * <li>{@code @AchievesGoal} with {@code value}, {@code tags}, {@code examples},
- * and
+ * <li>{@code @AchievesGoal} with {@code value}, {@code tags}, {@code examples}, and
  * {@code export} — full goal annotation with MCP export</li>
  * </ul>
  *
@@ -55,7 +49,9 @@ import org.slf4j.LoggerFactory;
  *   → [summarizeDocument] (@AchievesGoal + @Export) → DocumentSummary
  * </pre>
  */
-@Agent(name = "DocumentProcessingAgent", description = "Preprocesses, analyses, and summarises a document. Demonstrates default-producer action for optional inputs, Ai injection, value, canRerun, and full @AchievesGoal options.", version = "1.0.0")
+@Agent(name = "DocumentProcessingAgent",
+		description = "Preprocesses, analyses, and summarises a document. Demonstrates default-producer action for optional inputs, Ai injection, value, canRerun, and full @AchievesGoal options.",
+		version = "1.0.0")
 public class DocumentProcessingAgent {
 
 	private static final Logger log = LoggerFactory.getLogger(DocumentProcessingAgent.class);
@@ -84,12 +80,10 @@ public class DocumentProcessingAgent {
 	 * Provides default MetadataHints when the caller did not supply any.
 	 *
 	 * <p>
-	 * GOAP automatically includes this action in the plan when
-	 * {@code it:MetadataHints}
+	 * GOAP automatically includes this action in the plan when {@code it:MetadataHints}
 	 * is absent from the blackboard. When the caller has already placed a
 	 * {@link MetadataHints} object on the blackboard, GOAP skips this action (its
-	 * auto-generated precondition {@code it:MetadataHints = FALSE} is not
-	 * satisfied).
+	 * auto-generated precondition {@code it:MetadataHints = FALSE} is not satisfied).
 	 * This is the idiomatic Embabel pattern for optional inputs: provide a
 	 * default-producer action rather than using {@code @Nullable}.
 	 */
@@ -105,20 +99,18 @@ public class DocumentProcessingAgent {
 	 * Extracts structured metadata from the cleaned document.
 	 *
 	 * <p>
-	 * By the time this action runs, {@link MetadataHints} is guaranteed to be on
-	 * the
+	 * By the time this action runs, {@link MetadataHints} is guaranteed to be on the
 	 * blackboard — either supplied by the caller or produced by
-	 * {@link #provideDefaultMetadataHints}. GOAP resolved the optional-input
-	 * problem by
+	 * {@link #provideDefaultMetadataHints}. GOAP resolved the optional-input problem by
 	 * choosing the right precursor action.
 	 *
 	 * <p>
 	 * {@code value = 0.3} — annotates this step's relative value for the planner.
-	 * Utility-style planners use net value (value − cost) to rank steps; GOAP
-	 * records it
+	 * Utility-style planners use net value (value − cost) to rank steps; GOAP records it
 	 * as informational metadata visible in the workflow visualizer.
 	 */
-	@Action(description = "Extract metadata (topics, keywords, reading time) from the cleaned document. Guided by MetadataHints.", value = 0.3)
+	@Action(description = "Extract metadata (topics, keywords, reading time) from the cleaned document. Guided by MetadataHints.",
+			value = 0.3)
 	public DocumentMetadata extractMetadata(CleanDocument cleanDoc, MetadataHints hints, Ai ai) {
 		log.info("Extracting metadata for: {} wordCount={}", cleanDoc.documentId(), cleanDoc.wordCount());
 
@@ -161,18 +153,14 @@ public class DocumentProcessingAgent {
 	 * Performs deep content analysis — tone, themes, structure, quality.
 	 *
 	 * <p>
-	 * Skips LLM analysis for documents with 50 words or fewer — short text does not
-	 * have
+	 * Skips LLM analysis for documents with 50 words or fewer — short text does not have
 	 * enough content for meaningful tone/theme scoring. Returns a lightweight stub
 	 * {@link ContentAnalysis} for those documents.
 	 *
 	 * <p>
-	 * {@code canRerun = true}: Allows this step to be re-executed if the planner
-	 * decides
-	 * to re-run it (e.g., after new data is placed on the blackboard). Without this
-	 * flag,
-	 * an action is treated as a one-shot step and will not be replanned once it has
-	 * run.
+	 * {@code canRerun = true}: Allows this step to be re-executed if the planner decides
+	 * to re-run it (e.g., after new data is placed on the blackboard). Without this flag,
+	 * an action is treated as a one-shot step and will not be replanned once it has run.
 	 */
 	@Action(description = "Deep content analysis: tone, themes, structure, quality score.", canRerun = true)
 	public ContentAnalysis analyzeContent(CleanDocument cleanDoc, DocumentMetadata metadata, Ai ai) {
@@ -223,19 +211,18 @@ public class DocumentProcessingAgent {
 	 * <li>{@code value = 0.9} — high value signals this goal is very desirable for
 	 * Utility/Autonomy-based goal selection</li>
 	 * <li>{@code tags} — labels used for goal cataloguing and filtering</li>
-	 * <li>{@code examples} — natural language examples of inputs that trigger this
-	 * goal,
+	 * <li>{@code examples} — natural language examples of inputs that trigger this goal,
 	 * used by Autonomy's LLM-based goal ranking</li>
-	 * <li>{@code export = @Export(remote=true, ...)} — publishes this goal as an
-	 * MCP tool
+	 * <li>{@code export = @Export(remote=true, ...)} — publishes this goal as an MCP tool
 	 * so external agents/tools can invoke it remotely</li>
 	 * </ul>
 	 */
-	@AchievesGoal(description = "Produce a concise, structured summary of the document including key points and a recommended action.", value = 0.9, tags = {
-			"document", "summarization", "nlp" }, examples = { "Summarise my quarterly report",
-					"Process and analyse this technical document",
-					"Extract key points from the attached whitepaper" }, export = @Export(remote = true, name = "summarizeDocument", startingInputTypes = {
-							DocumentRequest.class }))
+	@AchievesGoal(
+			description = "Produce a concise, structured summary of the document including key points and a recommended action.",
+			value = 0.9, tags = { "document", "summarization", "nlp" },
+			examples = { "Summarise my quarterly report", "Process and analyse this technical document",
+					"Extract key points from the attached whitepaper" },
+			export = @Export(remote = true, name = "summarizeDocument", startingInputTypes = { DocumentRequest.class }))
 	@Action(description = "Generate the final document summary with key points and recommended action.")
 	public DocumentSummary summarizeDocument(CleanDocument cleanDoc, DocumentMetadata metadata,
 			ContentAnalysis analysis, Ai ai) {

@@ -24,15 +24,12 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Discovers Embabel agents in the Spring {@link ApplicationContext} and
- * produces a
+ * Discovers Embabel agents in the Spring {@link ApplicationContext} and produces a
  * {@link WorkflowCatalog} describing their workflow.
  *
  * <p>
- * Discovery is purely reflective and never imports Embabel types directly so
- * that the
- * starter remains usable without forcing the {@code embabel-agent-api} on the
- * runtime
+ * Discovery is purely reflective and never imports Embabel types directly so that the
+ * starter remains usable without forcing the {@code embabel-agent-api} on the runtime
  * classpath.
  * </p>
  */
@@ -68,8 +65,7 @@ public class EmbabelWorkflowCatalogService {
 	}
 
 	/**
-	 * Build the catalog. Each bean is processed independently; failures are logged
-	 * and do
+	 * Build the catalog. Each bean is processed independently; failures are logged and do
 	 * not abort the scan.
 	 */
 	public WorkflowCatalog catalog() {
@@ -80,7 +76,8 @@ public class EmbabelWorkflowCatalogService {
 		Map<String, Object> beans;
 		try {
 			beans = applicationContext.getBeansOfType(Object.class, false, false);
-		} catch (RuntimeException ex) {
+		}
+		catch (RuntimeException ex) {
 			log.error("Failed to enumerate beans for Embabel workflow catalog", ex);
 			return new WorkflowCatalog(List.of());
 		}
@@ -89,7 +86,8 @@ public class EmbabelWorkflowCatalogService {
 		for (Object bean : beans.values()) {
 			try {
 				toAgentWorkflow(bean).ifPresent(agents::add);
-			} catch (Throwable t) {
+			}
+			catch (Throwable t) {
 				log.error("Skipping bean {} while scanning Embabel agents: {}", bean.getClass().getName(),
 						t.toString());
 			}
@@ -104,8 +102,7 @@ public class EmbabelWorkflowCatalogService {
 
 		Annotation agentAnnotation = findAnnotation(targetType, AGENT_ANNOTATION_FQN);
 		Annotation componentAnnotation = agentAnnotation == null
-				? findAnnotation(targetType, EMBABEL_COMPONENT_ANNOTATION_FQN)
-				: null;
+				? findAnnotation(targetType, EMBABEL_COMPONENT_ANNOTATION_FQN) : null;
 		if (agentAnnotation == null && componentAnnotation == null) {
 			return Optional.empty();
 		}
@@ -121,8 +118,7 @@ public class EmbabelWorkflowCatalogService {
 
 		List<WorkflowStep> steps = collectSteps(targetType);
 		return Optional
-				.of(new AgentWorkflow(agentName, description, version, plannerType, opaque, targetType.getName(),
-						steps));
+			.of(new AgentWorkflow(agentName, description, version, plannerType, opaque, targetType.getName(), steps));
 	}
 
 	private List<WorkflowStep> collectSteps(Class<?> targetType) {
@@ -181,50 +177,49 @@ public class EmbabelWorkflowCatalogService {
 			return List.of();
 		}
 		return Arrays.stream(type.getRecordComponents())
-				.map(RecordComponent::getType)
-				.filter(t -> !FRAMEWORK_PARAMETER_TYPES.contains(t.getName()))
-				.map(Class::getSimpleName)
-				.toList();
+			.map(RecordComponent::getType)
+			.filter(t -> !FRAMEWORK_PARAMETER_TYPES.contains(t.getName()))
+			.map(Class::getSimpleName)
+			.toList();
 	}
 
 	/**
-	 * Collects the simple class names of all record components from every @State
-	 * inner
+	 * Collects the simple class names of all record components from every @State inner
 	 * record on {@code targetType}.
 	 */
 	private List<String> stateComponentTypesOf(Class<?> targetType) {
 		return Arrays.stream(targetType.getDeclaredClasses())
-				.filter(inner -> findAnnotation(inner, STATE_ANNOTATION_FQN) != null && inner.isRecord())
-				.flatMap(inner -> Arrays.stream(inner.getRecordComponents()))
-				.map(RecordComponent::getType)
-				.filter(t -> !FRAMEWORK_PARAMETER_TYPES.contains(t.getName()))
-				.map(Class::getSimpleName)
-				.distinct()
-				.toList();
+			.filter(inner -> findAnnotation(inner, STATE_ANNOTATION_FQN) != null && inner.isRecord())
+			.flatMap(inner -> Arrays.stream(inner.getRecordComponents()))
+			.map(RecordComponent::getType)
+			.filter(t -> !FRAMEWORK_PARAMETER_TYPES.contains(t.getName()))
+			.map(Class::getSimpleName)
+			.distinct()
+			.toList();
 	}
 
 	private WorkflowStep toStep(Method method, List<Annotation> annotations, List<String> implicitInputs,
 			List<String> possibleOutputs) {
 		Annotation primary = annotations.stream()
-				.filter(a -> ACTION_ANNOTATION_FQN.equals(a.annotationType().getName()))
-				.findFirst()
-				.orElse(annotations.get(0));
+			.filter(a -> ACTION_ANNOTATION_FQN.equals(a.annotationType().getName()))
+			.findFirst()
+			.orElse(annotations.get(0));
 
 		boolean achievesGoal = annotations.stream()
-				.anyMatch(a -> ACHIEVES_GOAL_ANNOTATION_FQN.equals(a.annotationType().getName()));
+			.anyMatch(a -> ACHIEVES_GOAL_ANNOTATION_FQN.equals(a.annotationType().getName()));
 
 		boolean llmTool = annotations.stream()
-				.anyMatch(a -> LLM_TOOL_ANNOTATION_FQN.equals(a.annotationType().getName()));
+			.anyMatch(a -> LLM_TOOL_ANNOTATION_FQN.equals(a.annotationType().getName()));
 
 		String type = achievesGoal && ACTION_ANNOTATION_FQN.equals(primary.annotationType().getName()) ? "AchievesGoal"
 				: primary.annotationType().getSimpleName();
 
 		String name = firstNonBlank(readStringAttribute(primary, "name"), method.getName());
 		String description = annotations.stream()
-				.map(a -> readStringAttribute(a, "description"))
-				.filter(StringUtils::hasText)
-				.findFirst()
-				.orElse("");
+			.map(a -> readStringAttribute(a, "description"))
+			.filter(StringUtils::hasText)
+			.findFirst()
+			.orElse("");
 
 		List<String> pre = readStringArrayAttribute(primary, "pre");
 		List<String> post = readStringArrayAttribute(primary, "post");
@@ -232,9 +227,9 @@ public class EmbabelWorkflowCatalogService {
 		// Explicit method parameters (minus framework types) + any implicit inputs
 		// from an enclosing @State record's components.
 		List<String> methodInputs = Arrays.stream(method.getParameterTypes())
-				.filter(p -> !FRAMEWORK_PARAMETER_TYPES.contains(p.getName()))
-				.map(Class::getSimpleName)
-				.toList();
+			.filter(p -> !FRAMEWORK_PARAMETER_TYPES.contains(p.getName()))
+			.map(Class::getSimpleName)
+			.toList();
 		List<String> inputs = implicitInputs.isEmpty() ? methodInputs
 				: Stream.concat(implicitInputs.stream(), methodInputs.stream()).distinct().toList();
 
@@ -314,7 +309,8 @@ public class EmbabelWorkflowCatalogService {
 			Method method = annotation.annotationType().getMethod(attributeName);
 			Object value = method.invoke(annotation);
 			return value instanceof String str ? str : "";
-		} catch (ReflectiveOperationException ignored) {
+		}
+		catch (ReflectiveOperationException ignored) {
 			return "";
 		}
 	}
@@ -327,7 +323,8 @@ public class EmbabelWorkflowCatalogService {
 				return Arrays.stream(array).filter(StringUtils::hasText).toList();
 			}
 			return List.of();
-		} catch (ReflectiveOperationException ignored) {
+		}
+		catch (ReflectiveOperationException ignored) {
 			return List.of();
 		}
 	}
@@ -337,8 +334,7 @@ public class EmbabelWorkflowCatalogService {
 	}
 
 	/**
-	 * Reads an {@link Enum} attribute and returns its {@code toString()} (constant
-	 * name),
+	 * Reads an {@link Enum} attribute and returns its {@code toString()} (constant name),
 	 * or empty string if the attribute does not exist or is not an enum.
 	 */
 	private String readEnumNameAttribute(Annotation annotation, String attributeName) {
@@ -346,7 +342,8 @@ public class EmbabelWorkflowCatalogService {
 			Method method = annotation.annotationType().getMethod(attributeName);
 			Object value = method.invoke(annotation);
 			return value != null ? value.toString() : "";
-		} catch (ReflectiveOperationException ignored) {
+		}
+		catch (ReflectiveOperationException ignored) {
 			return "";
 		}
 	}
@@ -359,14 +356,14 @@ public class EmbabelWorkflowCatalogService {
 			Method method = annotation.annotationType().getMethod(attributeName);
 			Object value = method.invoke(annotation);
 			return Boolean.TRUE.equals(value);
-		} catch (ReflectiveOperationException ignored) {
+		}
+		catch (ReflectiveOperationException ignored) {
 			return false;
 		}
 	}
 
 	/**
-	 * Reads a {@code double} attribute from an annotation, returning {@code null}
-	 * when
+	 * Reads a {@code double} attribute from an annotation, returning {@code null} when
 	 * the attribute is absent or left at the {@code 0.0} default (i.e. "not set").
 	 */
 	private Double readNonZeroDoubleAttribute(Annotation annotation, String attributeName) {
@@ -377,21 +374,22 @@ public class EmbabelWorkflowCatalogService {
 				return d;
 			}
 			return null;
-		} catch (ReflectiveOperationException ignored) {
+		}
+		catch (ReflectiveOperationException ignored) {
 			return null;
 		}
 	}
 
 	/**
-	 * Reads a nested annotation attribute (e.g.
-	 * {@code @AchievesGoal(export = @Export)}).
+	 * Reads a nested annotation attribute (e.g. {@code @AchievesGoal(export = @Export)}).
 	 */
 	private Annotation readAnnotationAttribute(Annotation annotation, String attributeName) {
 		try {
 			Method method = annotation.annotationType().getMethod(attributeName);
 			Object value = method.invoke(annotation);
 			return value instanceof Annotation nested ? nested : null;
-		} catch (ReflectiveOperationException ignored) {
+		}
+		catch (ReflectiveOperationException ignored) {
 			return null;
 		}
 	}

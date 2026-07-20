@@ -34,12 +34,12 @@ jobs:
     name: Release (Java 21)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0   # full history required for JReleaser changelog
 
       - name: Set up JDK 21
-        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
           java-version: '21'
@@ -60,7 +60,7 @@ jobs:
         run: mvn -B -Dmaven.test.skip=true deploy -DaltDeploymentRepository=local::file://${GITHUB_WORKSPACE}/target/staging-deploy
 
       - name: Run JReleaser
-        uses: jreleaser/release-action@97b5e2f0e845de2fe1dbbdf451ac6a21233fafff
+        uses: jreleaser/release-action@90ac653bb9c79d11179e65d81499f3f34527dcd5 # 2.5.0
         with:
           arguments: full-release
         env:
@@ -74,7 +74,7 @@ jobs:
 
       - name: Upload JReleaser output
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: jreleaser-release-output
           path: |

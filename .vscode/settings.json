@@ -1,0 +1,10 @@
+{
+    // This project is formatted by the Spring Java Format Maven plugin
+    // (`mvn spring-javaformat:apply`), which uses single-space Javadoc
+    // continuation lines. The built-in Eclipse JDT formatter re-aligns Javadoc
+    // into columns on save, which conflicts with that style — so disable
+    // format-on-save for Java here and rely on the Maven plugin instead.
+    "[java]": {
+        "editor.formatOnSave": false
+    }
+}

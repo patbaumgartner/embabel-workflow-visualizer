@@ -17,7 +17,7 @@
 
   <groupId>com.patbaumgartner.embabel</groupId>
   <artifactId>embabel-workflow-visualizer-parent</artifactId>
-  <version>0.3.0</version>
+  <version>0.4.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>embabel-workflow-visualizer-parent</name>

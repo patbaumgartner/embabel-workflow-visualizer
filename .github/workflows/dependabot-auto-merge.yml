@@ -13,90 +13,196 @@ permissions:
   pull-requests: write
 
 jobs:
-  enable-auto-merge:
+  auto-merge:
     if: github.event.pull_request.user.login == 'dependabot[bot]' && github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
-      - name: Approve and enable auto-merge
+      - name: Approve, wait for checks, and merge
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:
           script: |
             const { owner, repo } = context.repo;
-            const pullNumber = context.payload.pull_request.number;
+            const prNumber = context.payload.pull_request.number;
+            const selfJob = context.job;
+            const blockedLabel = "automerge-blocked";
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+            async function ensureLabel() {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name: blockedLabel });
+              } catch (error) {
+                if (error.status !== 404) return;
+                try {
+                  await github.rest.issues.createLabel({
+                    owner,
+                    repo,
+                    name: blockedLabel,
+                    color: "b60205",
+                    description: "Dependabot PR could not be auto-merged",
+                  });
+                } catch (createError) {
+                  core.info(`Could not create label: ${createError.message}`);
+                }
+              }
+            }
+
+            async function block(reason) {
+              core.warning(`Auto-merge blocked: ${reason}`);
+              await ensureLabel();
+              try {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number: prNumber,
+                  labels: [blockedLabel],
+                });
+              } catch (error) {
+                core.info(`Could not add label: ${error.message}`);
+              }
+              try {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: prNumber,
+                  body: `🚧 **Auto-merge blocked** — ${reason}.\n\nThe pull request was left open for manual review. Fix the issue (or merge manually) and Dependabot / re-running this workflow will pick it up again.`,
+                });
+              } catch (error) {
+                core.info(`Could not comment: ${error.message}`);
+              }
+            }
+
+            async function clearBlock() {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner,
+                  repo,
+                  issue_number: prNumber,
+                  name: blockedLabel,
+                });
+              } catch (error) {
+                // Label was not present; nothing to clear.
+              }
+            }
+
+            // 1. Approve the pull request (idempotent).
             try {
               await github.rest.pulls.createReview({
                 owner,
                 repo,
-                pull_number: pullNumber,
+                pull_number: prNumber,
                 event: "APPROVE",
-                body: "Auto-approving Dependabot pull request."
+                body: "Auto-approving Dependabot pull request.",
               });
             } catch (error) {
-              console.log(`Approval skipped: ${error.message}`);
+              core.info(`Approval skipped: ${error.message}`);
             }
 
-            const data = await github.graphql(
-              `query($owner: String!, $repo: String!, $pullNumber: Int!) {
-                repository(owner: $owner, name: $repo) {
-                  mergeCommitAllowed
-                  rebaseMergeAllowed
-                  squashMergeAllowed
-                  pullRequest(number: $pullNumber) {
-                    id
+            // 2. Choose a merge method the repository actually allows.
+            const { data: repoData } = await github.rest.repos.get({ owner, repo });
+            const mergeMethod = repoData.allow_squash_merge
+              ? "squash"
+              : repoData.allow_rebase_merge
+                ? "rebase"
+                : repoData.allow_merge_commit
+                  ? "merge"
+                  : null;
+
+            if (!mergeMethod) {
+              await block("no merge method is enabled in the repository settings");
+              core.setFailed("No merge method is enabled for this repository.");
+              return;
+            }
+
+            // 3. Prefer GitHub's native auto-merge (used when branch protection is configured).
+            try {
+              const query = await github.graphql(
+                `query($owner: String!, $repo: String!, $number: Int!) {
+                  repository(owner: $owner, name: $repo) {
+                    pullRequest(number: $number) { id }
                   }
-                }
-              }`,
-              { owner, repo, pullNumber }
-            );
-
-            let mergeMethod = "SQUASH";
-            if (!data.repository.squashMergeAllowed) {
-              if (data.repository.rebaseMergeAllowed) {
-                mergeMethod = "REBASE";
-              } else if (data.repository.mergeCommitAllowed) {
-                mergeMethod = "MERGE";
-              } else {
-                throw new Error("No merge method is enabled for this repository.");
-              }
+                }`,
+                { owner, repo, number: prNumber }
+              );
+              await github.graphql(
+                `mutation($pullRequestId: ID!, $mergeMethod: PullRequestMergeMethod!) {
+                  enablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId, mergeMethod: $mergeMethod }) {
+                    clientMutationId
+                  }
+                }`,
+                { pullRequestId: query.repository.pullRequest.id, mergeMethod: mergeMethod.toUpperCase() }
+              );
+              core.info(`Native auto-merge enabled (${mergeMethod}); GitHub will merge when required checks pass.`);
+              return;
+            } catch (error) {
+              const message = error.errors?.map((entry) => entry.message).join("; ") || error.message || "";
+              core.info(`Native auto-merge unavailable (${message}); falling back to wait-and-merge.`);
             }
 
-            const mutation = `mutation($pullRequestId: ID!, $mergeMethod: PullRequestMergeMethod!) {
-              enablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId, mergeMethod: $mergeMethod }) {
-                clientMutationId
-              }
-            }`;
+            // 4. Fallback for repositories without branch protection: wait for checks, then merge directly.
+            const maxAttempts = 60; // ~30 minutes at 30s intervals.
+            const intervalMs = 30000;
 
-            const variables = {
-              pullRequestId: data.repository.pullRequest.id,
-              mergeMethod
-            };
-
-            for (let attempt = 1; attempt <= 6; attempt += 1) {
-              try {
-                await github.graphql(mutation, variables);
-                core.info(`Enabled auto-merge using ${mergeMethod} on attempt ${attempt}.`);
+            for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+              const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+              if (pr.merged) {
+                core.info("Pull request already merged.");
                 return;
-              } catch (error) {
-                const unstable = error.errors?.some((entry) => entry.message?.includes("unstable status")) || error.message?.includes("unstable status");
-                const missingProtection = error.errors?.some((entry) => entry.message?.includes("Protected branch rules not configured")) || error.message?.includes("Protected branch rules not configured");
-
-                if (missingProtection) {
-                  core.info("Skipping auto-merge enablement because the base branch has no protection rules configured.");
-                  return;
-                }
-
-                if (!unstable) {
-                  throw error;
-                }
-
-                if (attempt === 6) {
-                  core.info("Skipping auto-merge enablement because the pull request remained unstable after retries.");
-                  return;
-                }
-
-                core.info(`Pull request still unstable on attempt ${attempt}; retrying in 10 seconds.`);
-                await sleep(10000);
               }
+              if (pr.state !== "open") {
+                core.info(`Pull request is ${pr.state}; nothing to merge.`);
+                return;
+              }
+
+              const sha = pr.head.sha;
+              const checkRuns = (
+                await github.paginate(github.rest.checks.listForRef, {
+                  owner,
+                  repo,
+                  ref: sha,
+                  per_page: 100,
+                })
+              ).filter((run) => run.name !== selfJob);
+              const { data: combined } = await github.rest.repos.getCombinedStatusForRef({ owner, repo, ref: sha });
+
+              const pendingChecks = checkRuns.filter((run) => run.status !== "completed");
+              const failedChecks = checkRuns.filter(
+                (run) => run.status === "completed" && !["success", "skipped", "neutral"].includes(run.conclusion)
+              );
+              const statuses = combined.statuses || [];
+              const statusPending = statuses.some((entry) => entry.state === "pending");
+              const statusFailed = combined.state === "failure" || combined.state === "error";
+
+              if (failedChecks.length > 0 || statusFailed) {
+                const names = failedChecks.map((run) => run.name).join(", ") || combined.state;
+                await block(`failing checks (${names})`);
+                return;
+              }
+
+              if (pendingChecks.length === 0 && !statusPending) {
+                if (pr.mergeable === false) {
+                  await block("the pull request has a merge conflict");
+                  return;
+                }
+                try {
+                  await github.rest.pulls.merge({
+                    owner,
+                    repo,
+                    pull_number: prNumber,
+                    merge_method: mergeMethod,
+                  });
+                  await clearBlock();
+                  core.info(`Merged pull request #${prNumber} using ${mergeMethod}.`);
+                  return;
+                } catch (error) {
+                  core.info(`Merge attempt ${attempt} failed: ${error.message}; retrying.`);
+                }
+              } else {
+                core.info(
+                  `Waiting for checks (attempt ${attempt}/${maxAttempts}): ${pendingChecks.length} pending check run(s).`
+                );
+              }
+
+              await sleep(intervalMs);
             }
+
+            await block("required checks did not complete within the auto-merge timeout");

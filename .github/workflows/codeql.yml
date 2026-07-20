@@ -23,17 +23,17 @@ jobs:
     name: Analyze Java (CodeQL)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Set up JDK 21
-        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@02c5e83432fe5497fd85b873b6c9f16a8578e1d9
+        uses: github/codeql-action/init@7188fc363630916deb702c7fdcf4e481b751f97a # v4.37.1
         with:
           languages: java
           queries: security-extended
@@ -45,6 +45,6 @@ jobs:
         run: mvn -B -DskipTests compile -pl embabel-workflow-visualizer-starter
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@02c5e83432fe5497fd85b873b6c9f16a8578e1d9
+        uses: github/codeql-action/analyze@7188fc363630916deb702c7fdcf4e481b751f97a # v4.37.1
         with:
           category: /language:java

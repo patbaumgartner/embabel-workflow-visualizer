@@ -111,14 +111,17 @@ public class EmbabelWorkflowCatalogService {
 		String agentName = firstNonBlank(readStringAttribute(source, "name"), targetType.getSimpleName());
 		String description = readStringAttribute(source, "description");
 		String version = readStringAttribute(source, "version");
+		// provider is only declared on @Agent (not @EmbabelComponent)
+		String providerAttr = agentAnnotation != null ? readStringAttribute(agentAnnotation, "provider") : "";
+		String provider = StringUtils.hasText(providerAttr) ? providerAttr : null;
 		// plannerType: read enum constant name from @Agent; mark @EmbabelComponent as
 		// "COMPONENT"
 		String plannerType = agentAnnotation != null ? readEnumNameAttribute(agentAnnotation, "planner") : "COMPONENT";
 		boolean opaque = agentAnnotation != null && readBooleanAttribute(agentAnnotation, "opaque");
 
 		List<WorkflowStep> steps = collectSteps(targetType);
-		return Optional
-			.of(new AgentWorkflow(agentName, description, version, plannerType, opaque, targetType.getName(), steps));
+		return Optional.of(new AgentWorkflow(agentName, description, version, plannerType, opaque, targetType.getName(),
+				steps, provider));
 	}
 
 	private List<WorkflowStep> collectSteps(Class<?> targetType) {
@@ -251,6 +254,14 @@ public class EmbabelWorkflowCatalogService {
 		boolean clearBlackboard = readBooleanAttribute(primary, "clearBlackboard");
 		String outputBinding = readStringAttribute(primary, "outputBinding");
 
+		// @Action(trigger = SomeEvent.class): the action is event-triggered. The
+		// Embabel
+		// default is kotlin.Unit ("no trigger"), which we map to null.
+		String trigger = primaryIsAction ? readClassSimpleNameAttribute(primary, "trigger") : null;
+		// @Action(actionRetryPolicyExpression = "..."): per-action retry policy.
+		String retryExpr = primaryIsAction ? readStringAttribute(primary, "actionRetryPolicyExpression") : "";
+		String retryPolicy = StringUtils.hasText(retryExpr) ? retryExpr : null;
+
 		// @AchievesGoal-specific fields
 		List<String> tags = List.of();
 		List<String> examples = List.of();
@@ -273,12 +284,17 @@ public class EmbabelWorkflowCatalogService {
 
 		// @LlmTool-specific fields
 		String llmToolDescription = null;
+		boolean llmToolReturnDirect = false;
+		String llmToolCategory = null;
 		if (llmTool) {
 			for (Annotation a : annotations) {
 				if (LLM_TOOL_ANNOTATION_FQN.equals(a.annotationType().getName())) {
 					llmToolDescription = readStringAttribute(a, "description");
 					if (!StringUtils.hasText(llmToolDescription))
 						llmToolDescription = null;
+					llmToolReturnDirect = readBooleanAttribute(a, "returnDirect");
+					String category = readStringAttribute(a, "category");
+					llmToolCategory = StringUtils.hasText(category) ? category : null;
 					// Use @LlmTool description as step description if no other
 					// description
 					if (!StringUtils.hasText(description) && StringUtils.hasText(llmToolDescription)) {
@@ -292,7 +308,8 @@ public class EmbabelWorkflowCatalogService {
 		return new WorkflowStep(name, type, description, method.getName(), pre, post, inputs, output, achievesGoal,
 				costMethod.isEmpty() ? null : costMethod, valueMethod.isEmpty() ? null : valueMethod, cost, value,
 				goalValue, possibleOutputs, canRerun, readOnly, outputBinding.isEmpty() ? null : outputBinding,
-				clearBlackboard, tags, examples, llmTool, llmToolDescription, exportedRemote, exportName);
+				clearBlackboard, tags, examples, llmTool, llmToolDescription, exportedRemote, exportName, trigger,
+				retryPolicy, llmToolReturnDirect, llmToolCategory);
 	}
 
 	private Annotation findAnnotation(Class<?> type, String annotationTypeName) {
@@ -372,6 +389,29 @@ public class EmbabelWorkflowCatalogService {
 			Object value = method.invoke(annotation);
 			if (value instanceof Double d && d != 0.0) {
 				return d;
+			}
+			return null;
+		}
+		catch (ReflectiveOperationException ignored) {
+			return null;
+		}
+	}
+
+	/**
+	 * Reads a {@link Class}-valued annotation attribute and returns
+	 * {@link Class#getSimpleName()}, or {@code null} when the attribute is absent or left
+	 * at a "no value" sentinel ({@code kotlin.Unit}, {@code void}, or {@code Void}).
+	 */
+	private String readClassSimpleNameAttribute(Annotation annotation, String attributeName) {
+		try {
+			Method method = annotation.annotationType().getMethod(attributeName);
+			Object value = method.invoke(annotation);
+			if (value instanceof Class<?> type) {
+				String name = type.getName();
+				if ("kotlin.Unit".equals(name) || "void".equals(name) || "java.lang.Void".equals(name)) {
+					return null;
+				}
+				return type.getSimpleName();
 			}
 			return null;
 		}

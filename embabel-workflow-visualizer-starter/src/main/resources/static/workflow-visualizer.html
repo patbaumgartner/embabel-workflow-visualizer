@@ -521,6 +521,16 @@
             color: var(--brand-yellow);
         }
 
+        .nb-trigger {
+            background: rgba(236, 72, 153, 0.18);
+            color: #f472b6;
+        }
+
+        .nb-returndirect {
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+        }
+
         .nname {
             font-size: 13px;
             font-weight: 700;
@@ -981,6 +991,8 @@
             if (step.readOnly) badges += '<span class="nb nb-readonly">\u26d4 readOnly</span>';
             if (step.llmTool && step.type !== 'LlmTool') badges += '<span class="nb nb-llmtool">\u2699 LLM Tool</span>';
             if (step.clearBlackboard) badges += '<span class="nb nb-clearbb">\u2715 clears BB</span>';
+            if (step.trigger) badges += '<span class="nb nb-trigger">\u2607 on ' + esc(step.trigger) + '</span>';
+            if (step.llmToolReturnDirect) badges += '<span class="nb nb-returndirect">\u21a9 returnDirect</span>';
 
             var html = '<div xmlns="http://www.w3.org/1999/xhtml" class="nfo">';
             html += '<div class="ntype-row"><span class="ntype ' + tc + '">' + esc(typeLabel) + '</span>' + badges + '</div>';
@@ -1016,6 +1028,10 @@
             if ((step.post || []).length)
                 html += '<div class="nrow cpost"><span class="lbl">post</span><span class="val">' + esc(step.post.join(', ')) + '</span></div>';
 
+            // Per-action retry policy (@Action(actionRetryPolicyExpression = ...))
+            if (step.retryPolicy)
+                html += '<div class="nrow cretry"><span class="lbl">retry</span><span class="val">' + esc(step.retryPolicy) + '</span></div>';
+
             // Cost / value methods (dynamic) and static cost / value declarations
             if (step.costMethod)
                 html += '<div class="nrow ccost"><span class="lbl">cost</span><span class="val">\u00a7 ' + esc(step.costMethod) + '()</span></div>';
@@ -1037,6 +1053,10 @@
             // LLM Tool description
             if (step.llmToolDescription)
                 html += '<div class="nrow"><span class="lbl">tool</span>' + esc(step.llmToolDescription) + '</div>';
+
+            // LLM Tool category (@LlmTool(category = ...))
+            if (step.llmToolCategory)
+                html += '<div class="nrow"><span class="lbl">category</span>' + esc(step.llmToolCategory) + '</div>';
 
             // Examples
             if (step.examples && step.examples.length) {
@@ -1352,7 +1372,8 @@
 
             var metaSpan = document.createElement('span');
             metaSpan.className = 'agent-meta';
-            metaSpan.textContent = agent.className + (agent.version ? ' \u00b7 v' + agent.version : '');
+            metaSpan.textContent = agent.className + (agent.version ? ' \u00b7 v' + agent.version : '')
+                + (agent.provider ? ' \u00b7 ' + agent.provider : '');
             hdr.appendChild(metaSpan);
 
             panel.appendChild(hdr);

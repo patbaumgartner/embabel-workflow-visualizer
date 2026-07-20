@@ -86,6 +86,13 @@ class EmbabelWorkflowCatalogServiceTests {
 		assertThat(agent.opaque()).isTrue();
 	}
 
+	@Test
+	void agentProviderIsReflected() {
+		AgentWorkflow agent = catalogWith(RichActionSampleAgent.class).agents().get(0);
+
+		assertThat(agent.provider()).isEqualTo("acme");
+	}
+
 	// -------------------------------------------------------------------------
 	// Sorting
 	// -------------------------------------------------------------------------
@@ -168,6 +175,22 @@ class EmbabelWorkflowCatalogServiceTests {
 		// No static cost/value declared — must be null, not 0.0
 		assertThat(step.cost()).isNull();
 		assertThat(step.value()).isNull();
+		// No trigger / retry policy on this action
+		assertThat(step.trigger()).isNull();
+		assertThat(step.retryPolicy()).isNull();
+	}
+
+	@Test
+	void actionTriggerAndRetryPolicyAreReflected() {
+		Map<String, WorkflowStep> byMethod = catalogWith(RichActionSampleAgent.class).agents()
+			.get(0)
+			.steps()
+			.stream()
+			.collect(Collectors.toMap(WorkflowStep::method, s -> s));
+
+		WorkflowStep step = byMethod.get("onRefresh");
+		assertThat(step.trigger()).isEqualTo("RefreshEvent");
+		assertThat(step.retryPolicy()).isEqualTo("maxAttempts=3");
 	}
 
 	@Test
@@ -220,6 +243,8 @@ class EmbabelWorkflowCatalogServiceTests {
 		assertThat(step.llmToolDescription()).isEqualTo("A helpful LLM tool");
 		assertThat(step.description()).isEqualTo("A helpful LLM tool");
 		assertThat(step.inputs()).containsExactly("String");
+		assertThat(step.llmToolReturnDirect()).isTrue();
+		assertThat(step.llmToolCategory()).isEqualTo("utility");
 	}
 
 }

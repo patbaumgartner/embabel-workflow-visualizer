@@ -33,7 +33,7 @@ mvn -pl embabel-workflow-visualizer-starter test
 
 ## Usage
 
-Compatibility note: this project is validated against [Embabel](https://github.com/embabel/embabel-agent) 0.4.0 (the latest release, available on Maven Central) and supports all Embabel annotation features: `@Agent` (GOAP / UTILITY / SUPERVISOR planners, `opaque`), `@EmbabelComponent`, `@Action` (`pre`/`post`, `cost`/`value`, `costMethod`/`valueMethod`, `canRerun`, `readOnly`, `clearBlackboard`, `outputBinding`), `@Condition`, `@Cost`, `@AchievesGoal` (`value`, `tags`, `examples`, `@Export` MCP publishing), `@State`, and `@LlmTool`.
+Compatibility note: this project is validated against [Embabel](https://github.com/embabel/embabel-agent) 1.0.0 (the latest release, available on Maven Central) and supports all Embabel annotation features: `@Agent` (GOAP / UTILITY / SUPERVISOR planners, `opaque`, `provider`), `@EmbabelComponent`, `@Action` (`pre`/`post`, `cost`/`value`, `costMethod`/`valueMethod`, `canRerun`, `readOnly`, `clearBlackboard`, `outputBinding`, event `trigger`, per-action retry policy), `@Condition`, `@Cost`, `@AchievesGoal` (`value`, `tags`, `examples`, `@Export` MCP publishing), `@State`, and `@LlmTool` (`description`, `returnDirect`, `category`).
 
 ### 1. Add the dependency
 
@@ -43,11 +43,11 @@ The library is published to [Maven Central](https://central.sonatype.com/artifac
 <dependency>
     <groupId>com.patbaumgartner.embabel</groupId>
     <artifactId>embabel-workflow-visualizer-starter</artifactId>
-    <version>0.1.1</version>
+    <version>0.3.0</version>
 </dependency>
 ```
 
-Embabel 0.4.0 and the visualizer starter are both published to Maven Central, so no extra repository configuration is needed. Only if your project uses Embabel *snapshot* dependencies, add the Embabel snapshot repository:
+Embabel 1.0.0 and the visualizer starter are both published to Maven Central, so no extra repository configuration is needed. Only if your project uses Embabel *snapshot* dependencies, add the Embabel snapshot repository:
 
 ```xml
 <repositories>
@@ -105,8 +105,8 @@ The UI (`GET /embabel-workflows`) renders each discovered `@Agent` as an interac
 - Per-agent controls: Fit, Zoom In, Zoom Out, Reset Layout
 - Node types color-coded with the 42talents brand palette (cyan, yellow, green, pink, orange)
 - Animated flowing arrows on pre-condition edges; AchievesGoal nodes glow green
-- Node badges surface `canRerun`, `readOnly`, `clearBlackboard`, `@LlmTool`, and MCP-exported goals (`@Export(remote = true)`)
-- Cost / value rows show static `cost=` / `value=` declarations, dynamic `costMethod=` / `valueMethod=` references, and `@AchievesGoal(value=)`
+- Node badges surface `canRerun`, `readOnly`, `clearBlackboard`, `@LlmTool`, event-triggered actions (`@Action(trigger=)`), `returnDirect` tools, and MCP-exported goals (`@Export(remote = true)`)
+- Cost / value rows show static `cost=` / `value=` declarations, dynamic `costMethod=` / `valueMethod=` references, and `@AchievesGoal(value=)`; a `retry` row shows a per-action retry policy, and a `category` row shows the `@LlmTool` category
 - Light / dark mode toggle, respects `prefers-color-scheme`
 
 ## Sample agents

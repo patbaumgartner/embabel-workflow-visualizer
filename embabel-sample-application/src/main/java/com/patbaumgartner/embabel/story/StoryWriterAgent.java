@@ -169,8 +169,8 @@ public class StoryWriterAgent {
 	 * {@link StoryReview} on the blackboard still requires revision. The planner will
 	 * schedule it again so long as:
 	 * <ul>
-	 * <li>A {@link Draft} and {@link StoryReview} with {@code approvedForFinalization ==
-	 * false} are on the blackboard, and</li>
+	 * <li>A {@link Draft} and {@link StoryReview} with
+	 * {@code approvedForFinalization == false} are on the blackboard, and</li>
 	 * <li>The {@link FinalStory} goal has not yet been achieved.</li>
 	 * </ul>
 	 * This implements a feedback loop without requiring any explicit looping code.

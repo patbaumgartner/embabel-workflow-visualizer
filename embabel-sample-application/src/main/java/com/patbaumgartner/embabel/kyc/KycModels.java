@@ -5,9 +5,14 @@ import jakarta.validation.constraints.NotBlank;
 /**
  * Domain model for KYC verification agent.
  *
- * Flow: KycRequest → [screenCustomer] → KycScreening → [branch via conditions] →
- * KycAssessment
+ * <p>
+ * Flow:
  *
+ * <pre>
+ * KycRequest → [screenCustomer] → KycScreening → [branch via conditions] → KycAssessment
+ * </pre>
+ *
+ * <p>
  * The planner uses these types to build the execution plan automatically. Domain objects
  * ARE the routing mechanism — no string-based state machine needed.
  */

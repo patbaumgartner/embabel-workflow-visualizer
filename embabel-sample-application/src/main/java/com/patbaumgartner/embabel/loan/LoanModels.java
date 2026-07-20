@@ -9,12 +9,14 @@ import java.math.BigDecimal;
 /**
  * Domain model for the Loan Application agent.
  *
- * Flow: LoanRequest → [analyzeCreditProfile] → CreditAnalysis → [branch via conditions] →
- * LoanDecision
+ * <p>
+ * Flow:
  *
- * CAN_AUTO_DECIDE branch: credit score strongly good or bad → makeAutoDecision
- * REQUIRES_UNDERWRITING branch: borderline case → conductUnderwriting →
- * makeUnderwrittenDecision
+ * <pre>
+ * LoanRequest → [analyzeCreditProfile] → CreditAnalysis → [branch via conditions] → LoanDecision
+ *   CAN_AUTO_DECIDE       : credit score strongly good or bad → makeAutoDecision
+ *   REQUIRES_UNDERWRITING : borderline case → conductUnderwriting → makeUnderwrittenDecision
+ * </pre>
  */
 public class LoanModels {
 

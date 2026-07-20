@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <!--
@@ -15,7 +17,7 @@
 
   <groupId>com.patbaumgartner.embabel</groupId>
   <artifactId>embabel-workflow-visualizer-parent</artifactId>
-  <version>0.3.0-SNAPSHOT</version>
+  <version>0.3.0</version>
   <packaging>pom</packaging>
 
   <name>embabel-workflow-visualizer-parent</name>
@@ -29,6 +31,7 @@
   <properties>
     <java.version>21</java.version>
     <jreleaser.version>1.25.0</jreleaser.version>
+    <spring-javaformat.version>0.0.47</spring-javaformat.version>
   </properties>
 
   <build>
@@ -82,6 +85,26 @@
         <artifactId>jreleaser-maven-plugin</artifactId>
         <version>${jreleaser.version}</version>
         <inherited>false</inherited>
+      </plugin>
+
+      <!--
+        Spring Java Format — enforces a consistent code style across all modules.
+        Run `mvn spring-javaformat:apply` to auto-format sources; the bound
+        `validate` goal fails the build (and CI) on any formatting violation.
+      -->
+      <plugin>
+        <groupId>io.spring.javaformat</groupId>
+        <artifactId>spring-javaformat-maven-plugin</artifactId>
+        <version>${spring-javaformat.version}</version>
+        <executions>
+          <execution>
+            <id>checkstyle-validate</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>validate</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

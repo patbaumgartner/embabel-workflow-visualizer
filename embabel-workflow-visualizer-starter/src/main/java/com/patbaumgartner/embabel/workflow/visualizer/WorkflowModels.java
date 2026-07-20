@@ -34,9 +34,11 @@ public final class WorkflowModels {
 	 * other agents' planners)
 	 * @param className fully-qualified class name
 	 * @param steps declared workflow steps
+	 * @param provider provider string from {@code @Agent(provider = "...")}; {@code null}
+	 * if not set
 	 */
 	public record AgentWorkflow(String agentName, String description, String version, String plannerType,
-			boolean opaque, String className, List<WorkflowStep> steps) {
+			boolean opaque, String className, List<WorkflowStep> steps, String provider) {
 	}
 
 	/**
@@ -82,12 +84,22 @@ public final class WorkflowModels {
 	 * via {@code @AchievesGoal(export = @Export(remote = true, ...))}
 	 * @param exportName explicit export name from {@code @Export(name = "...")};
 	 * {@code null} if not set
+	 * @param trigger simple type name of the event that triggers this action via
+	 * {@code @Action(trigger = SomeEvent.class)}; {@code null} when the action is not
+	 * event-triggered
+	 * @param retryPolicy retry policy SpEL expression declared via
+	 * {@code @Action(actionRetryPolicyExpression = "...")}; {@code null} if not set
+	 * @param llmToolReturnDirect {@code true} when {@code @LlmTool(returnDirect = true)},
+	 * so the tool result is returned directly without further LLM processing
+	 * @param llmToolCategory category declared via {@code @LlmTool(category = "...")};
+	 * {@code null} if not set
 	 */
 	public record WorkflowStep(String name, String type, String description, String method, List<String> pre,
 			List<String> post, List<String> inputs, String output, boolean goal, String costMethod, String valueMethod,
 			Double cost, Double value, Double goalValue, List<String> possibleOutputs, boolean canRerun,
 			boolean readOnly, String outputBinding, boolean clearBlackboard, List<String> tags, List<String> examples,
-			boolean llmTool, String llmToolDescription, boolean exportedRemote, String exportName) {
+			boolean llmTool, String llmToolDescription, boolean exportedRemote, String exportName, String trigger,
+			String retryPolicy, boolean llmToolReturnDirect, String llmToolCategory) {
 	}
 
 }

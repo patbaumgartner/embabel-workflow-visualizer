@@ -9,9 +9,13 @@ import jakarta.validation.constraints.Size;
  * Domain model for the Story Writer agent.
  *
  * <p>
- * Flow: StoryRequest → [draftStory] → Draft → [reviewDraft] → StoryReview → if revision
- * needed: [reviseDraft] (canRerun=true) → Draft (loop); else [finalize] (@AchievesGoal) →
- * FinalStory
+ * Flow:
+ *
+ * <pre>
+ * StoryRequest → [draftStory] → Draft → [reviewDraft] → StoryReview
+ *   → if revision needed: [reviseDraft] (canRerun=true) → Draft (loop)
+ *   → else: [finalize] (@AchievesGoal) → FinalStory
+ * </pre>
  *
  * <p>
  * Demo patterns:

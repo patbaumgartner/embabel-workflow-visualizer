@@ -39,9 +39,9 @@ class EmbabelWorkflowApiControllerTests {
 	void returnsCatalogAsJson() throws Exception {
 		WorkflowStep step = new WorkflowStep("doWork", "Action", "desc", "doWork", List.of(), List.of("done"),
 				List.of("Input"), "Output", false, null, null, null, null, null, null, false, false, null, false,
-				List.of(), List.of(), false, null, false, null);
+				List.of(), List.of(), false, null, false, null, null, null, false, null);
 		AgentWorkflow agent = new AgentWorkflow("demo-agent", "Demo", "1.0", "GOAP", false, "com.example.DemoAgent",
-				List.of(step));
+				List.of(step), null);
 		given(catalogService.catalog()).willReturn(new WorkflowCatalog(List.of(agent)));
 
 		mockMvc.perform(get("/embabel-workflows/api"))

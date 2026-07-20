@@ -14,24 +14,38 @@ import com.embabel.agent.api.annotation.LlmTool;
  * <p>
  * Covers:
  * <ul>
- * <li>{@code @Agent} with explicit {@code version} and {@code opaque = true}</li>
+ * <li>{@code @Agent} with explicit {@code version}, {@code opaque = true}, and
+ * {@code provider}</li>
  * <li>{@code @Action} with {@code canRerun}, {@code readOnly}, {@code outputBinding},
  * {@code costMethod}, and {@code valueMethod}</li>
  * <li>{@code @Action} with static {@code cost} and {@code value} declarations</li>
+ * <li>{@code @Action} with an event {@code trigger} and an
+ * {@code actionRetryPolicyExpression}</li>
  * <li>{@code @Cost} methods referenced by the action</li>
  * <li>{@code @Action} + {@code @AchievesGoal} on the same method with {@code value},
  * {@code tags}, {@code examples}, and a remote {@code @Export}</li>
- * <li>{@code @LlmTool} with a {@code description}</li>
+ * <li>{@code @LlmTool} with a {@code description}, {@code returnDirect}, and
+ * {@code category}</li>
  * </ul>
  */
-@Agent(name = "rich-agent", description = "Rich annotation agent", version = "3.0.0", opaque = true)
+@Agent(name = "rich-agent", description = "Rich annotation agent", version = "3.0.0", opaque = true, provider = "acme")
 public class RichActionSampleAgent {
+
+	/** Event type used to exercise {@code @Action(trigger = ...)}. */
+	public record RefreshEvent(String reason) {
+	}
 
 	@Action(description = "An action with all optional attributes set", pre = { "precondition" },
 			post = { "postcondition" }, canRerun = true, readOnly = true, outputBinding = "myOutput",
 			costMethod = "calcCost", valueMethod = "calcValue")
 	public String processData() {
 		return "result";
+	}
+
+	@Action(description = "Event-triggered action with a per-action retry policy", trigger = RefreshEvent.class,
+			actionRetryPolicyExpression = "maxAttempts=3")
+	public String onRefresh() {
+		return "refreshed";
 	}
 
 	@Cost(name = "calcCost")
@@ -56,7 +70,7 @@ public class RichActionSampleAgent {
 		return "done";
 	}
 
-	@LlmTool(description = "A helpful LLM tool")
+	@LlmTool(description = "A helpful LLM tool", returnDirect = true, category = "utility")
 	public String helpTool(String input) {
 		return input;
 	}

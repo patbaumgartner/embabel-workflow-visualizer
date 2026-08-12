@@ -33,7 +33,9 @@ mvn -pl embabel-workflow-visualizer-starter test
 
 ## Usage
 
-Compatibility note: this project is validated against [Embabel](https://github.com/embabel/embabel-agent) 1.0.0 (the latest release, available on Maven Central) and supports all Embabel annotation features: `@Agent` (GOAP / UTILITY / SUPERVISOR planners, `opaque`, `provider`), `@EmbabelComponent`, `@Action` (`pre`/`post`, `cost`/`value`, `costMethod`/`valueMethod`, `canRerun`, `readOnly`, `clearBlackboard`, `outputBinding`, event `trigger`, per-action retry policy), `@Condition`, `@Cost`, `@AchievesGoal` (`value`, `tags`, `examples`, `@Export` MCP publishing), `@State`, and `@LlmTool` (`description`, `returnDirect`, `category`).
+Compatibility note: this project is built against [Spring Boot](https://spring.io/projects/spring-boot) 4.1 and validated against [Embabel](https://github.com/embabel/embabel-agent) 1.5.0 (the latest release, available on Maven Central). Embabel 1.5.0 requires Spring Boot 4.x / Spring AI 2.x, so this line of the starter is **Spring Boot 4 only** — consumers still on Spring Boot 3.5 should stay on the `0.3.x` line.
+
+It supports every Embabel annotation feature: `@Agent` (GOAP / UTILITY / HYBRID / SUPERVISOR planners, `opaque`, `provider`, `beanName`, `scan`, agent-level `actionRetryPolicy` / `actionRetryPolicyExpression`), `@EmbabelComponent` (`scan`), `@Action` (`pre`/`post`, `cost`/`value`, `costMethod`/`valueMethod`, `canRerun`, `readOnly`, `clearBlackboard`, `outputBinding`, event `trigger`, `actionRetryPolicy` and `actionRetryPolicyExpression`), `@Condition` (`name`, `cost`), `@Cost`, `@AchievesGoal` (`value`, `tags`, `examples`, and `@Export` with `remote`, `local`, `name`, `startingInputTypes`), `@State`, `@LlmTool` (`description`, `name`, `returnDirect`, `category`, `metadata`), and the `@Provided` / `@RequireNameMatch` parameter annotations.
 
 ### 1. Add the dependency
 
@@ -47,7 +49,7 @@ The library is published to [Maven Central](https://central.sonatype.com/artifac
 </dependency>
 ```
 
-Embabel 1.0.0 and the visualizer starter are both published to Maven Central, so no extra repository configuration is needed. Only if your project uses Embabel *snapshot* dependencies, add the Embabel snapshot repository:
+Embabel 1.5.0 and the visualizer starter are both published to Maven Central, so no extra repository configuration is needed. Only if your project uses Embabel *snapshot* dependencies, add the Embabel snapshot repository:
 
 ```xml
 <repositories>
@@ -105,16 +107,19 @@ The UI (`GET /embabel-workflows`) renders each discovered `@Agent` as an interac
 - Per-agent controls: Fit, Zoom In, Zoom Out, Reset Layout
 - Node types color-coded with the 42talents brand palette (cyan, yellow, green, pink, orange)
 - Animated flowing arrows on pre-condition edges; AchievesGoal nodes glow green
-- Node badges surface `canRerun`, `readOnly`, `clearBlackboard`, `@LlmTool`, event-triggered actions (`@Action(trigger=)`), `returnDirect` tools, and MCP-exported goals (`@Export(remote = true)`)
-- Cost / value rows show static `cost=` / `value=` declarations, dynamic `costMethod=` / `valueMethod=` references, and `@AchievesGoal(value=)`; a `retry` row shows a per-action retry policy, and a `category` row shows the `@LlmTool` category
+- Node badges surface `canRerun`, `readOnly`, `clearBlackboard`, `@LlmTool`, event-triggered actions (`@Action(trigger=)`), `returnDirect` tools, MCP-exported goals (`@Export(remote = true)`), and goals withheld from local callers (`@Export(local = false)`)
+- Cost / value rows show static `cost=` / `value=` declarations, dynamic `costMethod=` / `valueMethod=` references, `@AchievesGoal(value=)`, and `@Condition(cost=)`; `retry` / `retry policy` rows show the per-action SpEL QoS key and `ActionRetryPolicy` constant, and `category`, `tool name` and metadata rows describe the `@LlmTool`
+- Goal rows show `starts from` for `@Export(startingInputTypes=)`; step rows show `provided` (`@Provided`) and `name match` (`@RequireNameMatch`) parameters
+- Agent headers show the planner badge (GOAP / UTILITY / HYBRID / SUPERVISOR / COMPONENT), `opaque`, a `scan off` badge for `scan = false`, and the `beanName` plus agent-level retry policy
 - Light / dark mode toggle, respects `prefers-color-scheme`
 
 ## Sample agents
 
-The `embabel-sample-application` module ships ten demo agents covering common enterprise use cases.
+The `embabel-sample-application` module ships eleven demo agents covering common enterprise use cases.
 Each agent intentionally demonstrates a **different workflow pattern** so you can see how the Embabel
 planner handles linear flows, fan-in, branching, converging branches, dynamic cost methods, static
-cost declarations, Utility AI planning, @State routing, LLM-supervised planning, and revision loops.
+cost declarations, Utility AI planning, Hybrid planning, @State routing, LLM-supervised planning, and
+revision loops.
 
 | Agent | Workflow pattern | Description | Endpoint |
 |---|---|---|---|
@@ -128,5 +133,6 @@ cost declarations, Utility AI planning, @State routing, LLM-supervised planning,
 | `TicketRoutingAgent` | `UTILITY` planner + `@State` routing | Utility AI planner ranks actions by dynamic `valueMethod=`; `routeToCategory` returns one of three `@State` records, each containing its own `@AchievesGoal` handler. | `POST /api/tickets/route` |
 | `ProductResearchAgent` | `SUPERVISOR` planner + SpEL precondition + `@EmbabelComponent` | LLM-supervised planning; `pre = {"spel:marketData.confidenceScore > 0.6"}` gates the competitor analysis; `ResearchUtils` contributes `gatherMarketData` (with `outputBinding`) as a shared `@EmbabelComponent`. | `POST /api/research/analyze` |
 | `StoryWriterAgent` | Revision loop (`canRerun`) + `@LlmTool` + persona | Draft → review → revise loop until editorial approval; `PersonaSpec` prompt contributor, per-action `LlmOptions` temperatures, `ActionException.Transient`/`Permanent`, and an `@LlmTool` method. | `POST /api/story/write` |
+| `ComplianceReviewAgent` | `HYBRID` planner + retry policies + restricted export | Pure-Java branching review; agent-level `beanName` and `actionRetryPolicyExpression` (a QoS key under `embabel.agent.platform.action-qos.*`), `@Action(actionRetryPolicy = FIRE_ONCE)`, `@Condition(cost=)`, `@Export(startingInputTypes=)`, and an `@LlmTool` with `name` and `metadata`. | `POST /api/compliance/review` |
 
-Ready-to-run HTTP request examples for all ten agents are in [`embabel-sample-application/requests/`](embabel-sample-application/requests/).
+Ready-to-run HTTP request examples for all eleven agents are in [`embabel-sample-application/requests/`](embabel-sample-application/requests/).

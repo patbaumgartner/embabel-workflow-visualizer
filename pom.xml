@@ -107,6 +107,39 @@
           </execution>
         </executions>
       </plugin>
+
+      <!--
+        Resolve dependency paths into properties (e.g. ${org.mockito:mockito-core:jar})
+        so Surefire can attach Mockito as a proper -javaagent below.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>resolve-dependency-properties</id>
+            <goals>
+              <goal>properties</goal>
+            </goals>
+            <phase>process-test-resources</phase>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
+        Attach Mockito explicitly as a java agent. Without this, Mockito
+        self-attaches the Byte Buddy agent at runtime, which the JDK warns about
+        ("Dynamic loading of agents will be disallowed by default in a future
+        release"). The agent appends to the bootstrap classpath, which makes the
+        JVM warn that class-data sharing is unavailable, so CDS is turned off.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>-javaagent:${org.mockito:mockito-core:jar} -Xshare:off</argLine>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 

@@ -256,6 +256,12 @@
             background: rgba(228, 69, 125, 0.12);
         }
 
+        .planner-hybrid {
+            color: var(--brand-orange);
+            border-color: var(--brand-orange);
+            background: rgba(255, 108, 44, 0.12);
+        }
+
         .planner-component {
             color: var(--brand-green);
             border-color: var(--brand-green);
@@ -993,6 +999,8 @@
             if (step.clearBlackboard) badges += '<span class="nb nb-clearbb">\u2715 clears BB</span>';
             if (step.trigger) badges += '<span class="nb nb-trigger">\u2607 on ' + esc(step.trigger) + '</span>';
             if (step.llmToolReturnDirect) badges += '<span class="nb nb-returndirect">\u21a9 returnDirect</span>';
+            // @Export(local = false): goal is not callable by local in-process callers
+            if (step.goal && step.exportedLocal === false) badges += '<span class="nb nb-clearbb">\u2298 not local</span>';
 
             var html = '<div xmlns="http://www.w3.org/1999/xhtml" class="nfo">';
             html += '<div class="ntype-row"><span class="ntype ' + tc + '">' + esc(typeLabel) + '</span>' + badges + '</div>';
@@ -1032,6 +1040,10 @@
             if (step.retryPolicy)
                 html += '<div class="nrow cretry"><span class="lbl">retry</span><span class="val">' + esc(step.retryPolicy) + '</span></div>';
 
+            // Per-action retry policy constant (@Action(actionRetryPolicy = ...))
+            if (step.actionRetryPolicy)
+                html += '<div class="nrow cretry"><span class="lbl">retry policy</span><span class="val">' + esc(step.actionRetryPolicy) + '</span></div>';
+
             // Cost / value methods (dynamic) and static cost / value declarations
             if (step.costMethod)
                 html += '<div class="nrow ccost"><span class="lbl">cost</span><span class="val">\u00a7 ' + esc(step.costMethod) + '()</span></div>';
@@ -1041,6 +1053,10 @@
                 html += '<div class="nrow cval"><span class="lbl">value</span><span class="val">\u00a7 ' + esc(step.valueMethod) + '()</span></div>';
             else if (step.value != null)
                 html += '<div class="nrow cval"><span class="lbl">value</span><span class="val">' + esc(step.value) + '</span></div>';
+
+            // Condition evaluation cost (@Condition(cost = ...))
+            if (step.conditionCost != null)
+                html += '<div class="nrow ccost"><span class="lbl">cond cost</span><span class="val">' + esc(step.conditionCost) + '</span></div>';
 
             // Goal value from @AchievesGoal(value = ...)
             if (step.goalValue != null)
@@ -1057,6 +1073,29 @@
             // LLM Tool category (@LlmTool(category = ...))
             if (step.llmToolCategory)
                 html += '<div class="nrow"><span class="lbl">category</span>' + esc(step.llmToolCategory) + '</div>';
+
+            // Explicit LLM tool name (@LlmTool(name = ...))
+            if (step.llmToolName)
+                html += '<div class="nrow"><span class="lbl">tool name</span>' + esc(step.llmToolName) + '</div>';
+
+            // LLM tool metadata (@LlmTool(metadata = @Meta(key, value)))
+            if (step.llmToolMetadata && step.llmToolMetadata.length) {
+                step.llmToolMetadata.forEach(function (meta) {
+                    html += '<div class="nrow"><span class="lbl">' + esc(meta.key) + '</span><span class="val">' + esc(meta.value) + '</span></div>';
+                });
+            }
+
+            // Exported goal starting input types (@Export(startingInputTypes = ...))
+            if (step.exportStartingInputTypes && step.exportStartingInputTypes.length)
+                html += '<div class="nrow"><span class="lbl">starts from</span><span class="val">' + esc(step.exportStartingInputTypes.join(', ')) + '</span></div>';
+
+            // Platform-provided parameters (@Provided)
+            if (step.providedInputs && step.providedInputs.length)
+                html += '<div class="nrow"><span class="lbl">provided</span><span class="val">' + esc(step.providedInputs.join(', ')) + '</span></div>';
+
+            // Name-bound parameters (@RequireNameMatch)
+            if (step.nameMatchInputs && step.nameMatchInputs.length)
+                html += '<div class="nrow"><span class="lbl">name match</span><span class="val">' + esc(step.nameMatchInputs.join(', ')) + '</span></div>';
 
             // Examples
             if (step.examples && step.examples.length) {
@@ -1335,6 +1374,7 @@
             switch (pt.toUpperCase()) {
                 case 'GOAP': return 'planner-goap';
                 case 'UTILITY': return 'planner-utility';
+                case 'HYBRID': return 'planner-hybrid';
                 case 'SUPERVISOR': return 'planner-supervisor';
                 case 'COMPONENT': return 'planner-component';
                 default: return 'planner-goap';
@@ -1368,12 +1408,22 @@
                 ob.textContent = 'opaque';
                 titleRow.appendChild(ob);
             }
+            // @Agent(scan = false) / @EmbabelComponent(scan = false) disables step discovery
+            if (agent.scan === false) {
+                var nsb = document.createElement('span');
+                nsb.className = 'opaque-badge';
+                nsb.textContent = 'scan off';
+                titleRow.appendChild(nsb);
+            }
             hdr.appendChild(titleRow);
 
             var metaSpan = document.createElement('span');
             metaSpan.className = 'agent-meta';
             metaSpan.textContent = agent.className + (agent.version ? ' \u00b7 v' + agent.version : '')
-                + (agent.provider ? ' \u00b7 ' + agent.provider : '');
+                + (agent.provider ? ' \u00b7 ' + agent.provider : '')
+                + (agent.beanName ? ' \u00b7 bean: ' + agent.beanName : '')
+                + (agent.retryPolicy ? ' \u00b7 retry: ' + agent.retryPolicy : '')
+                + (agent.retryPolicyExpression ? ' \u00b7 retry: ' + agent.retryPolicyExpression : '');
             hdr.appendChild(metaSpan);
 
             panel.appendChild(hdr);

@@ -1,6 +1,7 @@
 package com.patbaumgartner.embabel.workflow.visualizer;
 
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.AgentWorkflow;
+import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.ToolMetadata;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowCatalog;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowStep;
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ import org.springframework.util.StringUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,9 +51,17 @@ public class EmbabelWorkflowCatalogService {
 
 	private static final String LLM_TOOL_ANNOTATION_FQN = "com.embabel.agent.api.annotation.LlmTool";
 
+	private static final String CONDITION_ANNOTATION_FQN = "com.embabel.agent.api.annotation.Condition";
+
+	private static final String PROVIDED_ANNOTATION_FQN = "com.embabel.agent.api.annotation.Provided";
+
+	private static final String REQUIRE_NAME_MATCH_ANNOTATION_FQN = "com.embabel.agent.api.annotation.RequireNameMatch";
+
+	/** {@code ActionRetryPolicy.DEFAULT} means "not configured" and is not reported. */
+	private static final String DEFAULT_RETRY_POLICY = "DEFAULT";
+
 	private static final Set<String> STEP_ANNOTATION_FQNS = Set.of(ACTION_ANNOTATION_FQN, ACHIEVES_GOAL_ANNOTATION_FQN,
-			"com.embabel.agent.api.annotation.Condition", "com.embabel.agent.api.annotation.Cost",
-			LLM_TOOL_ANNOTATION_FQN);
+			CONDITION_ANNOTATION_FQN, "com.embabel.agent.api.annotation.Cost", LLM_TOOL_ANNOTATION_FQN);
 
 	/** Framework parameter types that should not be reported as workflow inputs. */
 	private static final Set<String> FRAMEWORK_PARAMETER_TYPES = Set.of("com.embabel.agent.api.common.OperationContext",
@@ -119,9 +129,17 @@ public class EmbabelWorkflowCatalogService {
 		String plannerType = agentAnnotation != null ? readEnumNameAttribute(agentAnnotation, "planner") : "COMPONENT";
 		boolean opaque = agentAnnotation != null && readBooleanAttribute(agentAnnotation, "opaque");
 
+		// beanName is only on @Agent; scan is on both annotations and defaults to true
+		String beanNameAttr = agentAnnotation != null ? readStringAttribute(agentAnnotation, "beanName") : "";
+		String beanName = StringUtils.hasText(beanNameAttr) ? beanNameAttr : null;
+		boolean scan = readBooleanAttributeWithDefault(source, "scan", true);
+		String retryPolicy = agentAnnotation != null ? readNonDefaultRetryPolicy(agentAnnotation) : null;
+		String retryExpression = agentAnnotation != null
+				? emptyToNull(readStringAttribute(agentAnnotation, "actionRetryPolicyExpression")) : null;
+
 		List<WorkflowStep> steps = collectSteps(targetType);
 		return Optional.of(new AgentWorkflow(agentName, description, version, plannerType, opaque, targetType.getName(),
-				steps, provider));
+				steps, provider, beanName, scan, retryPolicy, retryExpression));
 	}
 
 	private List<WorkflowStep> collectSteps(Class<?> targetType) {
@@ -261,12 +279,23 @@ public class EmbabelWorkflowCatalogService {
 		// @Action(actionRetryPolicyExpression = "..."): per-action retry policy.
 		String retryExpr = primaryIsAction ? readStringAttribute(primary, "actionRetryPolicyExpression") : "";
 		String retryPolicy = StringUtils.hasText(retryExpr) ? retryExpr : null;
+		String actionRetryPolicy = primaryIsAction ? readNonDefaultRetryPolicy(primary) : null;
+
+		// @Condition(cost = ...), distinct from the @Action(cost = ...) read above
+		Double conditionCost = null;
+		for (Annotation a : annotations) {
+			if (CONDITION_ANNOTATION_FQN.equals(a.annotationType().getName())) {
+				conditionCost = readNonZeroDoubleAttribute(a, "cost");
+			}
+		}
 
 		// @AchievesGoal-specific fields
 		List<String> tags = List.of();
 		List<String> examples = List.of();
 		Double goalValue = null;
 		boolean exportedRemote = false;
+		boolean exportedLocal = false;
+		List<String> exportStartingInputTypes = List.of();
 		String exportName = null;
 		for (Annotation a : annotations) {
 			if (ACHIEVES_GOAL_ANNOTATION_FQN.equals(a.annotationType().getName())) {
@@ -276,6 +305,8 @@ public class EmbabelWorkflowCatalogService {
 				Annotation export = readAnnotationAttribute(a, "export");
 				if (export != null) {
 					exportedRemote = readBooleanAttribute(export, "remote");
+					exportedLocal = readBooleanAttributeWithDefault(export, "local", true);
+					exportStartingInputTypes = readClassArraySimpleNames(export, "startingInputTypes");
 					String name1 = readStringAttribute(export, "name");
 					exportName = StringUtils.hasText(name1) ? name1 : null;
 				}
@@ -286,6 +317,8 @@ public class EmbabelWorkflowCatalogService {
 		String llmToolDescription = null;
 		boolean llmToolReturnDirect = false;
 		String llmToolCategory = null;
+		String llmToolName = null;
+		List<ToolMetadata> llmToolMetadata = List.of();
 		if (llmTool) {
 			for (Annotation a : annotations) {
 				if (LLM_TOOL_ANNOTATION_FQN.equals(a.annotationType().getName())) {
@@ -295,6 +328,8 @@ public class EmbabelWorkflowCatalogService {
 					llmToolReturnDirect = readBooleanAttribute(a, "returnDirect");
 					String category = readStringAttribute(a, "category");
 					llmToolCategory = StringUtils.hasText(category) ? category : null;
+					llmToolName = emptyToNull(readStringAttribute(a, "name"));
+					llmToolMetadata = readToolMetadata(a);
 					// Use @LlmTool description as step description if no other
 					// description
 					if (!StringUtils.hasText(description) && StringUtils.hasText(llmToolDescription)) {
@@ -305,11 +340,15 @@ public class EmbabelWorkflowCatalogService {
 			}
 		}
 
+		List<String> providedInputs = readParameterAnnotatedTypes(method, PROVIDED_ANNOTATION_FQN);
+		List<String> nameMatchInputs = readRequireNameMatchInputs(method);
+
 		return new WorkflowStep(name, type, description, method.getName(), pre, post, inputs, output, achievesGoal,
 				costMethod.isEmpty() ? null : costMethod, valueMethod.isEmpty() ? null : valueMethod, cost, value,
 				goalValue, possibleOutputs, canRerun, readOnly, outputBinding.isEmpty() ? null : outputBinding,
 				clearBlackboard, tags, examples, llmTool, llmToolDescription, exportedRemote, exportName, trigger,
-				retryPolicy, llmToolReturnDirect, llmToolCategory);
+				retryPolicy, llmToolReturnDirect, llmToolCategory, actionRetryPolicy, conditionCost, exportedLocal,
+				exportStartingInputTypes, llmToolName, llmToolMetadata, providedInputs, nameMatchInputs);
 	}
 
 	private Annotation findAnnotation(Class<?> type, String annotationTypeName) {
@@ -432,6 +471,117 @@ public class EmbabelWorkflowCatalogService {
 		catch (ReflectiveOperationException ignored) {
 			return null;
 		}
+	}
+
+	private String emptyToNull(String value) {
+		return StringUtils.hasText(value) ? value : null;
+	}
+
+	/**
+	 * Reads a {@code boolean} attribute, falling back to {@code defaultValue} when the
+	 * attribute is missing — used for attributes whose Embabel default is {@code true}.
+	 */
+	private boolean readBooleanAttributeWithDefault(Annotation annotation, String attributeName, boolean defaultValue) {
+		try {
+			Method method = annotation.annotationType().getMethod(attributeName);
+			Object value = method.invoke(annotation);
+			return value instanceof Boolean b ? b : defaultValue;
+		}
+		catch (ReflectiveOperationException ignored) {
+			return defaultValue;
+		}
+	}
+
+	/**
+	 * Reads {@code actionRetryPolicy}, returning {@code null} when left at
+	 * {@code ActionRetryPolicy.DEFAULT} so the UI only surfaces explicit policies.
+	 */
+	private String readNonDefaultRetryPolicy(Annotation annotation) {
+		String policy = readEnumNameAttribute(annotation, "actionRetryPolicy");
+		return StringUtils.hasText(policy) && !DEFAULT_RETRY_POLICY.equals(policy) ? policy : null;
+	}
+
+	/**
+	 * Reads a {@code Class[]} attribute and returns each entry's
+	 * {@link Class#getSimpleName()}.
+	 */
+	private List<String> readClassArraySimpleNames(Annotation annotation, String attributeName) {
+		try {
+			Method method = annotation.annotationType().getMethod(attributeName);
+			Object value = method.invoke(annotation);
+			if (value instanceof Class<?>[] classes) {
+				return Arrays.stream(classes).map(Class::getSimpleName).toList();
+			}
+			return List.of();
+		}
+		catch (ReflectiveOperationException ignored) {
+			return List.of();
+		}
+	}
+
+	/**
+	 * Reads {@code @LlmTool(metadata = {@literal @}Meta(key, value))} pairs.
+	 */
+	private List<ToolMetadata> readToolMetadata(Annotation annotation) {
+		try {
+			Method method = annotation.annotationType().getMethod("metadata");
+			Object value = method.invoke(annotation);
+			if (!(value instanceof Annotation[] entries)) {
+				return List.of();
+			}
+			List<ToolMetadata> metadata = new ArrayList<>();
+			for (Annotation entry : entries) {
+				String key = readStringAttribute(entry, "key");
+				if (StringUtils.hasText(key)) {
+					metadata.add(new ToolMetadata(key, readStringAttribute(entry, "value")));
+				}
+			}
+			return List.copyOf(metadata);
+		}
+		catch (ReflectiveOperationException ignored) {
+			return List.of();
+		}
+	}
+
+	/**
+	 * Returns the simple type names of parameters carrying the given parameter-level
+	 * annotation.
+	 */
+	private List<String> readParameterAnnotatedTypes(Method method, String annotationTypeName) {
+		List<String> names = new ArrayList<>();
+		for (Parameter parameter : method.getParameters()) {
+			if (hasAnnotation(parameter, annotationTypeName)) {
+				names.add(parameter.getType().getSimpleName());
+			}
+		}
+		return List.copyOf(names);
+	}
+
+	/**
+	 * Returns {@code @RequireNameMatch} parameters as {@code Type}, or
+	 * {@code Type:boundName} when the annotation declares an explicit binding name.
+	 */
+	private List<String> readRequireNameMatchInputs(Method method) {
+		List<String> names = new ArrayList<>();
+		for (Parameter parameter : method.getParameters()) {
+			for (Annotation annotation : parameter.getAnnotations()) {
+				if (REQUIRE_NAME_MATCH_ANNOTATION_FQN.equals(annotation.annotationType().getName())) {
+					String bound = readStringAttribute(annotation, "value");
+					String type = parameter.getType().getSimpleName();
+					names.add(StringUtils.hasText(bound) ? type + ":" + bound : type);
+				}
+			}
+		}
+		return List.copyOf(names);
+	}
+
+	private boolean hasAnnotation(Parameter parameter, String annotationTypeName) {
+		for (Annotation annotation : parameter.getAnnotations()) {
+			if (annotation.annotationType().getName().equals(annotationTypeName)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

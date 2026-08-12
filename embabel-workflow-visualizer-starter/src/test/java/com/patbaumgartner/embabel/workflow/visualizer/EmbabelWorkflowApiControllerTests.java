@@ -1,13 +1,12 @@
 package com.patbaumgartner.embabel.workflow.visualizer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.AgentWorkflow;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowCatalog;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowStep;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -31,7 +30,7 @@ class EmbabelWorkflowApiControllerTests {
 	void setUp() {
 		this.catalogService = mock(EmbabelWorkflowCatalogService.class);
 		this.mockMvc = MockMvcBuilders.standaloneSetup(new EmbabelWorkflowApiController(catalogService))
-			.setMessageConverters(new MappingJackson2HttpMessageConverter(new ObjectMapper()))
+			.setMessageConverters(new JacksonJsonHttpMessageConverter())
 			.build();
 	}
 

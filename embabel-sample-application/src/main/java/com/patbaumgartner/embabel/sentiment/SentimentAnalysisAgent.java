@@ -9,6 +9,7 @@ import com.patbaumgartner.embabel.sentiment.SentimentModels.FeedbackRequest;
 import com.patbaumgartner.embabel.sentiment.SentimentModels.FeedbackResponse;
 import com.patbaumgartner.embabel.sentiment.SentimentModels.SentimentClassification;
 import com.patbaumgartner.embabel.sentiment.SentimentModels.SentimentInsight;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,9 +38,16 @@ public class SentimentAnalysisAgent {
 	 * Dynamic cost for the deep-analysis step. Negative or urgent feedback is worth
 	 * spending more on — the cost is intentionally higher so the planner knows this is an
 	 * expensive call. Neutral/positive feedback uses a lower cost.
+	 *
+	 * <p>
+	 * {@link Cost} methods must accept {@code @Nullable} domain parameters — if the
+	 * object is not yet on the blackboard, {@code null} is passed.
 	 */
 	@Cost(name = "deepAnalysisCost")
-	public double computeDeepAnalysisCost(SentimentClassification classification) {
+	public double computeDeepAnalysisCost(@Nullable SentimentClassification classification) {
+		if (classification == null) {
+			return 2.0;
+		}
 		if (classification.urgentIssueDetected() || classification.score() < -0.5) {
 			return 5.0;
 		}
@@ -49,9 +57,15 @@ public class SentimentAnalysisAgent {
 	/**
 	 * Dynamic cost for producing the final customer response. Escalations require a
 	 * carefully crafted message — higher cost.
+	 *
+	 * <p>
+	 * As above, {@code null} is passed when the insight is not yet on the blackboard.
 	 */
 	@Cost(name = "responseCost")
-	public double computeResponseCost(SentimentInsight insight) {
+	public double computeResponseCost(@Nullable SentimentInsight insight) {
+		if (insight == null) {
+			return 1.5;
+		}
 		return insight.suggestedAction() != null && insight.suggestedAction().toLowerCase().contains("escalat") ? 4.0
 				: 1.5;
 	}

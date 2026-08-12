@@ -21,9 +21,8 @@ import org.slf4j.LoggerFactory;
  *
  * Key demo points: - Prompt minimization keeps internal IDs out of LLM context - Domain
  * objects ARE the routing mechanism — the planner connects them automatically -
- *
- * @Condition gates the enhanced due diligence branch - All actions use the LLM — this is
- * a "think → decide" pattern
+ * {@code @Condition} gates the enhanced due diligence branch - All actions use the LLM —
+ * this is a "think → decide" pattern
  */
 @Agent(name = "KycVerificationAgent",
 		description = "Screens a customer against risk indicators and produces a risk assessment.", version = "1.0.0")

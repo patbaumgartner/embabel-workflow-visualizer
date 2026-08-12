@@ -72,6 +72,12 @@ class SentimentAnalysisAgentTest {
 			assertThat(agent.computeDeepAnalysisCost(classification)).isGreaterThan(0);
 		}
 
+		@Test
+		@DisplayName("returns the nominal cost when the classification is not yet on the blackboard")
+		void handlesNullClassification() {
+			assertThat(agent.computeDeepAnalysisCost(null)).isGreaterThan(0);
+		}
+
 	}
 
 	// ── computeResponseCost ───────────────────────────────────────────────
@@ -104,6 +110,12 @@ class SentimentAnalysisAgentTest {
 		void alwaysPositiveCost() {
 			var insight = new SentimentInsight("fb-9", new String[] {}, "neutral", "follow-up", "standard response");
 			assertThat(agent.computeResponseCost(insight)).isGreaterThan(0);
+		}
+
+		@Test
+		@DisplayName("returns the nominal cost when the insight is not yet on the blackboard")
+		void handlesNullInsight() {
+			assertThat(agent.computeResponseCost(null)).isGreaterThan(0);
 		}
 
 	}

@@ -33,7 +33,14 @@ mvn -pl embabel-workflow-visualizer-starter test
 
 ## Usage
 
-Compatibility note: this project is built against [Spring Boot](https://spring.io/projects/spring-boot) 4.1 and validated against [Embabel](https://github.com/embabel/embabel-agent) 1.5.0 (the latest release, available on Maven Central). Embabel 1.5.0 requires Spring Boot 4.x / Spring AI 2.x, so this line of the starter is **Spring Boot 4 only** — consumers still on Spring Boot 3.5 should stay on the `0.3.x` line.
+Compatibility note: this project is built against [Spring Boot](https://spring.io/projects/spring-boot) 4.1 and validated against [Embabel](https://github.com/embabel/embabel-agent) 1.5.0 (the latest release, available on Maven Central). Embabel 1.5.0 requires Spring Boot 4.x / Spring AI 2.x, so this line of the starter is **Spring Boot 4 only**.
+
+| Visualizer | Spring Boot | Embabel | Java |
+|---|---|---|---|
+| `1.0.x` | 4.1.x | 1.5.x | 21+ |
+| `0.3.x` | 3.5.x | 1.0.x | 21+ |
+
+A single artifact cannot support both Spring Boot 3 and 4 (Spring Framework 7 baseline), so consumers still on Spring Boot 3.5 should stay on the `0.3.x` line.
 
 It supports every Embabel annotation feature: `@Agent` (GOAP / UTILITY / HYBRID / SUPERVISOR planners, `opaque`, `provider`, `beanName`, `scan`, agent-level `actionRetryPolicy` / `actionRetryPolicyExpression`), `@EmbabelComponent` (`scan`), `@Action` (`pre`/`post`, `cost`/`value`, `costMethod`/`valueMethod`, `canRerun`, `readOnly`, `clearBlackboard`, `outputBinding`, event `trigger`, `actionRetryPolicy` and `actionRetryPolicyExpression`), `@Condition` (`name`, `cost`), `@Cost`, `@AchievesGoal` (`value`, `tags`, `examples`, and `@Export` with `remote`, `local`, `name`, `startingInputTypes`), `@State`, `@LlmTool` (`description`, `name`, `returnDirect`, `category`, `metadata`), and the `@Provided` / `@RequireNameMatch` parameter annotations.
 
@@ -45,7 +52,7 @@ The library is published to [Maven Central](https://central.sonatype.com/artifac
 <dependency>
     <groupId>com.patbaumgartner.embabel</groupId>
     <artifactId>embabel-workflow-visualizer-starter</artifactId>
-    <version>0.3.0</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 

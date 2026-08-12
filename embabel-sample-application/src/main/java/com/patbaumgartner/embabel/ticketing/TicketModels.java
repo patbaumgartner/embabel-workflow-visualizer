@@ -37,19 +37,19 @@ public class TicketModels {
 	}
 
 	/**
-	 * @State: billing-related tickets.
+	 * {@code @State}: billing-related tickets.
 	 */
 	public record BillingTicket(String ticketId, TicketClassification classification, SupportTicket original) {
 	}
 
 	/**
-	 * @State: technical / product issue tickets.
+	 * {@code @State}: technical / product issue tickets.
 	 */
 	public record TechnicalTicket(String ticketId, TicketClassification classification, SupportTicket original) {
 	}
 
 	/**
-	 * @State: general enquiry tickets.
+	 * {@code @State}: general enquiry tickets.
 	 */
 	public record GeneralTicket(String ticketId, TicketClassification classification, SupportTicket original) {
 	}

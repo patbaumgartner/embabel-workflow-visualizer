@@ -1,0 +1,49 @@
+### Compliance Review — ComplianceReviewAgent
+### POST /api/compliance/review
+@baseUrl = http://localhost:8080
+
+### High risk: several flagged terms → ESCALATE path
+POST {{baseUrl}}/api/compliance/review
+Content-Type: application/json
+
+{
+  "reviewId": "REV-20001",
+  "documentText": "The vendor accepts unlimited liability. This contract will auto-renew annually. An exclusive indemnity applies to all downstream claims.",
+  "jurisdiction": "EU"
+}
+
+###
+
+### Clean document: no flagged terms → isClean branch → CLEAR path
+POST {{baseUrl}}/api/compliance/review
+Content-Type: application/json
+
+{
+  "reviewId": "REV-20002",
+  "documentText": "Standard mutual terms apply. Either party may terminate with thirty days written notice.",
+  "jurisdiction": "US"
+}
+
+###
+
+### Single flagged term → hasFlaggedClauses branch at the REMEDIATE threshold
+POST {{baseUrl}}/api/compliance/review
+Content-Type: application/json
+
+{
+  "reviewId": "REV-20003",
+  "documentText": "The supplier grants an exclusive distribution right for the territory.",
+  "jurisdiction": "CH"
+}
+
+###
+
+### Two flagged terms → higher risk score, still REMEDIATE
+POST {{baseUrl}}/api/compliance/review
+Content-Type: application/json
+
+{
+  "reviewId": "REV-20004",
+  "documentText": "A non-compete clause binds the contractor. The agreement will auto-renew unless cancelled.",
+  "jurisdiction": "DE"
+}

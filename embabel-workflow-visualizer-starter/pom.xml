@@ -19,7 +19,7 @@
     -->
 
   <properties>
-    <embabel-agent.version>1.0.0</embabel-agent.version>
+    <embabel-agent.version>1.5.0</embabel-agent.version>
   </properties>
 
   <dependencies>
@@ -29,10 +29,14 @@
       <artifactId>spring-boot-starter</artifactId>
     </dependency>
 
-    <!-- Web layer for the visualizer UI and REST API -->
+    <!--
+      Web layer for the visualizer UI and REST API.
+      Spring Boot 4 renamed spring-boot-starter-web to spring-boot-starter-webmvc;
+      the old artifact still resolves but is deprecated.
+    -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
+      <artifactId>spring-boot-starter-webmvc</artifactId>
     </dependency>
 
     <!-- Actuator for the embabel endpoint -->

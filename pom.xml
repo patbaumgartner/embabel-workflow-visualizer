@@ -3,13 +3,16 @@
   <modelVersion>4.0.0</modelVersion>
 
   <!--
-      Build the starter against Spring Boot 3.5 (minimum supported version).
-      The library is also compatible with Spring Boot 4.0.x.
+      Build the starter against Spring Boot 4.1 (minimum supported version).
+      Embabel 1.5.0 requires Spring Boot 4.x / Spring AI 2.x, so this line of the
+      starter is Boot 4 only. Consumers still on Spring Boot 3.5 must stay on the
+      0.3.x line of this starter — a single artifact cannot support both
+      Boot 3 and Boot 4 (Spring Framework 7 baseline).
     -->
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.5.16</version>
+    <version>4.1.0</version>
     <relativePath></relativePath>
   </parent>
 

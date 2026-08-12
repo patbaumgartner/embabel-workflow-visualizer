@@ -28,7 +28,7 @@ public final class WorkflowModels {
 	 * @param agentName agent display name ({@code @Agent(name=)})
 	 * @param description human-readable description
 	 * @param version version string
-	 * @param plannerType planner strategy: {@code GOAP}, {@code UTILITY},
+	 * @param plannerType planner strategy: {@code GOAP}, {@code UTILITY}, {@code HYBRID},
 	 * {@code SUPERVISOR}, or {@code COMPONENT} for {@code @EmbabelComponent} beans
 	 * @param opaque {@code true} if the agent is opaque (internal steps not exposed to
 	 * other agents' planners)
@@ -36,9 +36,36 @@ public final class WorkflowModels {
 	 * @param steps declared workflow steps
 	 * @param provider provider string from {@code @Agent(provider = "...")}; {@code null}
 	 * if not set
+	 * @param beanName explicit Spring bean name from {@code @Agent(beanName = "...")};
+	 * {@code null} if not set
+	 * @param scan {@code true} when Embabel scans this type for actions — the annotation
+	 * default; {@code false} when {@code scan = false} disables step discovery
+	 * @param retryPolicy agent-wide retry policy from
+	 * {@code @Agent(actionRetryPolicy = ...)}; {@code null} when left at
+	 * {@code ActionRetryPolicy.DEFAULT}
+	 * @param retryPolicyExpression agent-wide retry SpEL expression from
+	 * {@code @Agent(actionRetryPolicyExpression = "...")}; {@code null} if not set
 	 */
 	public record AgentWorkflow(String agentName, String description, String version, String plannerType,
-			boolean opaque, String className, List<WorkflowStep> steps, String provider) {
+			boolean opaque, String className, List<WorkflowStep> steps, String provider, String beanName, boolean scan,
+			String retryPolicy, String retryPolicyExpression) {
+
+		/**
+		 * Overload retaining the pre-1.5.0-coverage signature; new attributes default to
+		 * unset.
+		 */
+		public AgentWorkflow(String agentName, String description, String version, String plannerType, boolean opaque,
+				String className, List<WorkflowStep> steps, String provider) {
+			this(agentName, description, version, plannerType, opaque, className, steps, provider, null, true, null,
+					null);
+		}
+	}
+
+	/**
+	 * A single {@code key}/{@code value} pair declared via
+	 * {@code @LlmTool(metadata = @LlmTool.Meta(key = "...", value = "..."))}.
+	 */
+	public record ToolMetadata(String key, String value) {
 	}
 
 	/**
@@ -93,13 +120,50 @@ public final class WorkflowModels {
 	 * so the tool result is returned directly without further LLM processing
 	 * @param llmToolCategory category declared via {@code @LlmTool(category = "...")};
 	 * {@code null} if not set
+	 * @param actionRetryPolicy retry policy constant declared via
+	 * {@code @Action(actionRetryPolicy = ...)} (e.g. {@code FIRE_ONCE}); {@code null}
+	 * when left at {@code ActionRetryPolicy.DEFAULT}
+	 * @param conditionCost evaluation cost declared via {@code @Condition(cost = ...)};
+	 * {@code null} when left at the default ({@code 0.0})
+	 * @param exportedLocal {@code true} when the goal is exposed to local callers via
+	 * {@code @Export(local = true)} — the Embabel default
+	 * @param exportStartingInputTypes simple type names declared via
+	 * {@code @Export(startingInputTypes = {...})}, describing which inputs may start this
+	 * exported goal
+	 * @param llmToolName explicit tool name from {@code @LlmTool(name = "...")};
+	 * {@code null} if not set
+	 * @param llmToolMetadata key/value metadata declared via {@code @LlmTool(metadata =
+	 * {@literal @}Meta(...))}
+	 * @param providedInputs simple type names of parameters annotated {@code @Provided} —
+	 * supplied by the platform rather than produced by another action
+	 * @param nameMatchInputs parameters annotated {@code @RequireNameMatch}, rendered as
+	 * {@code Type} or {@code Type:boundName} when an explicit binding name is given
 	 */
 	public record WorkflowStep(String name, String type, String description, String method, List<String> pre,
 			List<String> post, List<String> inputs, String output, boolean goal, String costMethod, String valueMethod,
 			Double cost, Double value, Double goalValue, List<String> possibleOutputs, boolean canRerun,
 			boolean readOnly, String outputBinding, boolean clearBlackboard, List<String> tags, List<String> examples,
 			boolean llmTool, String llmToolDescription, boolean exportedRemote, String exportName, String trigger,
-			String retryPolicy, boolean llmToolReturnDirect, String llmToolCategory) {
+			String retryPolicy, boolean llmToolReturnDirect, String llmToolCategory, String actionRetryPolicy,
+			Double conditionCost, boolean exportedLocal, List<String> exportStartingInputTypes, String llmToolName,
+			List<ToolMetadata> llmToolMetadata, List<String> providedInputs, List<String> nameMatchInputs) {
+
+		/**
+		 * Overload retaining the pre-1.5.0-coverage signature; new attributes default to
+		 * unset.
+		 */
+		public WorkflowStep(String name, String type, String description, String method, List<String> pre,
+				List<String> post, List<String> inputs, String output, boolean goal, String costMethod,
+				String valueMethod, Double cost, Double value, Double goalValue, List<String> possibleOutputs,
+				boolean canRerun, boolean readOnly, String outputBinding, boolean clearBlackboard, List<String> tags,
+				List<String> examples, boolean llmTool, String llmToolDescription, boolean exportedRemote,
+				String exportName, String trigger, String retryPolicy, boolean llmToolReturnDirect,
+				String llmToolCategory) {
+			this(name, type, description, method, pre, post, inputs, output, goal, costMethod, valueMethod, cost, value,
+					goalValue, possibleOutputs, canRerun, readOnly, outputBinding, clearBlackboard, tags, examples,
+					llmTool, llmToolDescription, exportedRemote, exportName, trigger, retryPolicy, llmToolReturnDirect,
+					llmToolCategory, null, null, false, List.of(), null, List.of(), List.of(), List.of());
+		}
 	}
 
 }

@@ -1,6 +1,7 @@
 package com.patbaumgartner.embabel.workflow.visualizer;
 
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.AgentWorkflow;
+import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.ToolMetadata;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowCatalog;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowStep;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 class EmbabelWorkflowCatalogServiceTests {
 
@@ -245,6 +247,94 @@ class EmbabelWorkflowCatalogServiceTests {
 		assertThat(step.inputs()).containsExactly("String");
 		assertThat(step.llmToolReturnDirect()).isTrue();
 		assertThat(step.llmToolCategory()).isEqualTo("utility");
+	}
+
+	// -------------------------------------------------------------------------
+	// Full annotation-attribute coverage
+	// -------------------------------------------------------------------------
+
+	private Map<String, WorkflowStep> fullCoverageStepsByMethod() {
+		return catalogWith(FullCoverageSampleAgent.class).agents()
+			.get(0)
+			.steps()
+			.stream()
+			.collect(Collectors.toMap(WorkflowStep::method, s -> s));
+	}
+
+	@Test
+	void hybridPlannerAndAgentLevelAttributesAreReflected() {
+		AgentWorkflow agent = catalogWith(FullCoverageSampleAgent.class).agents().get(0);
+
+		assertThat(agent.plannerType()).isEqualTo("HYBRID");
+		assertThat(agent.beanName()).isEqualTo("fullCoverageBean");
+		assertThat(agent.retryPolicy()).isEqualTo("FIRE_ONCE");
+		assertThat(agent.retryPolicyExpression()).isEqualTo("agentMaxAttempts=2");
+		assertThat(agent.scan()).isTrue();
+	}
+
+	@Test
+	void agentRetryPolicyIsNullWhenLeftAtDefault() {
+		AgentWorkflow agent = catalogWith(RichActionSampleAgent.class).agents().get(0);
+
+		assertThat(agent.retryPolicy()).isNull();
+		assertThat(agent.retryPolicyExpression()).isNull();
+		assertThat(agent.beanName()).isNull();
+	}
+
+	@Test
+	void actionRetryPolicyConstantIsReflected() {
+		Map<String, WorkflowStep> byMethod = fullCoverageStepsByMethod();
+
+		assertThat(byMethod.get("fireOnce").actionRetryPolicy()).isEqualTo("FIRE_ONCE");
+		// ActionRetryPolicy.DEFAULT means "not configured" and must not be reported
+		assertThat(byMethod.get("bindParameters").actionRetryPolicy()).isNull();
+	}
+
+	@Test
+	void conditionCostIsReflected() {
+		Map<String, WorkflowStep> byMethod = fullCoverageStepsByMethod();
+
+		WorkflowStep condition = byMethod.get("isReady");
+		assertThat(condition.type()).isEqualTo("Condition");
+		assertThat(condition.conditionCost()).isEqualTo(0.25);
+	}
+
+	@Test
+	void exportLocalAndStartingInputTypesAreReflected() {
+		WorkflowStep step = fullCoverageStepsByMethod().get("achieveExportedGoal");
+
+		assertThat(step.exportedRemote()).isTrue();
+		assertThat(step.exportedLocal()).isFalse();
+		assertThat(step.exportName()).isEqualTo("hiddenLocally");
+		assertThat(step.exportStartingInputTypes()).containsExactly("Draft");
+	}
+
+	@Test
+	void exportDefaultsToLocallyCallable() {
+		Map<String, WorkflowStep> byMethod = catalogWith(RichActionSampleAgent.class).agents()
+			.get(0)
+			.steps()
+			.stream()
+			.collect(Collectors.toMap(WorkflowStep::method, s -> s));
+
+		assertThat(byMethod.get("achieveRichGoal").exportedLocal()).isTrue();
+	}
+
+	@Test
+	void llmToolNameAndMetadataAreReflected() {
+		WorkflowStep step = fullCoverageStepsByMethod().get("annotatedTool");
+
+		assertThat(step.llmToolName()).isEqualTo("explicitToolName");
+		assertThat(step.llmToolMetadata()).extracting(ToolMetadata::key, ToolMetadata::value)
+			.containsExactly(tuple("owner", "platform"), tuple("stability", "beta"));
+	}
+
+	@Test
+	void providedAndRequireNameMatchParametersAreReflected() {
+		WorkflowStep step = fullCoverageStepsByMethod().get("bindParameters");
+
+		assertThat(step.providedInputs()).containsExactly("Draft");
+		assertThat(step.nameMatchInputs()).containsExactly("String:editorNotes");
 	}
 
 }

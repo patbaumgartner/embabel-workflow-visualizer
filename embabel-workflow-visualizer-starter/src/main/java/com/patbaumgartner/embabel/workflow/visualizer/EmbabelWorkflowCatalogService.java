@@ -15,6 +15,7 @@ import org.springframework.util.StringUtils;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Proxy;
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,41 +78,59 @@ public class EmbabelWorkflowCatalogService {
 	}
 
 	/**
-	 * Build the catalog. Each bean is processed independently; failures are logged and do
+	 * Build the catalog. Each bean is inspected independently; failures are logged and do
 	 * not abort the scan.
+	 *
+	 * <p>
+	 * Only bean <em>types</em> are resolved, never bean instances. Asking for instances
+	 * would force every lazy singleton and every {@code FactoryBean} product in the
+	 * application to be created just so this endpoint can read their annotations —
+	 * turning a read-only diagnostic into a side effect, and failing outright when a bean
+	 * cannot be built in the current profile.
 	 */
 	public WorkflowCatalog catalog() {
-		// allowEagerInit=false prevents Spring from eagerly initialising lazy
-		// singletons and factory beans (e.g. ChatClient) just to determine whether they
-		// match Object.class — which can fail when required dependencies (ChatModel,
-		// etc.) are not available in the current profile / environment.
-		Map<String, Object> beans;
+		String[] beanNames;
 		try {
-			beans = applicationContext.getBeansOfType(Object.class, false, false);
+			beanNames = applicationContext.getBeanNamesForType(Object.class, false, false);
 		}
 		catch (RuntimeException ex) {
-			log.error("Failed to enumerate beans for Embabel workflow catalog", ex);
+			log.warn("Failed to enumerate beans for the Embabel workflow catalog", ex);
 			return new WorkflowCatalog(List.of());
 		}
 
 		List<AgentWorkflow> agents = new ArrayList<>();
-		for (Object bean : beans.values()) {
+		for (String beanName : beanNames) {
 			try {
-				toAgentWorkflow(bean).ifPresent(agents::add);
+				agentTypeOf(beanName).flatMap(this::toAgentWorkflow).ifPresent(agents::add);
 			}
-			catch (Throwable t) {
-				log.error("Skipping bean {} while scanning Embabel agents: {}", bean.getClass().getName(),
-						t.toString());
+			catch (Exception | LinkageError ex) {
+				log.warn("Skipping bean '{}' while scanning for Embabel agents", beanName, ex);
 			}
 		}
 		agents.sort(Comparator.comparing(AgentWorkflow::agentName, String.CASE_INSENSITIVE_ORDER));
 		return new WorkflowCatalog(agents);
 	}
 
-	private Optional<AgentWorkflow> toAgentWorkflow(Object bean) {
-		Class<?> beanType = AopUtils.isAopProxy(bean) ? AopUtils.getTargetClass(bean) : bean.getClass();
-		Class<?> targetType = ClassUtils.getUserClass(beanType);
+	/**
+	 * Resolves the annotated user class behind a bean name without instantiating it.
+	 *
+	 * <p>
+	 * CGLIB proxies are unwrapped by name. A JDK dynamic proxy hides the target class
+	 * entirely, so the already-proxied instance is the only source for it; that bean must
+	 * exist for a proxy to have been created, so obtaining it adds no new initialisation.
+	 */
+	private Optional<Class<?>> agentTypeOf(String beanName) {
+		Class<?> beanType = applicationContext.getType(beanName, false);
+		if (beanType == null) {
+			return Optional.empty();
+		}
+		if (Proxy.isProxyClass(beanType)) {
+			return Optional.of(ClassUtils.getUserClass(AopUtils.getTargetClass(applicationContext.getBean(beanName))));
+		}
+		return Optional.of(ClassUtils.getUserClass(beanType));
+	}
 
+	private Optional<AgentWorkflow> toAgentWorkflow(Class<?> targetType) {
 		Annotation agentAnnotation = findAnnotation(targetType, AGENT_ANNOTATION_FQN);
 		Annotation componentAnnotation = agentAnnotation == null
 				? findAnnotation(targetType, EMBABEL_COMPONENT_ANNOTATION_FQN) : null;

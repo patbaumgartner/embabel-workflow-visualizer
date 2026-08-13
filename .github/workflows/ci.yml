@@ -1,9 +1,8 @@
 name: CI
 
-# Runs on every push to any branch and on all pull requests.
-# Builds and verifies the starter only; the sample application requires
-# external Embabel snapshot artifacts and an OpenAI API key, so it is
-# excluded from automated CI.
+# Every push and every pull request runs the same full build: both modules,
+# all tests, the formatting check, and the coverage gate. A pull request that
+# is verified less strictly than the branch it targets is not verified.
 
 on:
   pull_request:
@@ -19,20 +18,38 @@ permissions:
 
 jobs:
   build:
-    name: Build & Test (Java 21)
+    name: Build & Test (Java ${{ matrix.java }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 21 is the baseline the artifact targets; 25 is the current LTS that
+        # consumers actually run on.
+        java: ['21', '25']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up JDK 21
+      - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: ${{ matrix.java }}
           cache: maven
 
-      - name: Install parent POM
-        run: mvn -N install -q
+      - name: Build and verify
+        # The sample application needs an API key present to start its context;
+        # no test calls a model, so a placeholder is enough.
+        run: ./mvnw -B --no-transfer-progress verify
+        env:
+          OPENAI_API_KEY: dummy
 
-      - name: Build and verify starter
-        run: mvn -B verify -pl embabel-workflow-visualizer-starter
+      - name: Upload test and coverage reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: reports-java-${{ matrix.java }}
+          path: |
+            **/target/surefire-reports/**
+            **/target/site/jacoco/**
+          retention-days: 7
+          if-no-files-found: ignore

@@ -138,32 +138,33 @@ public class EmbabelWorkflowCatalogService {
 	}
 
 	private Optional<AgentWorkflow> toAgentWorkflow(Class<?> targetType) {
-		Annotation agentAnnotation = findAnnotation(targetType, AGENT_ANNOTATION_FQN);
+		Annotation agentAnnotation = AnnotationAttributes.find(targetType, AGENT_ANNOTATION_FQN);
 		Annotation componentAnnotation = agentAnnotation == null
-				? findAnnotation(targetType, EMBABEL_COMPONENT_ANNOTATION_FQN) : null;
+				? AnnotationAttributes.find(targetType, EMBABEL_COMPONENT_ANNOTATION_FQN) : null;
 		if (agentAnnotation == null && componentAnnotation == null) {
 			return Optional.empty();
 		}
 
 		Annotation source = agentAnnotation != null ? agentAnnotation : componentAnnotation;
-		String agentName = firstNonBlank(readStringAttribute(source, "name"), targetType.getSimpleName());
-		String description = readStringAttribute(source, "description");
-		String version = readStringAttribute(source, "version");
+		String agentName = nameOr(source, targetType.getSimpleName());
+		String description = AnnotationAttributes.string(source, "description");
+		String version = AnnotationAttributes.string(source, "version");
 		// provider is only declared on @Agent (not @EmbabelComponent)
-		String providerAttr = agentAnnotation != null ? readStringAttribute(agentAnnotation, "provider") : "";
+		String providerAttr = agentAnnotation != null ? AnnotationAttributes.string(agentAnnotation, "provider") : "";
 		String provider = StringUtils.hasText(providerAttr) ? providerAttr : null;
 		// plannerType: read enum constant name from @Agent; mark @EmbabelComponent as
 		// "COMPONENT"
-		String plannerType = agentAnnotation != null ? readEnumNameAttribute(agentAnnotation, "planner") : "COMPONENT";
-		boolean opaque = agentAnnotation != null && readBooleanAttribute(agentAnnotation, "opaque");
+		String plannerType = agentAnnotation != null ? AnnotationAttributes.enumName(agentAnnotation, "planner")
+				: "COMPONENT";
+		boolean opaque = agentAnnotation != null && AnnotationAttributes.flag(agentAnnotation, "opaque");
 
 		// beanName is only on @Agent; scan is on both annotations and defaults to true
-		String beanNameAttr = agentAnnotation != null ? readStringAttribute(agentAnnotation, "beanName") : "";
+		String beanNameAttr = agentAnnotation != null ? AnnotationAttributes.string(agentAnnotation, "beanName") : "";
 		String beanName = StringUtils.hasText(beanNameAttr) ? beanNameAttr : null;
-		boolean scan = readBooleanAttributeWithDefault(source, "scan", true);
+		boolean scan = AnnotationAttributes.flag(source, "scan", true);
 		String retryPolicy = agentAnnotation != null ? readNonDefaultRetryPolicy(agentAnnotation) : null;
 		String retryExpression = agentAnnotation != null
-				? emptyToNull(readStringAttribute(agentAnnotation, "actionRetryPolicyExpression")) : null;
+				? AnnotationAttributes.stringOrNull(agentAnnotation, "actionRetryPolicyExpression") : null;
 
 		return Optional.of(AgentWorkflow.builder(agentName, targetType.getName())
 			.description(description)
@@ -194,7 +195,7 @@ public class EmbabelWorkflowCatalogService {
 		for (Map.Entry<Method, List<Annotation>> entry : stepMethods.entrySet()) {
 			Method m = entry.getKey();
 			boolean returnsStateType = m.getReturnType() == Object.class
-					|| findAnnotation(m.getReturnType(), STATE_ANNOTATION_FQN) != null;
+					|| AnnotationAttributes.find(m.getReturnType(), STATE_ANNOTATION_FQN) != null;
 			List<String> possibleOutputs = (returnsStateType && !stateComponentTypes.isEmpty()) ? stateComponentTypes
 					: null;
 			steps.add(toStep(m, entry.getValue(), implicitInputs, possibleOutputs));
@@ -204,7 +205,7 @@ public class EmbabelWorkflowCatalogService {
 		// inputs so that e.g. handleBilling(OperationContext) shows BillingTicket as
 		// its input (because the BillingState record holds a BillingTicket field).
 		for (Class<?> inner : targetType.getDeclaredClasses()) {
-			if (findAnnotation(inner, STATE_ANNOTATION_FQN) != null) {
+			if (AnnotationAttributes.find(inner, STATE_ANNOTATION_FQN) != null) {
 				steps.addAll(collectSteps(inner, recordComponentSimpleNames(inner)));
 			}
 		}
@@ -278,7 +279,7 @@ public class EmbabelWorkflowCatalogService {
 	 */
 	private List<String> stateComponentTypesOf(Class<?> targetType) {
 		return Arrays.stream(targetType.getDeclaredClasses())
-			.filter(inner -> findAnnotation(inner, STATE_ANNOTATION_FQN) != null && inner.isRecord())
+			.filter(inner -> AnnotationAttributes.find(inner, STATE_ANNOTATION_FQN) != null && inner.isRecord())
 			.flatMap(inner -> Arrays.stream(inner.getRecordComponents()))
 			.map(RecordComponent::getType)
 			.filter(t -> !FRAMEWORK_PARAMETER_TYPES.contains(t.getName()))
@@ -303,15 +304,15 @@ public class EmbabelWorkflowCatalogService {
 		String type = achievesGoal && ACTION_ANNOTATION_FQN.equals(primary.annotationType().getName()) ? "AchievesGoal"
 				: primary.annotationType().getSimpleName();
 
-		String name = firstNonBlank(readStringAttribute(primary, "name"), method.getName());
+		String name = nameOr(primary, method.getName());
 		String description = annotations.stream()
-			.map(a -> readStringAttribute(a, "description"))
+			.map(a -> AnnotationAttributes.string(a, "description"))
 			.filter(StringUtils::hasText)
 			.findFirst()
 			.orElse("");
 
-		List<String> pre = readStringArrayAttribute(primary, "pre");
-		List<String> post = readStringArrayAttribute(primary, "post");
+		List<String> pre = AnnotationAttributes.strings(primary, "pre");
+		List<String> post = AnnotationAttributes.strings(primary, "post");
 
 		// Explicit method parameters (minus framework types) + any implicit inputs
 		// from an enclosing @State record's components.
@@ -322,28 +323,28 @@ public class EmbabelWorkflowCatalogService {
 		List<String> inputs = implicitInputs.isEmpty() ? methodInputs
 				: Stream.concat(implicitInputs.stream(), methodInputs.stream()).distinct().toList();
 
-		String costMethod = readStringAttribute(primary, "costMethod");
-		String valueMethod = readStringAttribute(primary, "valueMethod");
+		String costMethod = AnnotationAttributes.stringOrNull(primary, "costMethod");
+		String valueMethod = AnnotationAttributes.stringOrNull(primary, "valueMethod");
 
 		// Static cost/value declared directly on @Action; the annotation default is
 		// 0.0, which we map to null ("not set") so the UI only shows explicit values.
 		// Only read from @Action — @AchievesGoal has its own (different) "value".
 		boolean primaryIsAction = ACTION_ANNOTATION_FQN.equals(primary.annotationType().getName());
-		Double cost = primaryIsAction ? readNonZeroDoubleAttribute(primary, "cost") : null;
-		Double value = primaryIsAction ? readNonZeroDoubleAttribute(primary, "value") : null;
+		Double cost = primaryIsAction ? AnnotationAttributes.nonZeroDouble(primary, "cost") : null;
+		Double value = primaryIsAction ? AnnotationAttributes.nonZeroDouble(primary, "value") : null;
 
 		// @Action-specific fields
-		boolean canRerun = readBooleanAttribute(primary, "canRerun");
-		boolean readOnly = readBooleanAttribute(primary, "readOnly");
-		boolean clearBlackboard = readBooleanAttribute(primary, "clearBlackboard");
+		boolean canRerun = AnnotationAttributes.flag(primary, "canRerun");
+		boolean readOnly = AnnotationAttributes.flag(primary, "readOnly");
+		boolean clearBlackboard = AnnotationAttributes.flag(primary, "clearBlackboard");
 		String outputBinding = readCustomOutputBinding(primary);
 
 		// @Action(trigger = SomeEvent.class): the action is event-triggered. The
 		// Embabel
 		// default is kotlin.Unit ("no trigger"), which we map to null.
-		String trigger = primaryIsAction ? readClassSimpleNameAttribute(primary, "trigger") : null;
+		String trigger = primaryIsAction ? AnnotationAttributes.classSimpleName(primary, "trigger") : null;
 		// @Action(actionRetryPolicyExpression = "..."): per-action retry policy.
-		String retryExpr = primaryIsAction ? readStringAttribute(primary, "actionRetryPolicyExpression") : "";
+		String retryExpr = primaryIsAction ? AnnotationAttributes.string(primary, "actionRetryPolicyExpression") : "";
 		String retryPolicy = StringUtils.hasText(retryExpr) ? retryExpr : null;
 		String actionRetryPolicy = primaryIsAction ? readNonDefaultRetryPolicy(primary) : null;
 
@@ -351,7 +352,7 @@ public class EmbabelWorkflowCatalogService {
 		Double conditionCost = null;
 		for (Annotation a : annotations) {
 			if (CONDITION_ANNOTATION_FQN.equals(a.annotationType().getName())) {
-				conditionCost = readNonZeroDoubleAttribute(a, "cost");
+				conditionCost = AnnotationAttributes.nonZeroDouble(a, "cost");
 			}
 		}
 
@@ -365,15 +366,15 @@ public class EmbabelWorkflowCatalogService {
 		String exportName = null;
 		for (Annotation a : annotations) {
 			if (ACHIEVES_GOAL_ANNOTATION_FQN.equals(a.annotationType().getName())) {
-				tags = readStringArrayAttribute(a, "tags");
-				examples = readStringArrayAttribute(a, "examples");
-				goalValue = readNonZeroDoubleAttribute(a, "value");
-				Annotation export = readAnnotationAttribute(a, "export");
+				tags = AnnotationAttributes.strings(a, "tags");
+				examples = AnnotationAttributes.strings(a, "examples");
+				goalValue = AnnotationAttributes.nonZeroDouble(a, "value");
+				Annotation export = AnnotationAttributes.nested(a, "export");
 				if (export != null) {
-					exportedRemote = readBooleanAttribute(export, "remote");
-					exportedLocal = readBooleanAttributeWithDefault(export, "local", true);
-					exportStartingInputTypes = readClassArraySimpleNames(export, "startingInputTypes");
-					String name1 = readStringAttribute(export, "name");
+					exportedRemote = AnnotationAttributes.flag(export, "remote");
+					exportedLocal = AnnotationAttributes.flag(export, "local", true);
+					exportStartingInputTypes = AnnotationAttributes.classSimpleNames(export, "startingInputTypes");
+					String name1 = AnnotationAttributes.string(export, "name");
 					exportName = StringUtils.hasText(name1) ? name1 : null;
 				}
 			}
@@ -388,13 +389,13 @@ public class EmbabelWorkflowCatalogService {
 		if (llmTool) {
 			for (Annotation a : annotations) {
 				if (LLM_TOOL_ANNOTATION_FQN.equals(a.annotationType().getName())) {
-					llmToolDescription = readStringAttribute(a, "description");
+					llmToolDescription = AnnotationAttributes.string(a, "description");
 					if (!StringUtils.hasText(llmToolDescription))
 						llmToolDescription = null;
-					llmToolReturnDirect = readBooleanAttribute(a, "returnDirect");
-					String category = readStringAttribute(a, "category");
+					llmToolReturnDirect = AnnotationAttributes.flag(a, "returnDirect");
+					String category = AnnotationAttributes.string(a, "category");
 					llmToolCategory = StringUtils.hasText(category) ? category : null;
-					llmToolName = emptyToNull(readStringAttribute(a, "name"));
+					llmToolName = AnnotationAttributes.stringOrNull(a, "name");
 					llmToolMetadata = readToolMetadata(a);
 					// Use @LlmTool description as step description if no other
 					// description
@@ -416,8 +417,8 @@ public class EmbabelWorkflowCatalogService {
 			.inputs(inputs)
 			.output(method.getReturnType().getSimpleName())
 			.goal(achievesGoal)
-			.costMethod(emptyToNull(costMethod))
-			.valueMethod(emptyToNull(valueMethod))
+			.costMethod(costMethod)
+			.valueMethod(valueMethod)
 			.cost(cost)
 			.value(value)
 			.goalValue(goalValue)
@@ -447,130 +448,19 @@ public class EmbabelWorkflowCatalogService {
 			.build();
 	}
 
-	private Annotation findAnnotation(Class<?> type, String annotationTypeName) {
-		for (Annotation annotation : type.getAnnotations()) {
-			if (annotation.annotationType().getName().equals(annotationTypeName)) {
-				return annotation;
-			}
-		}
-		return null;
-	}
-
-	private String readStringAttribute(Annotation annotation, String attributeName) {
-		try {
-			Method method = annotation.annotationType().getMethod(attributeName);
-			Object value = method.invoke(annotation);
-			return value instanceof String str ? str : "";
-		}
-		catch (ReflectiveOperationException ignored) {
-			return "";
-		}
-	}
-
-	private List<String> readStringArrayAttribute(Annotation annotation, String attributeName) {
-		try {
-			Method method = annotation.annotationType().getMethod(attributeName);
-			Object value = method.invoke(annotation);
-			if (value instanceof String[] array) {
-				return Arrays.stream(array).filter(StringUtils::hasText).toList();
-			}
-			return List.of();
-		}
-		catch (ReflectiveOperationException ignored) {
-			return List.of();
-		}
-	}
-
-	private String firstNonBlank(String first, String fallback) {
-		return StringUtils.hasText(first) ? first : fallback;
+	/** Annotation {@code name} attribute, falling back to the Java element's own name. */
+	private String nameOr(Annotation annotation, String fallback) {
+		String declared = AnnotationAttributes.stringOrNull(annotation, "name");
+		return declared != null ? declared : fallback;
 	}
 
 	/**
-	 * Reads an {@link Enum} attribute and returns its {@code toString()} (constant name),
-	 * or empty string if the attribute does not exist or is not an enum.
+	 * Reads {@code actionRetryPolicy}, returning {@code null} when left at
+	 * {@code ActionRetryPolicy.DEFAULT} so only explicit policies are surfaced.
 	 */
-	private String readEnumNameAttribute(Annotation annotation, String attributeName) {
-		try {
-			Method method = annotation.annotationType().getMethod(attributeName);
-			Object value = method.invoke(annotation);
-			return value != null ? value.toString() : "";
-		}
-		catch (ReflectiveOperationException ignored) {
-			return "";
-		}
-	}
-
-	/**
-	 * Reads a {@code boolean} attribute from an annotation.
-	 */
-	private boolean readBooleanAttribute(Annotation annotation, String attributeName) {
-		try {
-			Method method = annotation.annotationType().getMethod(attributeName);
-			Object value = method.invoke(annotation);
-			return Boolean.TRUE.equals(value);
-		}
-		catch (ReflectiveOperationException ignored) {
-			return false;
-		}
-	}
-
-	/**
-	 * Reads a {@code double} attribute from an annotation, returning {@code null} when
-	 * the attribute is absent or left at the {@code 0.0} default (i.e. "not set").
-	 */
-	private Double readNonZeroDoubleAttribute(Annotation annotation, String attributeName) {
-		try {
-			Method method = annotation.annotationType().getMethod(attributeName);
-			Object value = method.invoke(annotation);
-			if (value instanceof Double d && d != 0.0) {
-				return d;
-			}
-			return null;
-		}
-		catch (ReflectiveOperationException ignored) {
-			return null;
-		}
-	}
-
-	/**
-	 * Reads a {@link Class}-valued annotation attribute and returns
-	 * {@link Class#getSimpleName()}, or {@code null} when the attribute is absent or left
-	 * at a "no value" sentinel ({@code kotlin.Unit}, {@code void}, or {@code Void}).
-	 */
-	private String readClassSimpleNameAttribute(Annotation annotation, String attributeName) {
-		try {
-			Method method = annotation.annotationType().getMethod(attributeName);
-			Object value = method.invoke(annotation);
-			if (value instanceof Class<?> type) {
-				String name = type.getName();
-				if ("kotlin.Unit".equals(name) || "void".equals(name) || "java.lang.Void".equals(name)) {
-					return null;
-				}
-				return type.getSimpleName();
-			}
-			return null;
-		}
-		catch (ReflectiveOperationException ignored) {
-			return null;
-		}
-	}
-
-	/**
-	 * Reads a nested annotation attribute (e.g. {@code @AchievesGoal(export = @Export)}).
-	 */
-	private Annotation readAnnotationAttribute(Annotation annotation, String attributeName) {
-		try {
-			Method method = annotation.annotationType().getMethod(attributeName);
-			Object value = method.invoke(annotation);
-			return value instanceof Annotation nested ? nested : null;
-		}
-		catch (ReflectiveOperationException ignored) {
-			return null;
-		}
-	}
-
-	private String emptyToNull(String value) {
-		return StringUtils.hasText(value) ? value : null;
+	private String readNonDefaultRetryPolicy(Annotation annotation) {
+		String policy = AnnotationAttributes.enumName(annotation, "actionRetryPolicy");
+		return StringUtils.hasText(policy) && !DEFAULT_RETRY_POLICY.equals(policy) ? policy : null;
 	}
 
 	/**
@@ -578,74 +468,23 @@ public class EmbabelWorkflowCatalogService {
 	 * named a custom blackboard binding.
 	 */
 	private String readCustomOutputBinding(Annotation annotation) {
-		String binding = readStringAttribute(annotation, "outputBinding");
-		return DEFAULT_OUTPUT_BINDING.equals(binding) ? null : emptyToNull(binding);
-	}
-
-	/**
-	 * Reads a {@code boolean} attribute, falling back to {@code defaultValue} when the
-	 * attribute is missing — used for attributes whose Embabel default is {@code true}.
-	 */
-	private boolean readBooleanAttributeWithDefault(Annotation annotation, String attributeName, boolean defaultValue) {
-		try {
-			Method method = annotation.annotationType().getMethod(attributeName);
-			Object value = method.invoke(annotation);
-			return value instanceof Boolean b ? b : defaultValue;
-		}
-		catch (ReflectiveOperationException ignored) {
-			return defaultValue;
-		}
-	}
-
-	/**
-	 * Reads {@code actionRetryPolicy}, returning {@code null} when left at
-	 * {@code ActionRetryPolicy.DEFAULT} so the UI only surfaces explicit policies.
-	 */
-	private String readNonDefaultRetryPolicy(Annotation annotation) {
-		String policy = readEnumNameAttribute(annotation, "actionRetryPolicy");
-		return StringUtils.hasText(policy) && !DEFAULT_RETRY_POLICY.equals(policy) ? policy : null;
-	}
-
-	/**
-	 * Reads a {@code Class[]} attribute and returns each entry's
-	 * {@link Class#getSimpleName()}.
-	 */
-	private List<String> readClassArraySimpleNames(Annotation annotation, String attributeName) {
-		try {
-			Method method = annotation.annotationType().getMethod(attributeName);
-			Object value = method.invoke(annotation);
-			if (value instanceof Class<?>[] classes) {
-				return Arrays.stream(classes).map(Class::getSimpleName).toList();
-			}
-			return List.of();
-		}
-		catch (ReflectiveOperationException ignored) {
-			return List.of();
-		}
+		String binding = AnnotationAttributes.string(annotation, "outputBinding");
+		return DEFAULT_OUTPUT_BINDING.equals(binding) ? null
+				: AnnotationAttributes.stringOrNull(annotation, "outputBinding");
 	}
 
 	/**
 	 * Reads {@code @LlmTool(metadata = {@literal @}Meta(key, value))} pairs.
 	 */
 	private List<ToolMetadata> readToolMetadata(Annotation annotation) {
-		try {
-			Method method = annotation.annotationType().getMethod("metadata");
-			Object value = method.invoke(annotation);
-			if (!(value instanceof Annotation[] entries)) {
-				return List.of();
+		List<ToolMetadata> metadata = new ArrayList<>();
+		for (Annotation entry : AnnotationAttributes.nestedArray(annotation, "metadata")) {
+			String key = AnnotationAttributes.string(entry, "key");
+			if (StringUtils.hasText(key)) {
+				metadata.add(new ToolMetadata(key, AnnotationAttributes.string(entry, "value")));
 			}
-			List<ToolMetadata> metadata = new ArrayList<>();
-			for (Annotation entry : entries) {
-				String key = readStringAttribute(entry, "key");
-				if (StringUtils.hasText(key)) {
-					metadata.add(new ToolMetadata(key, readStringAttribute(entry, "value")));
-				}
-			}
-			return List.copyOf(metadata);
 		}
-		catch (ReflectiveOperationException ignored) {
-			return List.of();
-		}
+		return List.copyOf(metadata);
 	}
 
 	/**
@@ -653,13 +492,10 @@ public class EmbabelWorkflowCatalogService {
 	 * annotation.
 	 */
 	private List<String> readParameterAnnotatedTypes(Method method, String annotationTypeName) {
-		List<String> names = new ArrayList<>();
-		for (Parameter parameter : method.getParameters()) {
-			if (hasAnnotation(parameter, annotationTypeName)) {
-				names.add(parameter.getType().getSimpleName());
-			}
-		}
-		return List.copyOf(names);
+		return Arrays.stream(method.getParameters())
+			.filter(parameter -> AnnotationAttributes.isPresent(parameter, annotationTypeName))
+			.map(parameter -> parameter.getType().getSimpleName())
+			.toList();
 	}
 
 	/**
@@ -669,24 +505,14 @@ public class EmbabelWorkflowCatalogService {
 	private List<String> readRequireNameMatchInputs(Method method) {
 		List<String> names = new ArrayList<>();
 		for (Parameter parameter : method.getParameters()) {
-			for (Annotation annotation : parameter.getAnnotations()) {
-				if (REQUIRE_NAME_MATCH_ANNOTATION_FQN.equals(annotation.annotationType().getName())) {
-					String bound = readStringAttribute(annotation, "value");
-					String type = parameter.getType().getSimpleName();
-					names.add(StringUtils.hasText(bound) ? type + ":" + bound : type);
-				}
+			Annotation nameMatch = AnnotationAttributes.find(parameter, REQUIRE_NAME_MATCH_ANNOTATION_FQN);
+			if (nameMatch != null) {
+				String type = parameter.getType().getSimpleName();
+				String bound = AnnotationAttributes.stringOrNull(nameMatch, "value");
+				names.add(bound != null ? type + ":" + bound : type);
 			}
 		}
 		return List.copyOf(names);
-	}
-
-	private boolean hasAnnotation(Parameter parameter, String annotationTypeName) {
-		for (Annotation annotation : parameter.getAnnotations()) {
-			if (annotation.annotationType().getName().equals(annotationTypeName)) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 }

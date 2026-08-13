@@ -23,6 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 class EmbabelWorkflowCatalogServiceTests {
 
@@ -453,6 +456,40 @@ class EmbabelWorkflowCatalogServiceTests {
 			WorkflowCatalog catalog = new EmbabelWorkflowCatalogService(failingOnOneBean).catalog();
 
 			assertThat(catalog.agents()).extracting(AgentWorkflow::agentName).containsExactly("demo-agent");
+		}
+	}
+
+	@Test
+	void theCatalogIsScannedOnceAndReused() {
+		try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
+			ctx.registerBean("sampleAgent", SampleEmbabelAgent.class);
+			ctx.refresh();
+			ApplicationContext counting = spy(ctx);
+			EmbabelWorkflowCatalogService service = new EmbabelWorkflowCatalogService(counting);
+
+			WorkflowCatalog first = service.catalog();
+			WorkflowCatalog second = service.catalog();
+
+			assertThat(second).isSameAs(first);
+			verify(counting, times(1)).getBeanNamesForType(Object.class, false, false);
+		}
+	}
+
+	/**
+	 * An empty result may simply mean the context had not finished refreshing when the
+	 * catalog was first asked for, so it must not be cached forever.
+	 */
+	@Test
+	void anEmptyCatalogIsNotCached() {
+		try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
+			ctx.refresh();
+			ApplicationContext counting = spy(ctx);
+			EmbabelWorkflowCatalogService service = new EmbabelWorkflowCatalogService(counting);
+
+			assertThat(service.catalog().agents()).isEmpty();
+			assertThat(service.catalog().agents()).isEmpty();
+
+			verify(counting, times(2)).getBeanNamesForType(Object.class, false, false);
 		}
 	}
 

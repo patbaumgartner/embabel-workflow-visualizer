@@ -80,22 +80,45 @@ public class EmbabelWorkflowCatalogService {
 
 	private final ApplicationContext applicationContext;
 
+	private volatile WorkflowCatalog cached;
+
 	public EmbabelWorkflowCatalogService(ApplicationContext applicationContext) {
 		this.applicationContext = applicationContext;
 	}
 
 	/**
-	 * Build the catalog. Each bean is inspected independently; failures are logged and do
-	 * not abort the scan.
+	 * The workflow catalog for this application context.
+	 *
+	 * <p>
+	 * Computed once and reused: agent metadata comes from annotations on bean
+	 * definitions, which no longer change after the context has refreshed, and a
+	 * monitoring system polling {@code /actuator/embabel} should not re-reflect over
+	 * every bean in the application on every request.
 	 *
 	 * <p>
 	 * Only bean <em>types</em> are resolved, never bean instances. Asking for instances
 	 * would force every lazy singleton and every {@code FactoryBean} product in the
 	 * application to be created just so this endpoint can read their annotations —
 	 * turning a read-only diagnostic into a side effect, and failing outright when a bean
-	 * cannot be built in the current profile.
+	 * cannot be built in the current profile. Each bean is inspected independently, so
+	 * one unreadable bean does not abort the scan.
 	 */
 	public WorkflowCatalog catalog() {
+		WorkflowCatalog current = this.cached;
+		if (current != null) {
+			return current;
+		}
+		WorkflowCatalog scanned = scan();
+		// A racing scan produces an equal, immutable result, so no lock is needed.
+		// An empty result is never cached: it also covers "asked before the context
+		// finished refreshing", and re-scanning an agent-less context costs nothing.
+		if (!scanned.agents().isEmpty()) {
+			this.cached = scanned;
+		}
+		return scanned;
+	}
+
+	private WorkflowCatalog scan() {
 		String[] beanNames;
 		try {
 			beanNames = applicationContext.getBeanNamesForType(Object.class, false, false);

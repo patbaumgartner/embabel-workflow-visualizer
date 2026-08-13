@@ -1,0 +1,53 @@
+name: Bug report
+description: Something in the visualizer behaves incorrectly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a security problem, please do **not** open an issue — see
+        [SECURITY.md](https://github.com/patbaumgartner/embabel-workflow-visualizer/blob/main/SECURITY.md).
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you expect, and what did you get instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: agent
+    attributes:
+      label: Agent declaration
+      description: >
+        If the workflow is rendered incorrectly, paste the annotated agent class
+        (or a reduced version of it). This is almost always what we need to
+        reproduce the problem.
+      render: java
+
+  - type: textarea
+    id: catalog
+    attributes:
+      label: Catalog output
+      description: >
+        The response from `GET /actuator/embabel` or `GET <base-path>/api`, which
+        shows what the starter discovered. Trim it to the affected agent.
+      render: json
+
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Visualizer, Embabel, Spring Boot, and Java versions.
+      placeholder: visualizer 1.1.0, embabel 1.5.0, boot 4.1.0, java 21
+    validations:
+      required: true
+
+  - type: input
+    id: deployment
+    attributes:
+      label: Deployment details
+      description: >
+        Anything unusual about how the application is served — a servlet context
+        path, a reverse proxy prefix, a custom `base-path`, Spring Security.

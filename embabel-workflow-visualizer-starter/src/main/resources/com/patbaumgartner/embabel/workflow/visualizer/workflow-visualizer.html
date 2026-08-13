@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Embabel Workflow Visualizer</title>
+    <link rel="icon" href="data:," />
     <!-- Restore theme before first paint to prevent flash of wrong theme -->
     <script>
         try {
@@ -788,6 +789,49 @@
         .edge.pre {
             animation: dash-flow 1.3s linear infinite;
         }
+
+        /* Vestibular safety: never animate for visitors who asked us not to. */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+
+        /* Keyboard focus must be visible on every interactive control. */
+        :where(button, input, a):focus-visible {
+            outline: 2px solid var(--action);
+            outline-offset: 2px;
+        }
+
+        /* ── Filter ────────────────────────────────────────────────────── */
+        .filter {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .filter input {
+            background: var(--bg-2);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 0.26rem 0.75rem;
+            font-size: 0.78rem;
+            font-family: inherit;
+            color: var(--ink);
+            min-width: 12rem;
+        }
+
+        .filter input::placeholder {
+            color: var(--muted);
+        }
+
+        .agent[hidden] {
+            display: none;
+        }
     </style>
 </head>
 
@@ -795,11 +839,15 @@
     <header>
         <h1>Embabel Workflow Visualizer</h1>
         <div class="hdr-right">
-            <span class="hint">
-                Actuator <code>/actuator/embabel</code> &middot; API <code>/embabel-workflows/api</code>
+            <span class="hint" id="endpoint-hint"></span>
+            <span class="filter">
+                <label class="hint" for="agent-filter">Filter</label>
+                <input type="search" id="agent-filter" placeholder="Agent name, class or planner"
+                    autocomplete="off" spellcheck="false" />
             </span>
-            <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">
-                <span id="theme-icon"></span><span id="theme-lbl"></span>
+            <span class="hint" id="agent-count" role="status" aria-live="polite"></span>
+            <button type="button" class="theme-btn" id="theme-btn" aria-pressed="false">
+                <span id="theme-icon" aria-hidden="true"></span><span id="theme-lbl"></span>
             </button>
         </div>
     </header>
@@ -817,8 +865,11 @@
         }
         function syncThemeIcon() {
             var dark = isDark();
+            var btn = document.getElementById('theme-btn');
             document.getElementById('theme-icon').textContent = dark ? '\u2600\uFE0F\u00A0' : '\uD83C\uDF19\u00A0';
             document.getElementById('theme-lbl').textContent = dark ? 'Light' : 'Dark';
+            btn.setAttribute('aria-pressed', String(dark));
+            btn.setAttribute('title', dark ? 'Switch to the light theme' : 'Switch to the dark theme');
         }
         function toggleTheme() {
             var next = isDark() ? 'light' : 'dark';
@@ -826,6 +877,7 @@
             try { localStorage.setItem('embabel-theme', next); } catch (_) { }
             syncThemeIcon();
         }
+        document.getElementById('theme-btn').addEventListener('click', toggleTheme);
         syncThemeIcon();
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
             if (!document.documentElement.hasAttribute('data-theme')) syncThemeIcon();
@@ -845,7 +897,8 @@
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         // ── Layout ────────────────────────────────────────────────────────
@@ -935,7 +988,8 @@
                 cols[col[i]].push(i);
             });
 
-            var numCols = Math.max.apply(null, Object.keys(cols).map(Number)) + 1;
+            // Math.max of an empty column set is -Infinity; keep the canvas finite.
+            var numCols = Math.max(1, Math.max.apply(null, Object.keys(cols).map(Number)) + 1);
 
             // Per-column height (sum of node heights + row gaps)
             var colHeights = {};
@@ -984,9 +1038,27 @@
             return { x: (fp.x + NW + tp.x) / 2, y: (fp.y + fh / 2 + tp.y + th / 2) / 2 - 8 };
         }
 
+        // Several edges between the same two columns land on near-identical midpoints,
+        // which stacks their labels into an unreadable smudge. Bucket the midpoints and
+        // lift each subsequent label clear of the one already there.
+        var LBL_BUCKET_X = 90, LBL_BUCKET_Y = 14, LBL_STACK = 12;
+
+        function stackedLabelPositions(edges, positions, heights) {
+            var taken = new Map();
+            return edges.map(function (e) {
+                var m = edgeMidpoint(positions[e.from], heights[e.from], positions[e.to], heights[e.to]);
+                var bucket = Math.round(m.x / LBL_BUCKET_X) + ':' + Math.round(m.y / LBL_BUCKET_Y);
+                var stacked = taken.get(bucket) || 0;
+                taken.set(bucket, stacked + 1);
+                return { x: m.x, y: m.y - stacked * LBL_STACK };
+            });
+        }
+
         // ── Build node inner HTML (foreignObject content) ─────────────────
         function buildNodeHtml(step) {
-            var tc = (step.type || '').toLowerCase();
+            // Every value below reaches innerHTML, so the type-derived class name is
+            // escaped like any other field even though it originates server-side.
+            var tc = esc((step.type || '').toLowerCase());
             var typeLabel = step.goal && step.type !== 'AchievesGoal' ? step.type + ' \u00b7 GOAL' : step.type;
 
             // Micro-badges
@@ -1015,10 +1087,8 @@
             var inputs = (step.inputs || []).length ? step.inputs.join(', ') : '\u2014';
             var outputLabel = step.output || 'void';
             var nioHtml = esc(inputs) + ' \u2192 ' + esc(outputLabel);
-            if (step.outputBinding && step.outputBinding !== 'it')
+            if (step.outputBinding)
                 nioHtml += ' <span class="obind">\u00bb ' + esc(step.outputBinding) + '</span>';
-            else if (step.outputBinding === 'it')
-                nioHtml += ' <span class="obind">\u00bb it</span>';
             if (step.possibleOutputs && step.possibleOutputs.length)
                 nioHtml += '<br/><span class="alt">alt: ' + esc(step.possibleOutputs.join(' | ')) + '</span>';
             html += '<div class="nio">' + nioHtml + '</div>';
@@ -1154,6 +1224,10 @@
 
             var svg = document.createElementNS(xns, 'svg');
             svg.setAttribute('class', 'flow-svg');
+            svg.setAttribute('role', 'img');
+            svg.setAttribute('aria-label',
+                'Workflow diagram with ' + steps.length + ' step' + (steps.length === 1 ? '' : 's') +
+                ': ' + steps.map(function (s) { return s.name; }).join(', '));
 
             // Arrow markers
             var defs = document.createElementNS(xns, 'defs');
@@ -1200,13 +1274,13 @@
             });
 
             function refreshEdges(onlyIdx) {
+                var labelPos = stackedLabelPositions(edges, mpos, heights);
                 edges.forEach(function (e, ei) {
                     if (onlyIdx != null && e.from !== onlyIdx && e.to !== onlyIdx) return;
                     pathEls[ei].setAttribute('d', edgePath(mpos[e.from], heights[e.from], mpos[e.to], heights[e.to]));
                     if (lblEls[ei]) {
-                        var m = edgeMidpoint(mpos[e.from], heights[e.from], mpos[e.to], heights[e.to]);
-                        lblEls[ei].setAttribute('x', m.x);
-                        lblEls[ei].setAttribute('y', m.y);
+                        lblEls[ei].setAttribute('x', labelPos[ei].x);
+                        lblEls[ei].setAttribute('y', labelPos[ei].y);
                     }
                 });
             }
@@ -1270,15 +1344,22 @@
                 while (t && t !== svg) { if (t.classList && t.classList.contains('node-g')) return true; t = t.parentNode; }
                 return false;
             }
+            // Listeners are attached per drag rather than for the lifetime of the page:
+            // one canvas is rendered per agent, so permanent handlers would make every
+            // mouse move fan out across every diagram on screen.
+            function doPanMove(e) { if (!panning) return; vpTx = panOTx + e.clientX - panOX; vpTy = panOTy + e.clientY - panOY; applyVp(); }
+            function doPanUp() {
+                panning = false; svg.style.cursor = '';
+                window.removeEventListener('mousemove', doPanMove);
+                window.removeEventListener('mouseup', doPanUp);
+            }
             svg.addEventListener('mousedown', function (e) {
                 if (e.button !== 0 || isOnNode(e.target)) return;
                 panning = true; panOX = e.clientX; panOY = e.clientY; panOTx = vpTx; panOTy = vpTy;
                 svg.style.cursor = 'grabbing'; e.preventDefault();
+                window.addEventListener('mousemove', doPanMove);
+                window.addEventListener('mouseup', doPanUp);
             });
-            function doPanMove(e) { if (!panning) return; vpTx = panOTx + e.clientX - panOX; vpTy = panOTy + e.clientY - panOY; applyVp(); }
-            function doPanUp() { if (panning) { panning = false; svg.style.cursor = ''; } }
-            window.addEventListener('mousemove', doPanMove);
-            window.addEventListener('mouseup', doPanUp);
             svg.addEventListener('dblclick', function (e) { if (!isOnNode(e.target)) fit(); });
 
             var ltx = 0, lty = 0;
@@ -1384,6 +1465,9 @@
         function renderAgent(agent) {
             var panel = document.createElement('section');
             panel.className = 'agent';
+            panel.setAttribute('aria-label', agent.agentName);
+            panel.dataset.search = [agent.agentName, agent.className, agent.plannerType, agent.description,
+                agent.provider, agent.beanName].filter(Boolean).join(' ').toLowerCase();
 
             // Header row: name + planner badge + opaque badge + version/class
             var hdr = document.createElement('div');
@@ -1459,10 +1543,20 @@
             // Zoom controls
             var ctrl = document.createElement('div');
             ctrl.className = 'flow-controls';
-            var btnFit = document.createElement('button'); btnFit.className = 'flow-btn'; btnFit.textContent = '\u22a1 Fit';
-            var btnIn = document.createElement('button'); btnIn.className = 'flow-btn'; btnIn.textContent = '+ Zoom In';
-            var btnOut = document.createElement('button'); btnOut.className = 'flow-btn'; btnOut.textContent = '\u2212 Zoom Out';
-            var btnReset = document.createElement('button'); btnReset.className = 'flow-btn'; btnReset.textContent = '\u21ba Reset Layout';
+            ctrl.setAttribute('role', 'group');
+            ctrl.setAttribute('aria-label', 'Diagram controls for ' + agent.agentName);
+            function flowButton(label) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'flow-btn';
+                b.textContent = label;
+                b.setAttribute('aria-label', label.replace(/^\S+\s/, '') + ' \u2014 ' + agent.agentName);
+                return b;
+            }
+            var btnFit = flowButton('\u22a1 Fit');
+            var btnIn = flowButton('+ Zoom In');
+            var btnOut = flowButton('\u2212 Zoom Out');
+            var btnReset = flowButton('\u21ba Reset Layout');
             var fhint = document.createElement('span'); fhint.className = 'flow-hint';
             fhint.textContent = 'Drag\u00a0nodes \u00b7 Scroll\u00a0to\u00a0zoom \u00b7 Drag\u00a0background\u00a0to\u00a0pan \u00b7 Dbl-click\u00a0to\u00a0fit';
             ctrl.append(btnFit, btnIn, btnOut, btnReset, fhint);
@@ -1482,6 +1576,31 @@
             return panel;
         }
 
+        // ── Filter ────────────────────────────────────────────────────────
+        // Panels are only hidden, never destroyed: each carries a laid-out SVG that
+        // costs a full measure-and-fit pass to rebuild.
+        function applyFilter() {
+            var canvas = document.getElementById('canvas');
+            var panels = canvas.querySelectorAll('.agent');
+            var term = document.getElementById('agent-filter').value.trim().toLowerCase();
+            var shown = 0;
+            panels.forEach(function (panel) {
+                var match = !term || panel.dataset.search.indexOf(term) !== -1;
+                panel.hidden = !match;
+                if (match) shown++;
+            });
+            var count = document.getElementById('agent-count');
+            if (!panels.length) {
+                count.textContent = '';
+            } else if (shown === panels.length) {
+                count.textContent = panels.length + (panels.length === 1 ? ' agent' : ' agents');
+            } else {
+                count.textContent = shown + ' of ' + panels.length + ' agents';
+            }
+            var noMatch = document.getElementById('no-match');
+            noMatch.hidden = shown > 0 || !panels.length;
+        }
+
         // ── Render full catalog ───────────────────────────────────────────
         function render(catalog) {
             var canvas = document.getElementById('canvas');
@@ -1489,16 +1608,31 @@
             var agents = catalog.agents || [];
             if (!agents.length) {
                 canvas.innerHTML = '<p class="empty">No Embabel <code>@Agent</code> beans found in the application context.</p>';
+                document.getElementById('agent-count').textContent = '';
                 return;
             }
             agents.forEach(function (a) { canvas.appendChild(renderAgent(a)); });
+
+            var noMatch = document.createElement('p');
+            noMatch.id = 'no-match';
+            noMatch.className = 'empty';
+            noMatch.hidden = true;
+            noMatch.textContent = 'No agent matches this filter.';
+            canvas.appendChild(noMatch);
+
+            applyFilter();
         }
+
+        document.getElementById('agent-filter').addEventListener('input', applyFilter);
 
         // ── Fetch workflow catalog ────────────────────────────────────────
         // The API lives at <this page>/api. Deriving it from the browser's own
         // location keeps the UI working behind a servlet context path, a reverse
         // proxy prefix, or a custom embabel.workflow.visualizer.base-path.
         var API_URL = window.location.pathname.replace(/\/+$/, '') + '/api';
+
+        document.getElementById('endpoint-hint').innerHTML =
+            'Actuator <code>/actuator/embabel</code> \u00b7 API <code>' + esc(API_URL) + '</code>';
 
         fetch(API_URL, { headers: { 'Accept': 'application/json' }, cache: 'no-store' })
             .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })

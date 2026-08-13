@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 
@@ -20,24 +21,26 @@ import org.springframework.context.annotation.Bean;
  * </ul>
  *
  * <p>
- * Compatible with Spring Boot 3.5.x and 4.0.x.
- *
- * <p>
  * Registers the following beans:
  * <ul>
  * <li>{@link EmbabelWorkflowCatalogService} — discovers Embabel agents via
  * reflection</li>
  * <li>{@link EmbabelWorkflowActuatorEndpoint} — exposes the catalog as an actuator
  * endpoint ({@code /actuator/embabel})</li>
- * <li>{@link EmbabelWorkflowApiController} — REST API at {@code /embabel-workflows/api};
- * enabled by setting {@code embabel.workflow.visualizer.enabled=true}</li>
- * <li>{@link WorkflowVisualizerPageController} — serves the visualizer HTML page; enabled
+ * <li>{@link EmbabelWorkflowApiController} — REST API at {@code <base-path>/api}; enabled
  * by setting {@code embabel.workflow.visualizer.enabled=true}</li>
+ * <li>{@link WorkflowVisualizerPageController} — serves the visualizer HTML page at
+ * {@code <base-path>}; enabled by setting
+ * {@code embabel.workflow.visualizer.enabled=true}</li>
  * </ul>
+ *
+ * <p>
+ * See {@link EmbabelWorkflowVisualizerProperties} for the supported configuration.
  */
 @AutoConfiguration
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @ConditionalOnClass(name = "org.springframework.boot.actuate.endpoint.annotation.Endpoint")
+@EnableConfigurationProperties(EmbabelWorkflowVisualizerProperties.class)
 public class EmbabelWorkflowVisualizerAutoConfiguration {
 
 	@Bean

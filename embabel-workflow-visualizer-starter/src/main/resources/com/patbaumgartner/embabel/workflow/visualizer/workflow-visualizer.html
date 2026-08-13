@@ -1495,7 +1495,12 @@
         }
 
         // ── Fetch workflow catalog ────────────────────────────────────────
-        fetch('/embabel-workflows/api')
+        // The API lives at <this page>/api. Deriving it from the browser's own
+        // location keeps the UI working behind a servlet context path, a reverse
+        // proxy prefix, or a custom embabel.workflow.visualizer.base-path.
+        var API_URL = window.location.pathname.replace(/\/+$/, '') + '/api';
+
+        fetch(API_URL, { headers: { 'Accept': 'application/json' }, cache: 'no-store' })
             .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
             .then(render)
             .catch(function (err) {

@@ -6,11 +6,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static com.patbaumgartner.embabel.workflow.visualizer.EmbabelWorkflowVisualizerProperties.BASE_PATH_PLACEHOLDER;
+
 /**
  * REST controller that exposes the Embabel workflow catalog as JSON.
  *
  * <p>
- * Serves {@code GET /embabel-workflows/api} when
+ * Serves {@code GET <base-path>/api} (default {@code /embabel-workflows/api}) when
  * {@code embabel.workflow.visualizer.enabled=true} is set. The response is consumed by
  * the bundled visualization UI to render the interactive workflow diagram.
  *
@@ -19,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  * that both surfaces always reflect the same agent discovery result.
  */
 @RestController
-@RequestMapping(path = "/embabel-workflows/api", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(path = BASE_PATH_PLACEHOLDER + "/api", produces = MediaType.APPLICATION_JSON_VALUE)
 @SuppressWarnings("unused") // instantiated by EmbabelWorkflowVisualizerAutoConfiguration
 public class EmbabelWorkflowApiController {
 
@@ -31,7 +33,7 @@ public class EmbabelWorkflowApiController {
 
 	@GetMapping
 	public WorkflowCatalog workflows() {
-		return catalogService.catalog();
+		return this.catalogService.catalog();
 	}
 
 }

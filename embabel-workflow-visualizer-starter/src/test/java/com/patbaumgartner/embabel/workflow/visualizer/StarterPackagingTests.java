@@ -76,7 +76,10 @@ class StarterPackagingTests {
 		assertThat(registered).containsExactly(EmbabelWorkflowVisualizerAutoConfiguration.class.getName());
 	}
 
-	/** Directory the starter's own classes are loaded from ({@code target/classes}). */
+	/**
+	 * Directory the starter's own classes are loaded from ({@code target/classes}). The
+	 * jar is assembled from it verbatim, so asserting here also asserts the artifact.
+	 */
 	private Path artifactRoot() {
 		URL location = EmbabelWorkflowVisualizerAutoConfiguration.class.getProtectionDomain()
 			.getCodeSource()

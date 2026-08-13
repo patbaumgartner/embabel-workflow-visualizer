@@ -49,6 +49,15 @@ Compatibility note: this project is built against [Spring Boot](https://spring.i
 
 A single artifact cannot support both Spring Boot 3 and 4 (Spring Framework 7 baseline), so consumers still on Spring Boot 3.5 should stay on the `0.3.x` line.
 
+### Upgrading from 1.0.x
+
+The visualizer page is now served by its controller instead of as a static
+resource, which is what lets it work under a context path and keeps it
+unreachable while the visualizer is disabled. Consequently the undocumented
+`/workflow-visualizer.html` URL is gone — use `/embabel-workflows` (or your
+configured `base-path`), which is unchanged and has always been the documented
+entry point.
+
 It supports every Embabel annotation feature: `@Agent` (GOAP / UTILITY / HYBRID / SUPERVISOR planners, `opaque`, `provider`, `beanName`, `scan`, agent-level `actionRetryPolicy` / `actionRetryPolicyExpression`), `@EmbabelComponent` (`scan`), `@Action` (`pre`/`post`, `cost`/`value`, `costMethod`/`valueMethod`, `canRerun`, `readOnly`, `clearBlackboard`, `outputBinding`, event `trigger`, `actionRetryPolicy` and `actionRetryPolicyExpression`), `@Condition` (`name`, `cost`), `@Cost`, `@AchievesGoal` (`value`, `tags`, `examples`, and `@Export` with `remote`, `local`, `name`, `startingInputTypes`), `@State`, `@LlmTool` (`description`, `name`, `returnDirect`, `category`, `metadata`), and the `@Provided` / `@RequireNameMatch` parameter annotations.
 
 ### 1. Add the dependency
@@ -90,10 +99,10 @@ embabel.workflow.visualizer.enabled=true
 
 ### Configuration
 
-| Property | Default | Description |
-|---|---|---|
-| `embabel.workflow.visualizer.enabled` | `false` | Serves the UI and its REST API |
-| `embabel.workflow.visualizer.base-path` | `/embabel-workflows` | Path the UI is mounted on; the REST API is served from `<base-path>/api` |
+| Property | Default | Since | Description |
+|---|---|---|---|
+| `embabel.workflow.visualizer.enabled` | `false` | 0.1 | Serves the UI and its REST API |
+| `embabel.workflow.visualizer.base-path` | `/embabel-workflows` | 1.1 | Path the UI is mounted on; the REST API is served from `<base-path>/api` |
 
 Both properties ship IDE completion and documentation via
 `spring-configuration-metadata.json`. A `base-path` that would produce a broken

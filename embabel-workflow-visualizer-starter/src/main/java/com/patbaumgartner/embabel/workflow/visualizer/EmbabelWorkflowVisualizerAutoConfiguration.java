@@ -57,17 +57,26 @@ public class EmbabelWorkflowVisualizerAutoConfiguration {
 		return new EmbabelWorkflowActuatorEndpoint(catalogService);
 	}
 
+	/**
+	 * Both controllers map through the {@code base-path} placeholder, and take the
+	 * properties bean purely so that its binding — and therefore its validation of that
+	 * same property — is guaranteed to have run before the mapping is resolved. An
+	 * invalid base path then fails at startup, naming the property, instead of producing
+	 * a puzzling mapping.
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = "embabel.workflow.visualizer", name = "enabled", havingValue = "true")
-	public EmbabelWorkflowApiController embabelWorkflowApiController(EmbabelWorkflowCatalogService catalogService) {
+	public EmbabelWorkflowApiController embabelWorkflowApiController(EmbabelWorkflowCatalogService catalogService,
+			EmbabelWorkflowVisualizerProperties properties) {
 		return new EmbabelWorkflowApiController(catalogService);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = "embabel.workflow.visualizer", name = "enabled", havingValue = "true")
-	public WorkflowVisualizerPageController workflowVisualizerPageController() {
+	public WorkflowVisualizerPageController workflowVisualizerPageController(
+			EmbabelWorkflowVisualizerProperties properties) {
 		return new WorkflowVisualizerPageController();
 	}
 

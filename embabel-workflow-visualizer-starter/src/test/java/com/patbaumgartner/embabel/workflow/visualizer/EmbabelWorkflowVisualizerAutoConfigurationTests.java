@@ -108,7 +108,10 @@ class EmbabelWorkflowVisualizerAutoConfigurationTests {
 		this.webRunner
 			.withPropertyValues("embabel.workflow.visualizer.enabled=true",
 					"embabel.workflow.visualizer.base-path=agent-flows/")
-			.run(ctx -> assertThat(ctx).hasFailed());
+			.run(ctx -> assertThat(ctx).hasFailed()
+				.getFailure()
+				.hasStackTraceContaining("embabel.workflow.visualizer.base-path")
+				.hasStackTraceContaining("must start with '/'"));
 	}
 
 	@Test

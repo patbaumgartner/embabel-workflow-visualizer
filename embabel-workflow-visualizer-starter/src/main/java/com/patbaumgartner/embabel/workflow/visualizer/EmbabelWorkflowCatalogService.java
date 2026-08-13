@@ -137,9 +137,18 @@ public class EmbabelWorkflowCatalogService {
 		String retryExpression = agentAnnotation != null
 				? emptyToNull(readStringAttribute(agentAnnotation, "actionRetryPolicyExpression")) : null;
 
-		List<WorkflowStep> steps = collectSteps(targetType);
-		return Optional.of(new AgentWorkflow(agentName, description, version, plannerType, opaque, targetType.getName(),
-				steps, provider, beanName, scan, retryPolicy, retryExpression));
+		return Optional.of(AgentWorkflow.builder(agentName, targetType.getName())
+			.description(description)
+			.version(version)
+			.plannerType(plannerType)
+			.opaque(opaque)
+			.steps(collectSteps(targetType))
+			.provider(provider)
+			.beanName(beanName)
+			.scan(scan)
+			.retryPolicy(retryPolicy)
+			.retryPolicyExpression(retryExpression)
+			.build());
 	}
 
 	private List<WorkflowStep> collectSteps(Class<?> targetType) {
@@ -254,8 +263,6 @@ public class EmbabelWorkflowCatalogService {
 		List<String> inputs = implicitInputs.isEmpty() ? methodInputs
 				: Stream.concat(implicitInputs.stream(), methodInputs.stream()).distinct().toList();
 
-		String output = method.getReturnType().getSimpleName();
-
 		String costMethod = readStringAttribute(primary, "costMethod");
 		String valueMethod = readStringAttribute(primary, "valueMethod");
 
@@ -343,12 +350,42 @@ public class EmbabelWorkflowCatalogService {
 		List<String> providedInputs = readParameterAnnotatedTypes(method, PROVIDED_ANNOTATION_FQN);
 		List<String> nameMatchInputs = readRequireNameMatchInputs(method);
 
-		return new WorkflowStep(name, type, description, method.getName(), pre, post, inputs, output, achievesGoal,
-				costMethod.isEmpty() ? null : costMethod, valueMethod.isEmpty() ? null : valueMethod, cost, value,
-				goalValue, possibleOutputs, canRerun, readOnly, outputBinding.isEmpty() ? null : outputBinding,
-				clearBlackboard, tags, examples, llmTool, llmToolDescription, exportedRemote, exportName, trigger,
-				retryPolicy, llmToolReturnDirect, llmToolCategory, actionRetryPolicy, conditionCost, exportedLocal,
-				exportStartingInputTypes, llmToolName, llmToolMetadata, providedInputs, nameMatchInputs);
+		return WorkflowStep.builder(name, type, method.getName())
+			.description(description)
+			.pre(pre)
+			.post(post)
+			.inputs(inputs)
+			.output(method.getReturnType().getSimpleName())
+			.goal(achievesGoal)
+			.costMethod(emptyToNull(costMethod))
+			.valueMethod(emptyToNull(valueMethod))
+			.cost(cost)
+			.value(value)
+			.goalValue(goalValue)
+			.possibleOutputs(possibleOutputs)
+			.canRerun(canRerun)
+			.readOnly(readOnly)
+			.outputBinding(outputBinding)
+			.clearBlackboard(clearBlackboard)
+			.tags(tags)
+			.examples(examples)
+			.llmTool(llmTool)
+			.llmToolDescription(llmToolDescription)
+			.exportedRemote(exportedRemote)
+			.exportName(exportName)
+			.trigger(trigger)
+			.retryPolicy(retryPolicy)
+			.llmToolReturnDirect(llmToolReturnDirect)
+			.llmToolCategory(llmToolCategory)
+			.actionRetryPolicy(actionRetryPolicy)
+			.conditionCost(conditionCost)
+			.exportedLocal(exportedLocal)
+			.exportStartingInputTypes(exportStartingInputTypes)
+			.llmToolName(llmToolName)
+			.llmToolMetadata(llmToolMetadata)
+			.providedInputs(providedInputs)
+			.nameMatchInputs(nameMatchInputs)
+			.build();
 	}
 
 	private Annotation findAnnotation(Class<?> type, String annotationTypeName) {

@@ -2,8 +2,6 @@ name: CodeQL
 
 # Static security analysis via GitHub CodeQL.
 # Runs on push/PR to main and weekly to catch newly-published CVEs.
-# Only the starter module is analysed; the sample application is excluded
-# because it requires external Embabel snapshot artifacts.
 
 on:
   push:
@@ -38,11 +36,8 @@ jobs:
           languages: java
           queries: security-extended
 
-      - name: Install parent POM
-        run: mvn -N install -q
-
-      - name: Build starter for CodeQL
-        run: mvn -B -DskipTests compile -pl embabel-workflow-visualizer-starter
+      - name: Build for CodeQL
+        run: ./mvnw -B --no-transfer-progress --no-snapshot-updates -DskipTests compile
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6

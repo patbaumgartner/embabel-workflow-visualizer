@@ -48,7 +48,7 @@ jobs:
       - name: Validate tag matches POM version
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          POM_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          POM_VERSION=$(./mvnw -q --no-transfer-progress help:evaluate -Dexpression=project.version -q -DforceStdout)
           if [ "$POM_VERSION" != "$TAG_VERSION" ]; then
             echo "::error::Tag $GITHUB_REF_NAME expects version $TAG_VERSION but POM has $POM_VERSION"
             exit 1
@@ -57,7 +57,7 @@ jobs:
           echo "Releasing version $POM_VERSION"
 
       - name: Stage artifacts to local directory
-        run: mvn -B -Dmaven.test.skip=true deploy -DaltDeploymentRepository=local::file://${GITHUB_WORKSPACE}/target/staging-deploy
+        run: ./mvnw -B --no-transfer-progress -Dmaven.test.skip=true deploy -DaltDeploymentRepository=local::file://${GITHUB_WORKSPACE}/target/staging-deploy
 
       - name: Run JReleaser
         uses: jreleaser/release-action@90ac653bb9c79d11179e65d81499f3f34527dcd5 # 2.5.0

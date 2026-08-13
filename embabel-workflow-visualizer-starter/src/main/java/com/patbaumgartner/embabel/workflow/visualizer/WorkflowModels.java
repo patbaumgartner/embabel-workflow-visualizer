@@ -64,6 +64,17 @@ public final class WorkflowModels {
 			steps = copyOf(steps);
 		}
 
+		/**
+		 * @deprecated since 1.1.0, retained for binary compatibility with 1.0.x. Use
+		 * {@link #builder(String, String)}.
+		 */
+		@Deprecated(since = "1.1.0", forRemoval = true)
+		public AgentWorkflow(String agentName, String description, String version, String plannerType, boolean opaque,
+				String className, List<WorkflowStep> steps, String provider) {
+			this(agentName, description, version, plannerType, opaque, className, steps, provider, null, true, null,
+					null);
+		}
+
 		public static Builder builder(String agentName, String className) {
 			return new Builder(agentName, className);
 		}
@@ -259,6 +270,26 @@ public final class WorkflowModels {
 			nameMatchInputs = copyOf(nameMatchInputs);
 			// possibleOutputs stays nullable: null means "the return type is exact"
 			possibleOutputs = possibleOutputs == null ? null : List.copyOf(possibleOutputs);
+		}
+
+		/**
+		 * @deprecated since 1.1.0, retained for binary compatibility with 1.0.x. Use
+		 * {@link #builder(String, String, String)}, whose defaults also correct this
+		 * overload's {@code exportedLocal = false}: Embabel's {@code @Export(local)}
+		 * defaults to {@code true}.
+		 */
+		@Deprecated(since = "1.1.0", forRemoval = true)
+		public WorkflowStep(String name, String type, String description, String method, List<String> pre,
+				List<String> post, List<String> inputs, String output, boolean goal, String costMethod,
+				String valueMethod, Double cost, Double value, Double goalValue, List<String> possibleOutputs,
+				boolean canRerun, boolean readOnly, String outputBinding, boolean clearBlackboard, List<String> tags,
+				List<String> examples, boolean llmTool, String llmToolDescription, boolean exportedRemote,
+				String exportName, String trigger, String retryPolicy, boolean llmToolReturnDirect,
+				String llmToolCategory) {
+			this(name, type, description, method, pre, post, inputs, output, goal, costMethod, valueMethod, cost, value,
+					goalValue, possibleOutputs, canRerun, readOnly, outputBinding, clearBlackboard, tags, examples,
+					llmTool, llmToolDescription, exportedRemote, exportName, trigger, retryPolicy, llmToolReturnDirect,
+					llmToolCategory, null, null, false, List.of(), null, List.of(), List.of(), List.of());
 		}
 
 		public static Builder builder(String name, String type, String method) {

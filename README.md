@@ -23,13 +23,19 @@ This is a multi-module Maven project:
 
 ## Build and test
 
-```bash
-# Build and test everything from the repository root
-mvn test
+Java 21+ is the only prerequisite — the Maven wrapper supplies Maven.
 
-# Test only the starter module
-mvn -pl embabel-workflow-visualizer-starter test
+```bash
+# Build, test, format-check and coverage-check everything
+OPENAI_API_KEY=dummy ./mvnw verify
+
+# The published artifact only (no API key needed)
+./mvnw verify -pl embabel-workflow-visualizer-starter
 ```
+
+The sample application needs `OPENAI_API_KEY` present to start its context; no
+test calls a model, so a placeholder is enough. See
+[CONTRIBUTING.md](CONTRIBUTING.md) to run the visualizer locally.
 
 ## Usage
 
@@ -37,6 +43,7 @@ Compatibility note: this project is built against [Spring Boot](https://spring.i
 
 | Visualizer | Spring Boot | Embabel | Java |
 |---|---|---|---|
+| `1.1.x` | 4.1.x | 1.5.x | 21+ |
 | `1.0.x` | 4.1.x | 1.5.x | 21+ |
 | `0.3.x` | 3.5.x | 1.0.x | 21+ |
 
@@ -81,13 +88,34 @@ management.endpoints.web.exposure.include=health,info,embabel
 embabel.workflow.visualizer.enabled=true
 ```
 
+### Configuration
+
+| Property | Default | Description |
+|---|---|---|
+| `embabel.workflow.visualizer.enabled` | `false` | Serves the UI and its REST API |
+| `embabel.workflow.visualizer.base-path` | `/embabel-workflows` | Path the UI is mounted on; the REST API is served from `<base-path>/api` |
+
+Both properties ship IDE completion and documentation via
+`spring-configuration-metadata.json`. A `base-path` that would produce a broken
+mapping (no leading slash, or a trailing one) fails at startup rather than
+404-ing at request time.
+
 ## Endpoints
 
 | Endpoint | Requires | Description |
 |---|---|---|
 | `GET /actuator/embabel` | `management.endpoints.web.exposure.include=embabel` | Returns the workflow catalog as JSON |
-| `GET /embabel-workflows/api` | `embabel.workflow.visualizer.enabled=true` | REST API — returns the workflow catalog as JSON |
-| `GET /embabel-workflows` | `embabel.workflow.visualizer.enabled=true` | Interactive pan/zoom workflow visualization UI |
+| `GET <base-path>/api` | `embabel.workflow.visualizer.enabled=true` | REST API — returns the workflow catalog as JSON |
+| `GET <base-path>` | `embabel.workflow.visualizer.enabled=true` | Interactive pan/zoom workflow visualization UI |
+
+All three work unchanged behind a `server.servlet.context-path` or a
+reverse-proxy prefix: the UI resolves its API URL from the browser's own
+location rather than assuming it is mounted at the root.
+
+> **Security** — these endpoints describe your application's internals (agent
+> class names, method names, goal descriptions). They are off by default and add
+> no authentication of their own. See [SECURITY.md](SECURITY.md) for the threat
+> model and an example Spring Security configuration.
 
 ## Auto-configuration
 
@@ -105,6 +133,16 @@ The starter activates automatically when:
 
 All beans use `@ConditionalOnMissingBean` — declare your own bean to replace any of them.
 
+Discovery inspects bean **types**, never bean instances, so reading the catalog
+never initialises a lazy singleton or a `FactoryBean` product in your
+application. The result is computed once per context: it is derived from
+annotations on bean definitions, which do not change after refresh.
+
+The starter deliberately never imports Embabel types — annotations are read
+reflectively by name. `embabel-agent-api` is a test-scoped dependency, so you
+can upgrade Embabel without waiting for a visualizer release, and an attribute
+your Embabel version does not declare simply reads as "not set".
+
 ## Visualization UI
 
 The UI (`GET /embabel-workflows`) renders each discovered `@Agent` as an interactive flow diagram:
@@ -118,7 +156,9 @@ The UI (`GET /embabel-workflows`) renders each discovered `@Agent` as an interac
 - Cost / value rows show static `cost=` / `value=` declarations, dynamic `costMethod=` / `valueMethod=` references, `@AchievesGoal(value=)`, and `@Condition(cost=)`; `retry` / `retry policy` rows show the per-action SpEL QoS key and `ActionRetryPolicy` constant, and `category`, `tool name` and metadata rows describe the `@LlmTool`
 - Goal rows show `starts from` for `@Export(startingInputTypes=)`; step rows show `provided` (`@Provided`) and `name match` (`@RequireNameMatch`) parameters
 - Agent headers show the planner badge (GOAP / UTILITY / HYBRID / SUPERVISOR / COMPONENT), `opaque`, a `scan off` badge for `scan = false`, and the `beanName` plus agent-level retry policy
-- Light / dark mode toggle, respects `prefers-color-scheme`
+- Filter agents by name, class, planner, provider or bean name, with a live count
+- Light / dark mode toggle, respects `prefers-color-scheme`; honours `prefers-reduced-motion`
+- Self-contained single page: no third-party scripts, fonts or styles, and exactly one request — to its own API
 
 ## Sample agents
 
@@ -143,3 +183,12 @@ revision loops.
 | `ComplianceReviewAgent` | `HYBRID` planner + retry policies + restricted export | Pure-Java branching review; agent-level `beanName` and `actionRetryPolicyExpression` (a QoS key under `embabel.agent.platform.action-qos.*`), `@Action(actionRetryPolicy = FIRE_ONCE)`, `@Condition(cost=)`, `@Export(startingInputTypes=)`, and an `@LlmTool` with `name` and `metadata`. | `POST /api/compliance/review` |
 
 Ready-to-run HTTP request examples for all eleven agents are in [`embabel-sample-application/requests/`](embabel-sample-application/requests/).
+
+## Contributing
+
+Bug reports and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md)
+for the build, the design constraints, and what a good pull request looks like.
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE).

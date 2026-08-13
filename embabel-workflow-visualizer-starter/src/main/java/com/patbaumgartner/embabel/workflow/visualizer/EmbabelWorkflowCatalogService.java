@@ -63,6 +63,13 @@ public class EmbabelWorkflowCatalogService {
 	/** {@code ActionRetryPolicy.DEFAULT} means "not configured" and is not reported. */
 	private static final String DEFAULT_RETRY_POLICY = "DEFAULT";
 
+	/**
+	 * {@code IoBinding.DEFAULT_BINDING}: the value Embabel gives
+	 * {@code @Action(outputBinding)} when the author declares nothing. Reporting it would
+	 * decorate every single action with a binding it never asked for.
+	 */
+	private static final String DEFAULT_OUTPUT_BINDING = "it";
+
 	private static final Set<String> STEP_ANNOTATION_FQNS = Set.of(ACTION_ANNOTATION_FQN, ACHIEVES_GOAL_ANNOTATION_FQN,
 			CONDITION_ANNOTATION_FQN, "com.embabel.agent.api.annotation.Cost", LLM_TOOL_ANNOTATION_FQN);
 
@@ -329,7 +336,7 @@ public class EmbabelWorkflowCatalogService {
 		boolean canRerun = readBooleanAttribute(primary, "canRerun");
 		boolean readOnly = readBooleanAttribute(primary, "readOnly");
 		boolean clearBlackboard = readBooleanAttribute(primary, "clearBlackboard");
-		String outputBinding = readStringAttribute(primary, "outputBinding");
+		String outputBinding = readCustomOutputBinding(primary);
 
 		// @Action(trigger = SomeEvent.class): the action is event-triggered. The
 		// Embabel
@@ -564,6 +571,15 @@ public class EmbabelWorkflowCatalogService {
 
 	private String emptyToNull(String value) {
 		return StringUtils.hasText(value) ? value : null;
+	}
+
+	/**
+	 * Reads {@code @Action(outputBinding)}, returning {@code null} unless the author
+	 * named a custom blackboard binding.
+	 */
+	private String readCustomOutputBinding(Annotation annotation) {
+		String binding = readStringAttribute(annotation, "outputBinding");
+		return DEFAULT_OUTPUT_BINDING.equals(binding) ? null : emptyToNull(binding);
 	}
 
 	/**

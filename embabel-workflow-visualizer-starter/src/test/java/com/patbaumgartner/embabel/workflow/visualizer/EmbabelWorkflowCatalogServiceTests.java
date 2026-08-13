@@ -194,6 +194,22 @@ class EmbabelWorkflowCatalogServiceTests {
 	}
 
 	@Test
+	void outputBindingIsOnlyReportedWhenTheAuthorNamedOne() {
+		Map<String, WorkflowStep> byMethod = catalogWith(RichActionSampleAgent.class).agents()
+			.get(0)
+			.steps()
+			.stream()
+			.collect(Collectors.toMap(WorkflowStep::method, s -> s));
+
+		assertThat(byMethod.get("processData").outputBinding()).isEqualTo("myOutput");
+		// Embabel defaults @Action(outputBinding) to IoBinding.DEFAULT_BINDING ("it"),
+		// which carries no information and must not be reported as a custom binding
+		assertThat(byMethod.get("staticCostAction").outputBinding()).isNull();
+		// @Condition / @Cost have no outputBinding attribute at all
+		assertThat(byMethod.get("calcCost").outputBinding()).isNull();
+	}
+
+	@Test
 	void actionTriggerAndRetryPolicyAreReflected() {
 		Map<String, WorkflowStep> byMethod = catalogWith(RichActionSampleAgent.class).agents()
 			.get(0)

@@ -79,7 +79,9 @@
       <!--
         Generate spring-autoconfigure-metadata.properties so that
         Spring Boot can filter non-matching auto-configurations eagerly
-        at startup, improving application start time.
+        at startup, improving application start time, and
+        spring-configuration-metadata.json so that IDEs offer completion
+        and documentation for the embabel.workflow.visualizer.* properties.
     -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -89,6 +91,10 @@
             <path>
               <groupId>org.springframework.boot</groupId>
               <artifactId>spring-boot-autoconfigure-processor</artifactId>
+            </path>
+            <path>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-configuration-processor</artifactId>
             </path>
           </annotationProcessorPaths>
         </configuration>

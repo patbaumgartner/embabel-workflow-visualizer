@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
@@ -15,7 +16,6 @@ import org.springframework.util.StringUtils;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.lang.reflect.Proxy;
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -108,56 +108,84 @@ public class EmbabelWorkflowCatalogService {
 		if (current != null) {
 			return current;
 		}
-		WorkflowCatalog scanned = scan();
+		Scan scanned = scan();
 		// A racing scan produces an equal, immutable result, so no lock is needed.
-		// An empty result is never cached: it also covers "asked before the context
-		// finished refreshing", and re-scanning an agent-less context costs nothing.
-		if (!scanned.agents().isEmpty()) {
-			this.cached = scanned;
+		// Only a complete, non-empty scan is cached. An empty result also covers "asked
+		// before the context finished refreshing", and caching a scan that skipped a
+		// bean would make one transient failure permanent.
+		if (scanned.complete() && !scanned.catalog().agents().isEmpty()) {
+			this.cached = scanned.catalog();
 		}
-		return scanned;
+		return scanned.catalog();
 	}
 
-	private WorkflowCatalog scan() {
+	/** A catalog plus whether every bean in the context could be inspected. */
+	private record Scan(WorkflowCatalog catalog, boolean complete) {
+	}
+
+	private Scan scan() {
 		String[] beanNames;
 		try {
-			beanNames = applicationContext.getBeanNamesForType(Object.class, false, false);
+			beanNames = this.applicationContext.getBeanNamesForType(Object.class, false, false);
 		}
 		catch (RuntimeException ex) {
 			log.warn("Failed to enumerate beans for the Embabel workflow catalog", ex);
-			return new WorkflowCatalog(List.of());
+			return new Scan(new WorkflowCatalog(List.of()), false);
 		}
 
 		List<AgentWorkflow> agents = new ArrayList<>();
+		boolean complete = true;
 		for (String beanName : beanNames) {
 			try {
 				agentTypeOf(beanName).flatMap(this::toAgentWorkflow).ifPresent(agents::add);
 			}
 			catch (Exception | LinkageError ex) {
+				complete = false;
 				log.warn("Skipping bean '{}' while scanning for Embabel agents", beanName, ex);
 			}
 		}
 		agents.sort(Comparator.comparing(AgentWorkflow::agentName, String.CASE_INSENSITIVE_ORDER));
-		return new WorkflowCatalog(agents);
+		return new Scan(new WorkflowCatalog(agents), complete);
 	}
 
 	/**
-	 * Resolves the annotated user class behind a bean name without instantiating it.
+	 * Resolves the annotated user class behind a bean name without ever creating a bean.
 	 *
 	 * <p>
-	 * CGLIB proxies are unwrapped by name. A JDK dynamic proxy hides the target class
-	 * entirely, so the already-proxied instance is the only source for it; that bean must
-	 * exist for a proxy to have been created, so obtaining it adds no new initialisation.
+	 * An already-created singleton is the most reliable source — it reveals the concrete
+	 * class behind a JDK dynamic proxy, which no declared type can — and reading one that
+	 * already exists initialises nothing. Otherwise the declared type is used, which
+	 * Spring resolves from the bean definition.
+	 *
+	 * <p>
+	 * That leaves exactly one blind spot: a bean that has not been created <em>and</em>
+	 * whose declared type is too generic to carry the annotation, such as
+	 * {@code @Bean @Lazy Object agent()}. Identifying it would require instantiating it,
+	 * which this scan will not do, so it is reported at debug level rather than passed
+	 * over silently.
 	 */
 	private Optional<Class<?>> agentTypeOf(String beanName) {
-		Class<?> beanType = applicationContext.getType(beanName, false);
-		if (beanType == null) {
+		Object existing = existingSingleton(beanName);
+		if (existing != null) {
+			return Optional.of(ClassUtils.getUserClass(AopUtils.getTargetClass(existing)));
+		}
+
+		Class<?> declaredType = this.applicationContext.getType(beanName, false);
+		if (declaredType == null) {
 			return Optional.empty();
 		}
-		if (Proxy.isProxyClass(beanType)) {
-			return Optional.of(ClassUtils.getUserClass(AopUtils.getTargetClass(applicationContext.getBean(beanName))));
+		if (declaredType == Object.class || declaredType.isInterface()) {
+			log.debug("Bean '{}' is not yet created and is declared as {}, which cannot carry an Embabel annotation; "
+					+ "it is skipped rather than instantiated to find out", beanName, declaredType.getName());
+			return Optional.empty();
 		}
-		return Optional.of(ClassUtils.getUserClass(beanType));
+		return Optional.of(ClassUtils.getUserClass(declaredType));
+	}
+
+	/** The singleton instance if it already exists; never triggers creation. */
+	private Object existingSingleton(String beanName) {
+		return this.applicationContext instanceof ConfigurableApplicationContext configurable
+				? configurable.getBeanFactory().getSingleton(beanName) : null;
 	}
 
 	private Optional<AgentWorkflow> toAgentWorkflow(Class<?> targetType) {
@@ -244,9 +272,9 @@ public class EmbabelWorkflowCatalogService {
 	 *
 	 * <p>
 	 * Walks the whole type hierarchy — superclasses and interface default methods
-	 * included — because that is what Embabel's own {@code AgentMetadataReader} does when
-	 * it registers actions, conditions and cost methods. Scanning only declared methods
-	 * would silently hide every step an agent inherits from a shared base class.
+	 * included — to match how Embabel's own {@code AgentMetadataReader} discovers
+	 * actions, conditions and cost methods. Scanning only declared methods would silently
+	 * hide every step an agent inherits from a shared base class.
 	 */
 	private Map<Method, List<Annotation>> findStepMethods(Class<?> targetType) {
 		// putIfAbsent keeps the override: doWithMethods visits the most derived first.

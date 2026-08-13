@@ -4,6 +4,8 @@ import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.AgentWorkfl
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.ToolMetadata;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowCatalog;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowStep;
+import com.embabel.agent.api.annotation.Action;
+import com.embabel.agent.api.annotation.Agent;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.AopUtils;
@@ -425,6 +427,44 @@ class EmbabelWorkflowCatalogServiceTests {
 	}
 
 	@Test
+	void discoversAgentsDeclaredThroughAGenericBeanMethodReturnType() {
+		try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
+			ctx.register(GenericFactoryMethodConfiguration.class);
+			ctx.refresh();
+
+			WorkflowCatalog catalog = new EmbabelWorkflowCatalogService(ctx).catalog();
+
+			// Neither @Bean method declares the agent's concrete type, but both beans
+			// are eagerly created, so their real class is available without any
+			// initialisation of our own
+			assertThat(catalog.agents()).extracting(AgentWorkflow::className)
+				.containsExactlyInAnyOrder(SampleEmbabelAgent.class.getName(), RunnableAgent.class.getName());
+		}
+	}
+
+	/**
+	 * A lazy bean whose declared type cannot carry the annotation is the one case the
+	 * scan cannot resolve — finding out would mean instantiating it, which this service
+	 * refuses to do. It must still leave every other bean, lazy or not, untouched.
+	 */
+	@Test
+	void doesNotInstantiateLazyBeansToDiscoverTheirConcreteType() {
+		LazyAgentConfiguration.instantiations.set(0);
+
+		try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
+			ctx.register(LazyAgentConfiguration.class);
+			ctx.refresh();
+
+			WorkflowCatalog catalog = new EmbabelWorkflowCatalogService(ctx).catalog();
+
+			// The lazy bean with a concrete declared type is still discovered, because
+			// the bean definition alone answers the question
+			assertThat(catalog.agents()).extracting(AgentWorkflow::agentName).containsExactly("demo-agent");
+			assertThat(LazyAgentConfiguration.instantiations).hasValue(0);
+		}
+	}
+
+	@Test
 	void discoversAgentsBehindClassBasedProxies() {
 		try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
 			ctx.registerBean("proxying", ClassProxyingPostProcessor.class);
@@ -457,6 +497,25 @@ class EmbabelWorkflowCatalogServiceTests {
 
 			assertThat(catalog.agents()).extracting(AgentWorkflow::agentName).containsExactly("demo-agent");
 		}
+	}
+
+	/**
+	 * A bean that could not be inspected may well be readable on the next attempt, so
+	 * caching a scan that skipped one would make a transient failure permanent.
+	 */
+	@Test
+	void anIncompleteScanIsNotCached() {
+		ApplicationContext failingOnOneBean = mock(ApplicationContext.class);
+		given(failingOnOneBean.getBeanNamesForType(Object.class, false, false))
+			.willReturn(new String[] { "broken", "sampleAgent" });
+		given(failingOnOneBean.getType("broken", false)).willThrow(new IllegalStateException("cannot resolve"));
+		given(failingOnOneBean.getType("sampleAgent", false)).willReturn((Class) SampleEmbabelAgent.class);
+		EmbabelWorkflowCatalogService service = new EmbabelWorkflowCatalogService(failingOnOneBean);
+
+		assertThat(service.catalog().agents()).hasSize(1);
+		assertThat(service.catalog().agents()).hasSize(1);
+
+		verify(failingOnOneBean, times(2)).getBeanNamesForType(Object.class, false, false);
 	}
 
 	@Test
@@ -499,6 +558,62 @@ class EmbabelWorkflowCatalogServiceTests {
 		given(broken.getBeanNamesForType(Object.class, false, false)).willThrow(new IllegalStateException("closed"));
 
 		assertThat(new EmbabelWorkflowCatalogService(broken).catalog().agents()).isEmpty();
+	}
+
+	@Configuration
+	static class GenericFactoryMethodConfiguration {
+
+		@Bean
+		Object objectReturnAgent() {
+			return new SampleEmbabelAgent();
+		}
+
+		@Bean
+		Runnable interfaceReturnAgent() {
+			return new RunnableAgent();
+		}
+
+	}
+
+	/**
+	 * An agent a {@code @Bean} method can legitimately declare as {@code Runnable}.
+	 * Annotated in its own right because {@code @Agent} is not {@code @Inherited} —
+	 * extending an annotated class would not make this one an agent, to Embabel or to the
+	 * catalog.
+	 */
+	@Agent(name = "runnable-agent", description = "Declared through an interface return type")
+	static class RunnableAgent implements Runnable {
+
+		@Action(description = "Work")
+		public String work() {
+			return "done";
+		}
+
+		@Override
+		public void run() {
+		}
+
+	}
+
+	@Configuration
+	static class LazyAgentConfiguration {
+
+		static final AtomicInteger instantiations = new AtomicInteger();
+
+		@Bean
+		@Lazy
+		SampleEmbabelAgent lazyConcreteAgent() {
+			instantiations.incrementAndGet();
+			return new SampleEmbabelAgent();
+		}
+
+		@Bean
+		@Lazy
+		Object lazyGenericAgent() {
+			instantiations.incrementAndGet();
+			return new SampleEmbabelAgent();
+		}
+
 	}
 
 	@Configuration

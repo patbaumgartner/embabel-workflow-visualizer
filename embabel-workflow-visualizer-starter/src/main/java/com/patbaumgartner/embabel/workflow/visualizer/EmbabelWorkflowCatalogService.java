@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.util.ClassUtils;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.lang.annotation.Annotation;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.stream.Stream;
 
 /**
@@ -152,31 +154,18 @@ public class EmbabelWorkflowCatalogService {
 	}
 
 	private List<WorkflowStep> collectSteps(Class<?> targetType) {
-		return collectStepsInternal(targetType, List.of(), List.of());
+		return collectSteps(targetType, List.of());
 	}
 
-	private List<WorkflowStep> collectStepsInternal(Class<?> targetType, List<String> implicitInputs,
-			List<String> possibleOutputsForObjectReturn) {
-		// Group annotations by method so a method with both @Action and @AchievesGoal
-		// becomes a single enriched step, not two duplicates.
-		Map<Method, List<Annotation>> grouped = new LinkedHashMap<>();
-		for (Method method : targetType.getDeclaredMethods()) {
-			if (method.isSynthetic() || method.isBridge()) {
-				continue;
-			}
-			for (Annotation annotation : method.getAnnotations()) {
-				if (STEP_ANNOTATION_FQNS.contains(annotation.annotationType().getName())) {
-					grouped.computeIfAbsent(method, m -> new ArrayList<>()).add(annotation);
-				}
-			}
-		}
+	private List<WorkflowStep> collectSteps(Class<?> targetType, List<String> implicitInputs) {
+		Map<Method, List<Annotation>> stepMethods = findStepMethods(targetType);
 
 		// Compute @State component types so that steps returning Object can expose
 		// the concrete types the @State routing actually produces.
 		List<String> stateComponentTypes = stateComponentTypesOf(targetType);
 
 		List<WorkflowStep> steps = new ArrayList<>();
-		for (Map.Entry<Method, List<Annotation>> entry : grouped.entrySet()) {
+		for (Map.Entry<Method, List<Annotation>> entry : stepMethods.entrySet()) {
 			Method m = entry.getKey();
 			boolean returnsStateType = m.getReturnType() == Object.class
 					|| findAnnotation(m.getReturnType(), STATE_ANNOTATION_FQN) != null;
@@ -190,13 +179,57 @@ public class EmbabelWorkflowCatalogService {
 		// its input (because the BillingState record holds a BillingTicket field).
 		for (Class<?> inner : targetType.getDeclaredClasses()) {
 			if (findAnnotation(inner, STATE_ANNOTATION_FQN) != null) {
-				List<String> stateInputs = recordComponentSimpleNames(inner);
-				steps.addAll(collectStepsInternal(inner, stateInputs, List.of()));
+				steps.addAll(collectSteps(inner, recordComponentSimpleNames(inner)));
 			}
 		}
 
 		steps.sort(Comparator.comparing(WorkflowStep::name, String.CASE_INSENSITIVE_ORDER));
 		return steps;
+	}
+
+	/**
+	 * Collects every annotated step method reachable from {@code targetType}, grouping
+	 * the annotations by method so a method carrying both {@code @Action} and
+	 * {@code @AchievesGoal} becomes one enriched step rather than two duplicates.
+	 *
+	 * <p>
+	 * Walks the whole type hierarchy — superclasses and interface default methods
+	 * included — because that is what Embabel's own {@code AgentMetadataReader} does when
+	 * it registers actions, conditions and cost methods. Scanning only declared methods
+	 * would silently hide every step an agent inherits from a shared base class.
+	 */
+	private Map<Method, List<Annotation>> findStepMethods(Class<?> targetType) {
+		// putIfAbsent keeps the override: doWithMethods visits the most derived first.
+		Map<String, Method> mostDerived = new LinkedHashMap<>();
+		ReflectionUtils.doWithMethods(targetType, method -> mostDerived.putIfAbsent(signatureOf(method), method),
+				method -> !method.isSynthetic() && !method.isBridge() && hasStepAnnotation(method));
+
+		Map<Method, List<Annotation>> grouped = new LinkedHashMap<>();
+		for (Method method : mostDerived.values()) {
+			for (Annotation annotation : method.getAnnotations()) {
+				if (STEP_ANNOTATION_FQNS.contains(annotation.annotationType().getName())) {
+					grouped.computeIfAbsent(method, m -> new ArrayList<>()).add(annotation);
+				}
+			}
+		}
+		return grouped;
+	}
+
+	private boolean hasStepAnnotation(Method method) {
+		for (Annotation annotation : method.getAnnotations()) {
+			if (STEP_ANNOTATION_FQNS.contains(annotation.annotationType().getName())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private String signatureOf(Method method) {
+		StringJoiner signature = new StringJoiner(",", method.getName() + "(", ")");
+		for (Class<?> parameterType : method.getParameterTypes()) {
+			signature.add(parameterType.getName());
+		}
+		return signature.toString();
 	}
 
 	/**

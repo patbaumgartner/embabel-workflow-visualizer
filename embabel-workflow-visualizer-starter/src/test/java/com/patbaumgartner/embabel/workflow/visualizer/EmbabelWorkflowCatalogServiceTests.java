@@ -7,6 +7,7 @@ import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowSte
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -335,6 +336,41 @@ class EmbabelWorkflowCatalogServiceTests {
 
 		assertThat(step.providedInputs()).containsExactly("Draft");
 		assertThat(step.nameMatchInputs()).containsExactly("String:editorNotes");
+	}
+
+	// -------------------------------------------------------------------------
+	// Inherited steps
+	// -------------------------------------------------------------------------
+
+	@Test
+	void discoversStepsInheritedFromSuperclassesAndInterfaces() {
+		AgentWorkflow agent = catalogWith(InheritedStepsSampleAgent.class).agents().get(0);
+
+		assertThat(agent.steps()).extracting(WorkflowStep::method)
+			.containsExactlyInAnyOrder("finishReview", "prepareReview", "inheritedReady", "inheritedCost",
+					"recordAuditTrail");
+	}
+
+	@Test
+	void inheritedStepsKeepTheirDeclaredAttributes() {
+		Map<String, WorkflowStep> byMethod = catalogWith(InheritedStepsSampleAgent.class).agents()
+			.get(0)
+			.steps()
+			.stream()
+			.collect(Collectors.toMap(WorkflowStep::method, s -> s));
+
+		assertThat(byMethod.get("prepareReview").costMethod()).isEqualTo("inheritedCost");
+		assertThat(byMethod.get("inheritedReady").type()).isEqualTo("Condition");
+		assertThat(byMethod.get("inheritedReady").conditionCost()).isEqualTo(0.125);
+		assertThat(byMethod.get("inheritedCost").type()).isEqualTo("Cost");
+		assertThat(byMethod.get("recordAuditTrail").readOnly()).isTrue();
+	}
+
+	@Test
+	void anOverriddenInheritedStepIsReportedOnce() {
+		List<WorkflowStep> steps = catalogWith(InheritedStepsSampleAgent.class).agents().get(0).steps();
+
+		assertThat(steps).filteredOn(step -> step.method().equals("prepareReview")).hasSize(1);
 	}
 
 }

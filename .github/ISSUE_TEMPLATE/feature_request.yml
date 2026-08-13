@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest an improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that the visualizer makes hard today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you have in mind
+      description: Optional — a description of the behaviour you would like.
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Design constraints
+      description: >
+        See [CONTRIBUTING.md](https://github.com/patbaumgartner/embabel-workflow-visualizer/blob/main/CONTRIBUTING.md#design-constraints).
+      options:
+        - label: This does not require the starter to depend on Embabel at compile time
+        - label: This reflects what the Embabel planner actually sees

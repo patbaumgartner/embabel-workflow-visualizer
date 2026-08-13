@@ -17,7 +17,7 @@ class EmbabelWorkflowActuatorEndpointTests {
 	void readOperationDelegatesToCatalogService() {
 		EmbabelWorkflowCatalogService service = mock(EmbabelWorkflowCatalogService.class);
 		WorkflowCatalog expected = new WorkflowCatalog(
-				List.of(new AgentWorkflow("a", null, null, "GOAP", false, "C", List.of(), null)));
+				List.of(AgentWorkflow.builder("a", "C").plannerType("GOAP").build()));
 		given(service.catalog()).willReturn(expected);
 
 		WorkflowCatalog actual = new EmbabelWorkflowActuatorEndpoint(service).workflows();

@@ -5,14 +5,24 @@ import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.ToolMetadat
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowCatalog;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowStep;
 import org.junit.jupiter.api.Test;
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.aop.support.AopUtils;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 class EmbabelWorkflowCatalogServiceTests {
 
@@ -371,6 +381,104 @@ class EmbabelWorkflowCatalogServiceTests {
 		List<WorkflowStep> steps = catalogWith(InheritedStepsSampleAgent.class).agents().get(0).steps();
 
 		assertThat(steps).filteredOn(step -> step.method().equals("prepareReview")).hasSize(1);
+	}
+
+	// -------------------------------------------------------------------------
+	// Scanning must not disturb the application context
+	// -------------------------------------------------------------------------
+
+	@Test
+	void scanningDoesNotInstantiateLazyBeans() {
+		LazyBeanConfiguration.instantiations.set(0);
+
+		try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
+			ctx.register(LazyBeanConfiguration.class);
+			ctx.registerBean("sampleAgent", SampleEmbabelAgent.class);
+			ctx.refresh();
+
+			WorkflowCatalog catalog = new EmbabelWorkflowCatalogService(ctx).catalog();
+
+			assertThat(catalog.agents()).extracting(AgentWorkflow::agentName).containsExactly("demo-agent");
+			assertThat(LazyBeanConfiguration.instantiations)
+				.describedAs("reading the workflow catalog must not create application beans")
+				.hasValue(0);
+		}
+	}
+
+	@Test
+	void discoversAgentsBehindClassBasedProxies() {
+		try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
+			ctx.registerBean("proxying", ClassProxyingPostProcessor.class);
+			ctx.registerBean("sampleAgent", SampleEmbabelAgent.class);
+			ctx.refresh();
+
+			assertThat(AopUtils.isCglibProxy(ctx.getBean("sampleAgent"))).isTrue();
+
+			WorkflowCatalog catalog = new EmbabelWorkflowCatalogService(ctx).catalog();
+
+			assertThat(catalog.agents()).singleElement()
+				.extracting(AgentWorkflow::agentName, AgentWorkflow::className)
+				.containsExactly("demo-agent", SampleEmbabelAgent.class.getName());
+		}
+	}
+
+	@Test
+	void oneUnreadableBeanDoesNotAbortTheScan() {
+		try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
+			ctx.registerBean("sampleAgent", SampleEmbabelAgent.class);
+			ctx.refresh();
+
+			ApplicationContext failingOnOneBean = mock(ApplicationContext.class);
+			given(failingOnOneBean.getBeanNamesForType(Object.class, false, false))
+				.willReturn(new String[] { "broken", "sampleAgent" });
+			given(failingOnOneBean.getType("broken", false)).willThrow(new IllegalStateException("cannot resolve"));
+			given(failingOnOneBean.getType("sampleAgent", false)).willReturn((Class) SampleEmbabelAgent.class);
+
+			WorkflowCatalog catalog = new EmbabelWorkflowCatalogService(failingOnOneBean).catalog();
+
+			assertThat(catalog.agents()).extracting(AgentWorkflow::agentName).containsExactly("demo-agent");
+		}
+	}
+
+	@Test
+	void anUnusableBeanFactoryYieldsAnEmptyCatalogInsteadOfAnError() {
+		ApplicationContext broken = mock(ApplicationContext.class);
+		given(broken.getBeanNamesForType(Object.class, false, false)).willThrow(new IllegalStateException("closed"));
+
+		assertThat(new EmbabelWorkflowCatalogService(broken).catalog().agents()).isEmpty();
+	}
+
+	@Configuration
+	static class LazyBeanConfiguration {
+
+		static final AtomicInteger instantiations = new AtomicInteger();
+
+		@Bean
+		@Lazy
+		ExpensiveBean expensiveBean() {
+			instantiations.incrementAndGet();
+			return new ExpensiveBean();
+		}
+
+	}
+
+	static class ExpensiveBean {
+
+	}
+
+	/** Wraps the sample agent in a CGLIB proxy, as Spring AOP would. */
+	static class ClassProxyingPostProcessor implements BeanPostProcessor {
+
+		@Override
+		public Object postProcessAfterInitialization(Object bean, String beanName) {
+			if (!(bean instanceof SampleEmbabelAgent)) {
+				return bean;
+			}
+			ProxyFactory proxyFactory = new ProxyFactory(bean);
+			proxyFactory.setProxyTargetClass(true);
+			return proxyFactory.getProxy();
+		}
+
 	}
 
 }

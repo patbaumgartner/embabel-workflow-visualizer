@@ -1,22 +1,57 @@
 package com.patbaumgartner.embabel.workflow.visualizer;
 
-import org.springframework.stereotype.Controller;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+
+import static com.patbaumgartner.embabel.workflow.visualizer.EmbabelWorkflowVisualizerProperties.BASE_PATH_PLACEHOLDER;
 
 /**
- * Serves the Embabel Workflow Visualizer HTML page.
+ * Serves the Embabel Workflow Visualizer page from
+ * {@code embabel.workflow.visualizer.base-path} (default {@code /embabel-workflows}).
  *
  * <p>
- * Mapped to {@code /embabel-workflows} to avoid conflicting with the root path of the
- * host application.
+ * The page is a private classpath resource rather than a {@code static/} one on purpose.
+ * Spring Boot serves {@code classpath:/static/**} from every jar on the classpath, so a
+ * page published there would stay reachable even with the visualizer disabled, and would
+ * compete for file names with the consuming application's own assets.
  */
-@Controller
+@RestController
 @SuppressWarnings("unused") // instantiated by EmbabelWorkflowVisualizerAutoConfiguration
 public class WorkflowVisualizerPageController {
 
-	@GetMapping({ "/embabel-workflows" })
-	public String index() {
-		return "forward:/workflow-visualizer.html";
+	static final String PAGE_RESOURCE = "com/patbaumgartner/embabel/workflow/visualizer/workflow-visualizer.html";
+
+	private final String page;
+
+	public WorkflowVisualizerPageController() {
+		this.page = readPage();
+	}
+
+	@GetMapping(path = BASE_PATH_PLACEHOLDER, produces = MediaType.TEXT_HTML_VALUE)
+	public ResponseEntity<String> index() {
+		return ResponseEntity.ok()
+			.contentType(new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8))
+			.cacheControl(CacheControl.noCache())
+			.body(this.page);
+	}
+
+	private static String readPage() {
+		ClassPathResource resource = new ClassPathResource(PAGE_RESOURCE,
+				WorkflowVisualizerPageController.class.getClassLoader());
+		try {
+			return resource.getContentAsString(StandardCharsets.UTF_8);
+		}
+		catch (IOException ex) {
+			throw new UncheckedIOException("Embabel Workflow Visualizer page is missing from " + PAGE_RESOURCE, ex);
+		}
 	}
 
 }

@@ -98,6 +98,8 @@ already says what.
 
 Keep pull requests focused, and make sure `./mvnw verify` passes.
 
+By taking part you agree to uphold the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Reporting security issues
 
 Please do not open a public issue. See [SECURITY.md](SECURITY.md).

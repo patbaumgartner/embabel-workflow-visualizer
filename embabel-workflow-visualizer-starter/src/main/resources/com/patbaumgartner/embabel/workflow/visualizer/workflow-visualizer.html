@@ -455,10 +455,6 @@
             stroke-dasharray: 5 4;
         }
 
-        .edge.post {
-            stroke: var(--goal);
-        }
-
         .edge.type {
             stroke: var(--type-col);
             stroke-opacity: 0.75;
@@ -1347,8 +1343,8 @@
 
             // Arrow markers
             var defs = document.createElementNS(xns, 'defs');
-            var mkColors = { pre: 'var(--condition)', post: 'var(--goal)', type: 'var(--type-col)', cost: 'var(--cost)' };
-            ['pre', 'post', 'type', 'cost'].forEach(function (k) {
+            var mkColors = { pre: 'var(--condition)', type: 'var(--type-col)', cost: 'var(--cost)' };
+            ['pre', 'type', 'cost'].forEach(function (k) {
                 defs.insertAdjacentHTML('beforeend',
                     '<marker id="a' + id + '-' + k + '" viewBox="0 0 10 10" refX="9" refY="5"' +
                     ' markerWidth="6" markerHeight="6" orient="auto-start-reverse">' +
@@ -1779,7 +1775,7 @@
             leg.innerHTML =
                 '<span class="leg-item"><span class="swatch" style="background:var(--action)"></span>Action</span>' +
                 '<span class="leg-item"><span class="swatch" style="background:var(--condition)"></span>Condition / pre-edge</span>' +
-                '<span class="leg-item"><span class="swatch" style="background:var(--goal)"></span>AchievesGoal / post-edge</span>' +
+                '<span class="leg-item"><span class="swatch" style="background:var(--goal)"></span>AchievesGoal</span>' +
                 '<span class="leg-item"><span class="swatch" style="background:var(--cost)"></span>Cost / cost-method edge</span>' +
                 '<span class="leg-item"><span class="swatch" style="background:var(--type-col)"></span>Type flow edge</span>' +
                 '<span class="leg-item"><span class="swatch" style="background:var(--llmtool);opacity:0.8"></span>LLM Tool</span>' +

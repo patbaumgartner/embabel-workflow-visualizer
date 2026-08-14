@@ -37,7 +37,9 @@ public final class WorkflowModels {
 	 *
 	 * @param agentName agent display name ({@code @Agent(name=)})
 	 * @param description human-readable description
-	 * @param version version string
+	 * @param version version declared via {@code @Agent(version = "...")}; {@code null}
+	 * when left at Embabel's {@code 0.1.0-SNAPSHOT} default, and for
+	 * {@code @EmbabelComponent}, which has no version attribute
 	 * @param plannerType planner strategy: {@code GOAP}, {@code UTILITY}, {@code HYBRID},
 	 * {@code SUPERVISOR}, or {@code COMPONENT} for {@code @EmbabelComponent} beans
 	 * @param opaque {@code true} if the agent is opaque (internal steps not exposed to

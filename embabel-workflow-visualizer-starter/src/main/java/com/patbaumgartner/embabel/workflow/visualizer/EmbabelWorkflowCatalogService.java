@@ -76,6 +76,13 @@ public class EmbabelWorkflowCatalogService {
 	private static final String DEFAULT_RETRY_POLICY = "DEFAULT";
 
 	/**
+	 * The value Embabel gives {@code @Agent(version)} when the author declares nothing.
+	 * Reporting it would stamp a version an author never wrote onto every agent that
+	 * simply did not care about versioning.
+	 */
+	private static final String DEFAULT_AGENT_VERSION = "0.1.0-SNAPSHOT";
+
+	/**
 	 * {@code IoBinding.DEFAULT_BINDING}: the value Embabel gives
 	 * {@code @Action(outputBinding)} when the author declares nothing. Reporting it would
 	 * decorate every single action with a binding it never asked for.
@@ -357,7 +364,7 @@ public class EmbabelWorkflowCatalogService {
 		Annotation source = agentAnnotation != null ? agentAnnotation : componentAnnotation;
 		String agentName = nameOr(source, targetType.getSimpleName());
 		String description = AnnotationAttributes.string(source, "description");
-		String version = AnnotationAttributes.string(source, "version");
+		String version = readDeclaredVersion(source);
 		// provider is only declared on @Agent (not @EmbabelComponent)
 		String providerAttr = agentAnnotation != null ? AnnotationAttributes.string(agentAnnotation, "provider") : "";
 		String provider = StringUtils.hasText(providerAttr) ? providerAttr : null;
@@ -661,6 +668,16 @@ public class EmbabelWorkflowCatalogService {
 	private String nameOr(Annotation annotation, String fallback) {
 		String declared = AnnotationAttributes.stringOrNull(annotation, "name");
 		return declared != null ? declared : fallback;
+	}
+
+	/**
+	 * Reads {@code version}, returning {@code null} unless the author declared one.
+	 * {@code @Agent} defaults it to {@code 0.1.0-SNAPSHOT} and {@code @EmbabelComponent}
+	 * has no such attribute at all, so neither case describes an authored version.
+	 */
+	private String readDeclaredVersion(Annotation annotation) {
+		String version = AnnotationAttributes.stringOrNull(annotation, "version");
+		return DEFAULT_AGENT_VERSION.equals(version) ? null : version;
 	}
 
 	/**

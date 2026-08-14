@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.runner.ReactiveWebApplicationContex
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -114,12 +115,97 @@ class EmbabelWorkflowVisualizerAutoConfigurationTests {
 				.hasStackTraceContaining("must start with '/'"));
 	}
 
+	/**
+	 * Disabled has to mean unreachable, not merely unmapped. This runs with Spring MVC's
+	 * static resource handling active, so it would also fail if the page were ever moved
+	 * into an auto-served location such as {@code static/} or
+	 * {@code META-INF/resources/}, where the resource handler would publish it whatever
+	 * this property says.
+	 */
+	@Test
+	void servesNothingAtAllWhileTheVisualizerIsDisabled() {
+		this.mvcRunner.run(ctx -> {
+			MockMvc mockMvc = MockMvcBuilders
+				.webAppContextSetup((WebApplicationContext) ctx.getSourceApplicationContext())
+				.build();
+
+			mockMvc.perform(get("/embabel-workflows")).andExpect(status().isNotFound());
+			mockMvc.perform(get("/embabel-workflows/api")).andExpect(status().isNotFound());
+			mockMvc.perform(get("/workflow-visualizer.html")).andExpect(status().isNotFound());
+		});
+	}
+
+	/**
+	 * The mapping is declared as a raw {@code ${...}} placeholder, so it is worth pinning
+	 * that it still honours a relaxed spelling: Spring Boot attaches its configuration
+	 * property sources to the environment, which makes placeholder resolution
+	 * relaxed-binding aware. Were that to stop holding, the properties bean would report
+	 * one path while the UI answered on another.
+	 */
+	@Test
+	void mountsTheUiOnABasePathWrittenInARelaxedSpelling() {
+		this.mvcRunner
+			.withPropertyValues("embabel.workflow.visualizer.enabled=true",
+					"embabel.workflow.visualizer.basePath=/internal/agent-flows")
+			.run(ctx -> {
+				MockMvc mockMvc = MockMvcBuilders
+					.webAppContextSetup((WebApplicationContext) ctx.getSourceApplicationContext())
+					.build();
+
+				mockMvc.perform(get("/internal/agent-flows")).andExpect(status().isOk());
+				assertThat(ctx.getBean(EmbabelWorkflowVisualizerProperties.class).getBasePath())
+					.isEqualTo("/internal/agent-flows");
+			});
+	}
+
+	@Test
+	void acceptsTheCanonicalBasePathSpelling() {
+		this.webRunner
+			.withPropertyValues("embabel.workflow.visualizer.enabled=true",
+					"embabel.workflow.visualizer.base-path=/internal/agent-flows")
+			.run(ctx -> assertThat(ctx).hasNotFailed()
+				.hasSingleBean(EmbabelWorkflowApiController.class)
+				.hasSingleBean(WorkflowVisualizerPageController.class));
+	}
+
 	@Test
 	void backsOffWhenUserBeansArePresent() {
 		this.webRunner.withUserConfiguration(CustomBeansConfig.class).run(ctx -> {
 			assertThat(ctx).hasSingleBean(EmbabelWorkflowCatalogService.class);
 			assertThat(ctx.getBean(EmbabelWorkflowCatalogService.class)).isSameAs(ctx.getBean("customCatalogService"));
 		});
+	}
+
+	/**
+	 * A consuming application whose base package encloses this one component-scans the
+	 * starter's own classes. If either controller carried a {@code @Component} stereotype
+	 * the scan would register it directly, sailing past {@code @ConditionalOnProperty}
+	 * and serving the UI on an application that had switched it off — which is exactly
+	 * what the sample application did.
+	 */
+	@Test
+	void componentScanningTheStarterCannotResurrectTheDisabledControllers() {
+		this.webRunner.withUserConfiguration(ScanningConsumer.class).run(ctx -> {
+			assertThat(ctx).hasNotFailed();
+			assertThat(ctx).doesNotHaveBean(EmbabelWorkflowApiController.class);
+			assertThat(ctx).doesNotHaveBean(WorkflowVisualizerPageController.class);
+		});
+	}
+
+	@Test
+	void componentScanningTheStarterStillHonoursAnExplicitOptIn() {
+		this.webRunner.withUserConfiguration(ScanningConsumer.class)
+			.withPropertyValues("embabel.workflow.visualizer.enabled=true")
+			.run(ctx -> {
+				assertThat(ctx).hasSingleBean(EmbabelWorkflowApiController.class);
+				assertThat(ctx).hasSingleBean(WorkflowVisualizerPageController.class);
+			});
+	}
+
+	@Configuration
+	@ComponentScan("com.patbaumgartner.embabel.workflow.visualizer")
+	static class ScanningConsumer {
+
 	}
 
 	@Configuration

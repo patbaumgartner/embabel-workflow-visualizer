@@ -1,5 +1,6 @@
 package com.patbaumgartner.embabel.workflow.visualizer;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
@@ -22,8 +23,16 @@ import static com.patbaumgartner.embabel.workflow.visualizer.EmbabelWorkflowVisu
  * Spring Boot serves {@code classpath:/static/**} from every jar on the classpath, so a
  * page published there would stay reachable even with the visualizer disabled, and would
  * compete for file names with the consuming application's own assets.
+ *
+ * <p>
+ * For the same reason the condition is repeated on the class. {@code @RestController} is
+ * a {@code @Component} stereotype, so a consuming application whose base package encloses
+ * this one component-scans this class and would otherwise serve the page whatever
+ * {@code embabel.workflow.visualizer.enabled} says. Component scanning evaluates
+ * {@code @Conditional} as well, so the property governs both routes to this bean.
  */
 @RestController
+@ConditionalOnProperty(prefix = "embabel.workflow.visualizer", name = "enabled", havingValue = "true")
 @SuppressWarnings("unused") // instantiated by EmbabelWorkflowVisualizerAutoConfiguration
 public class WorkflowVisualizerPageController {
 

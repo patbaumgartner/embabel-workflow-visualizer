@@ -51,7 +51,7 @@
     -->
     <jackson-2-bom.version>2.21.5</jackson-2-bom.version>
     <jackson-bom.version>3.1.5</jackson-bom.version>
-    <jacoco.version>0.8.14</jacoco.version>
+    <jacoco.version>0.8.15</jacoco.version>
     <java.version>21</java.version>
     <jreleaser.version>1.25.0</jreleaser.version>
     <log4j2.version>2.25.5</log4j2.version>

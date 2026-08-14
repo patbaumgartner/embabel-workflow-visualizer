@@ -9,6 +9,8 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.support.StaticWebApplicationContext;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -93,6 +95,33 @@ class WorkflowVisualizerPageControllerTests {
 	}
 
 	/**
+	 * The page draws every step name, type and badge in a brand colour, and it ships two
+	 * palettes because one cannot serve both surfaces: the hues tuned for the dark card
+	 * drop to as little as 1.6:1 on the white one. Each theme therefore has to be checked
+	 * against the card <em>it</em> paints, which is what stops a future colour tweak from
+	 * quietly reintroducing unreadable text for half the users.
+	 */
+	@Test
+	void everyBrandColourIsLegibleOnTheCardItsOwnThemePaints() {
+		String page = new WorkflowVisualizerPageController().index().getBody();
+
+		Map<String, Map<String, String>> themes = themedColourBlocks(page);
+		assertThat(themes).describedAs("no theme block declares the brand palette").isNotEmpty();
+		themes.forEach((selector, tokens) -> {
+			String card = tokens.get("card");
+			assertThat(card).describedAs("%s declares brand colours but no --card to read them against", selector)
+				.isNotNull();
+			tokens.forEach((token, colour) -> {
+				if (token.startsWith("brand-")) {
+					assertThat(contrastRatio(colour, card))
+						.describedAs("--%s (%s) on --card (%s) in %s", token, colour, card, selector)
+						.isGreaterThanOrEqualTo(4.5);
+				}
+			});
+		});
+	}
+
+	/**
 	 * The filter reads this notice on every keystroke, including before the catalog has
 	 * loaded and after a load that produced no agents or failed outright. Declaring it in
 	 * the markup — outside the container each render clears — is what keeps it present on
@@ -104,6 +133,45 @@ class WorkflowVisualizerPageControllerTests {
 
 		assertThat(page).contains("id=\"no-match\"").doesNotContain("noMatch.id = 'no-match'");
 		assertThat(page.indexOf("id=\"no-match\"")).isLessThan(page.indexOf("function applyFilter"));
+	}
+
+	/**
+	 * Every declaration block that sets the brand palette, keyed by its selector, with
+	 * the {@code --card} it is meant to be read against.
+	 */
+	private Map<String, Map<String, String>> themedColourBlocks(String page) {
+		Map<String, Map<String, String>> blocks = new LinkedHashMap<>();
+		Matcher block = Pattern.compile("([^{}/*]+?)\\{([^{}]*?)}", Pattern.DOTALL).matcher(page);
+		while (block.find()) {
+			Map<String, String> tokens = new LinkedHashMap<>();
+			Matcher token = Pattern.compile("--(brand-[a-z]+|card)\\s*:\\s*(#[0-9a-fA-F]{6})\\s*;")
+				.matcher(block.group(2));
+			while (token.find()) {
+				tokens.put(token.group(1), token.group(2));
+			}
+			if (tokens.keySet().stream().anyMatch(name -> name.startsWith("brand-"))) {
+				blocks.put(block.group(1).trim(), tokens);
+			}
+		}
+		return blocks;
+	}
+
+	/** WCAG 2.1 contrast ratio: (L1 + 0.05) / (L2 + 0.05) over relative luminance. */
+	private double contrastRatio(String foreground, String background) {
+		double lighter = Math.max(relativeLuminance(foreground), relativeLuminance(background));
+		double darker = Math.min(relativeLuminance(foreground), relativeLuminance(background));
+		return (lighter + 0.05) / (darker + 0.05);
+	}
+
+	/** WCAG 2.1 relative luminance of an {@code #rrggbb} colour. */
+	private double relativeLuminance(String hex) {
+		double[] weights = { 0.2126, 0.7152, 0.0722 };
+		double luminance = 0;
+		for (int channel = 0; channel < 3; channel++) {
+			double value = Integer.parseInt(hex.substring(1 + channel * 2, 3 + channel * 2), 16) / 255.0;
+			luminance += weights[channel] * (value <= 0.04045 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4));
+		}
+		return luminance;
 	}
 
 	private String nonceFrom(String contentSecurityPolicy) {

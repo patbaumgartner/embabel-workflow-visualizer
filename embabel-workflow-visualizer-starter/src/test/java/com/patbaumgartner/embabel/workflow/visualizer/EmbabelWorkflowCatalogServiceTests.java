@@ -113,6 +113,25 @@ class EmbabelWorkflowCatalogServiceTests {
 		assertThat(agent.provider()).isEqualTo("acme");
 	}
 
+	/**
+	 * {@code @Agent(version)} defaults to {@code 0.1.0-SNAPSHOT} in Embabel, so reading
+	 * the attribute verbatim stamps a version onto every agent whose author never wrote
+	 * one — and the UI renders it next to the class name.
+	 */
+	@Test
+	void undeclaredAgentVersionIsNotReported() {
+		AgentWorkflow agent = catalogWith(SampleEmbabelAgent.class).agents().get(0);
+
+		assertThat(agent.version()).isNull();
+	}
+
+	@Test
+	void embabelComponentHasNoVersionAttributeToReport() {
+		AgentWorkflow agent = catalogWith(EmbabelComponentSampleBean.class).agents().get(0);
+
+		assertThat(agent.version()).isNull();
+	}
+
 	// -------------------------------------------------------------------------
 	// Sorting
 	// -------------------------------------------------------------------------

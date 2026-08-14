@@ -77,6 +77,36 @@
   <build>
     <plugins>
       <!--
+        Ship the licence inside the jar. Apache License 2.0 section 4(a) requires
+        giving every recipient of the work a copy of the licence, and for a
+        library the jar is the only artifact most consumers ever receive.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-license</id>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <phase>process-resources</phase>
+            <configuration>
+              <outputDirectory>${project.build.outputDirectory}/META-INF</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${maven.multiModuleProjectDirectory}</directory>
+                  <includes>
+                    <include>LICENSE</include>
+                  </includes>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
         Generate spring-autoconfigure-metadata.properties so that
         Spring Boot can filter non-matching auto-configurations eagerly
         at startup, improving application start time, and

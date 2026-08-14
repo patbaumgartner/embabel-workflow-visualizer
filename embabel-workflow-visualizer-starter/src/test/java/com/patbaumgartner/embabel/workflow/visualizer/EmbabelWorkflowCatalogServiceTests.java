@@ -1,5 +1,6 @@
 package com.patbaumgartner.embabel.workflow.visualizer;
 
+import com.patbaumgartner.embabel.workflow.visualizer.AgentPlatformReader.RuntimeAgent;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.AgentWorkflow;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.ToolMetadata;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowCatalog;
@@ -18,6 +19,7 @@ import org.springframework.context.annotation.Lazy;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -647,6 +649,163 @@ class EmbabelWorkflowCatalogServiceTests {
 			return proxyFactory.getProxy();
 		}
 
+	}
+
+	// -------------------------------------------------------------------------
+	// Runtime reconciliation
+	// -------------------------------------------------------------------------
+
+	private WorkflowCatalog catalogWithPlatform(FakeAgentPlatform.Platform platform, Class<?>... beanClasses) {
+		try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
+			for (Class<?> beanClass : beanClasses) {
+				ctx.registerBean(beanClass.getSimpleName().toLowerCase(), beanClass);
+			}
+			ctx.refresh();
+			AgentPlatformReader reader = new AgentPlatformReader(ctx) {
+				@Override
+				List<RuntimeAgent> readAgents() {
+					return readAgentsFrom(platform);
+				}
+			};
+			return new EmbabelWorkflowCatalogService(ctx, reader).catalog();
+		}
+	}
+
+	@Test
+	void withoutAPlatformEveryRegisteredFlagMeansUnknown() {
+		AgentWorkflow agent = catalogWith(SampleEmbabelAgent.class).agents().get(0);
+
+		assertThat(agent.registered()).isNull();
+		assertThat(agent.steps()).extracting(WorkflowStep::registered).containsOnlyNulls();
+	}
+
+	@Test
+	void marksDeclaredStepsThePlatformRegistered() {
+		FakeAgentPlatform.Platform platform = new FakeAgentPlatform.Platform(
+				List.of(FakeAgentPlatform.Agent.named("demo-agent",
+						List.of(FakeAgentPlatform.Action.named(SampleEmbabelAgent.class.getName() + ".draftPlan")),
+						Set.of(FakeAgentPlatform.Goal.named(SampleEmbabelAgent.class.getName() + ".completeGoal")))));
+
+		AgentWorkflow agent = catalogWithPlatform(platform, SampleEmbabelAgent.class).agents().get(0);
+
+		assertThat(agent.registered()).isTrue();
+		assertThat(agent.steps()).extracting(WorkflowStep::method, WorkflowStep::registered)
+			.contains(tuple("draftPlan", true), tuple("completeGoal", true));
+	}
+
+	/**
+	 * The case annotations cannot reveal: a SUPERVISOR agent's declared actions are not
+	 * planner actions — the planner registers one synthetic supervisor action instead.
+	 * Showing the declared steps as registered would be a lie.
+	 */
+	@Test
+	void marksDeclaredStepsThePlannerDoesNotRun() {
+		FakeAgentPlatform.Platform platform = new FakeAgentPlatform.Platform(List.of(FakeAgentPlatform.Agent
+			.named("demo-agent", List.of(FakeAgentPlatform.Action.named("SampleEmbabelAgent.supervisor")), Set.of())));
+
+		AgentWorkflow agent = catalogWithPlatform(platform, SampleEmbabelAgent.class).agents().get(0);
+
+		Map<String, WorkflowStep> byMethod = agent.steps()
+			.stream()
+			.collect(Collectors.toMap(WorkflowStep::method, step -> step));
+		assertThat(byMethod.get("draftPlan").registered()).isFalse();
+		assertThat(byMethod.get("completeGoal").registered()).isFalse();
+	}
+
+	@Test
+	void addsStepsThePlannerSynthesised() {
+		FakeAgentPlatform.Platform platform = new FakeAgentPlatform.Platform(List
+			.of(FakeAgentPlatform.Agent.named("demo-agent",
+					List.of(new FakeAgentPlatform.Action("SampleEmbabelAgent.supervisor", "Orchestrates tools",
+							FakeAgentPlatform.IoBinding.of("it:com.example.Request"),
+							FakeAgentPlatform.IoBinding.of("it:com.example.Report"), Map.of(), Map.of(), false, false)),
+					Set.of())));
+
+		AgentWorkflow agent = catalogWithPlatform(platform, SampleEmbabelAgent.class).agents().get(0);
+
+		WorkflowStep supervisor = agent.steps()
+			.stream()
+			.filter(WorkflowStep::plannerGenerated)
+			.findFirst()
+			.orElseThrow();
+		assertThat(supervisor.name()).isEqualTo("supervisor");
+		assertThat(supervisor.description()).isEqualTo("Orchestrates tools");
+		assertThat(supervisor.inputs()).containsExactly("Request");
+		assertThat(supervisor.output()).isEqualTo("Report");
+		assertThat(supervisor.registered()).isTrue();
+	}
+
+	/**
+	 * A {@code @Cost} function and an {@code @LlmTool} are deliberately not plan steps.
+	 * Reporting them as missing from the plan would bury the case that matters.
+	 */
+	@Test
+	void stepsThatAreNotPlanStepsAreNeverFlaggedAsMissing() {
+		FakeAgentPlatform.Platform platform = new FakeAgentPlatform.Platform(List.of(FakeAgentPlatform.Agent.named(
+				"rich-agent", List.of(FakeAgentPlatform.Action.named("RichActionSampleAgent.processData")), Set.of())));
+
+		Map<String, WorkflowStep> byMethod = catalogWithPlatform(platform, RichActionSampleAgent.class).agents()
+			.get(0)
+			.steps()
+			.stream()
+			.collect(Collectors.toMap(WorkflowStep::method, step -> step));
+
+		assertThat(byMethod.get("calcCost").type()).isEqualTo("Cost");
+		assertThat(byMethod.get("calcCost").registered()).isNull();
+		assertThat(byMethod.get("helpTool").type()).isEqualTo("LlmTool");
+		assertThat(byMethod.get("helpTool").registered()).isNull();
+		// an action, though, is a plan step and is reported either way
+		assertThat(byMethod.get("processData").registered()).isTrue();
+		assertThat(byMethod.get("onRefresh").registered()).isFalse();
+	}
+
+	@Test
+	void reportsAgentsThatOnlyExistAtRuntime() {
+		FakeAgentPlatform.Platform platform = new FakeAgentPlatform.Platform(List.of(FakeAgentPlatform.Agent.named(
+				"com.example.BuiltInCode", List.of(FakeAgentPlatform.Action.named("com.example.BuiltInCode.step")),
+				Set.of(FakeAgentPlatform.Goal.named("com.example.BuiltInCode.done")))));
+
+		WorkflowCatalog catalog = catalogWithPlatform(platform, SampleEmbabelAgent.class);
+
+		AgentWorkflow runtimeOnly = catalog.agents()
+			.stream()
+			.filter(agent -> "BuiltInCode".equals(agent.agentName()))
+			.findFirst()
+			.orElseThrow();
+		assertThat(runtimeOnly.plannerType()).isEqualTo("RUNTIME");
+		assertThat(runtimeOnly.className()).isEqualTo("com.example.BuiltInCode");
+		assertThat(runtimeOnly.registered()).isTrue();
+		assertThat(runtimeOnly.steps()).extracting(WorkflowStep::name, WorkflowStep::plannerGenerated)
+			.containsExactlyInAnyOrder(tuple("step", true), tuple("done", true));
+	}
+
+	@Test
+	void marksAnAnnotatedAgentThePlatformNeverDeployed() {
+		FakeAgentPlatform.Platform platform = new FakeAgentPlatform.Platform(
+				List.of(FakeAgentPlatform.Agent.named("com.example.Other", List.of(), Set.of())));
+
+		AgentWorkflow agent = catalogWithPlatform(platform, SampleEmbabelAgent.class).agents()
+			.stream()
+			.filter(candidate -> "demo-agent".equals(candidate.agentName()))
+			.findFirst()
+			.orElseThrow();
+
+		assertThat(agent.registered()).isFalse();
+	}
+
+	/** Embabel names an @EmbabelComponent agent by its fully-qualified class name. */
+	@Test
+	void matchesARuntimeAgentNamedByFullyQualifiedClassName() {
+		FakeAgentPlatform.Platform platform = new FakeAgentPlatform.Platform(
+				List.of(FakeAgentPlatform.Agent.named(EmbabelComponentSampleBean.class.getName(),
+						List.of(FakeAgentPlatform.Action.named(EmbabelComponentSampleBean.class.getName() + ".doWork")),
+						Set.of())));
+
+		AgentWorkflow agent = catalogWithPlatform(platform, EmbabelComponentSampleBean.class).agents().get(0);
+
+		assertThat(agent.registered()).isTrue();
+		assertThat(agent.steps()).extracting(WorkflowStep::method, WorkflowStep::registered)
+			.containsExactly(tuple("doWork", true));
 	}
 
 }

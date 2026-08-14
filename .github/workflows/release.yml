@@ -41,6 +41,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0   # full history required for JReleaser changelog
+          # The one job holding a contents:write token, and the only one running
+          # `mvn deploy` — so the one where a credential left in .git/config
+          # would expose the most to the most code. Nothing here needs it: the
+          # staging deploy writes to a local directory, the validation steps
+          # read git locally, and JReleaser authenticates with
+          # JRELEASER_GITHUB_TOKEN rather than through git.
+          persist-credentials: false
 
       - name: Set up JDK 21
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0

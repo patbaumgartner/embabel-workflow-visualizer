@@ -115,6 +115,31 @@ class AgentPlatformReaderTests {
 		assertThat(AgentPlatformReader.simpleName("Nirvana")).isEqualTo("Nirvana");
 	}
 
+	/**
+	 * An array binding carries the JVM's own spelling. Passing it through the nested-type
+	 * rule alone left the trailing semicolon on the name, so it matched nothing the
+	 * annotation scan reported and the step it fed appeared unconnected.
+	 */
+	@Test
+	void decodesArrayBindingsIntoTheNamesTheAnnotationScanUses() {
+		RuntimeStep action = readSingleAction(new FakeAgentPlatform.Action("a", "",
+				FakeAgentPlatform.IoBinding.of("it:[Lcom.example.Order;"),
+				FakeAgentPlatform.IoBinding.of("out:[[Lcom.example.Models$Line;"), Map.of(), Map.of(), false, false));
+
+		assertThat(action.inputs()).containsExactly("Order[]");
+		assertThat(action.output()).isEqualTo("Line[][]");
+	}
+
+	@Test
+	void decodesPrimitiveArrayBindings() {
+		RuntimeStep action = readSingleAction(
+				new FakeAgentPlatform.Action("a", "", FakeAgentPlatform.IoBinding.of("it:[I"),
+						FakeAgentPlatform.IoBinding.of("out:[[D"), Map.of(), Map.of(), false, false));
+
+		assertThat(action.inputs()).containsExactly("int[]");
+		assertThat(action.output()).isEqualTo("double[][]");
+	}
+
 	private RuntimeStep readSingleAction(FakeAgentPlatform.Action action) {
 		FakeAgentPlatform.Platform platform = new FakeAgentPlatform.Platform(
 				List.of(FakeAgentPlatform.Agent.named("agent", List.of(action), Set.of())));

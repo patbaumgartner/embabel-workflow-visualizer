@@ -56,19 +56,26 @@ class AgentPlatformReader {
 	}
 
 	/**
-	 * The registered agents, or an empty list when no usable platform is available.
+	 * The registered agents, or {@link Optional#empty()} when no usable platform is
+	 * available.
+	 *
+	 * <p>
+	 * A platform that registered nothing is not the same as no platform: the first says
+	 * every declared agent went undeployed, the second says nothing is known either way.
+	 * Both would be an empty list, so availability is carried separately.
 	 *
 	 * <p>
 	 * Only an already-created platform is read. Like the annotation scan, this must not
 	 * be the thing that brings a bean to life.
+	 * @return the registered agents, or empty when no platform could be read
 	 */
-	List<RuntimeAgent> readAgents() {
+	Optional<List<RuntimeAgent>> readAgents() {
 		try {
-			return platform().map(this::readAgentsFrom).orElseGet(List::of);
+			return platform().map(this::readAgentsFrom);
 		}
 		catch (Exception | LinkageError ex) {
 			log.warn("Could not read the Embabel agent platform; reporting declared workflows only", ex);
-			return List.of();
+			return Optional.empty();
 		}
 	}
 

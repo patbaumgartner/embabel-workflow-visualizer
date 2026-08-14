@@ -3,11 +3,15 @@ package com.patbaumgartner.embabel.workflow.visualizer;
 import com.patbaumgartner.embabel.workflow.visualizer.AgentPlatformReader.RuntimeAgent;
 import com.patbaumgartner.embabel.workflow.visualizer.AgentPlatformReader.RuntimeStep;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.util.ClassUtils;
 
+import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -106,6 +110,75 @@ class AgentPlatformReaderTests {
 
 			assertThat(new AgentPlatformReader(ctx).readAgents()).isEmpty();
 		}
+	}
+
+	/**
+	 * A platform that has already been created is read, and read through the same by-name
+	 * reflection the rest of the reader uses.
+	 */
+	@Test
+	void readsAPlatformBeanThatHasAlreadyBeenCreated() {
+		try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
+			ctx.refresh();
+			ctx.getBeanFactory()
+				.registerSingleton("agentPlatform", platformReturning(
+						List.of(FakeAgentPlatform.Agent.named("com.example.ReviewAgent", List.of(), Set.of()))));
+
+			assertThat(new AgentPlatformReader(ctx).readAgents())
+				.hasValueSatisfying(agents -> assertThat(agents).extracting(RuntimeAgent::name)
+					.containsExactly("com.example.ReviewAgent"));
+		}
+	}
+
+	/**
+	 * Reading the catalog must never be the thing that brings a bean to life. A platform
+	 * that is only <em>defined</em> therefore has to read as absent: instantiating it
+	 * here would initialise the platform — and through it every agent it wires — in an
+	 * application that had not asked for one yet, on every poll of the endpoint.
+	 *
+	 * <p>
+	 * The definition is left uninstantiated afterwards, which is the half that a change
+	 * from {@code getSingleton} to {@code getBean} would break while every other test
+	 * still passed.
+	 */
+	@Test
+	void neverInstantiatesAPlatformBeanThatIsOnlyDefined() {
+		AtomicBoolean instantiated = new AtomicBoolean();
+		try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
+			RootBeanDefinition definition = new RootBeanDefinition();
+			definition.setTargetType(agentPlatformType());
+			definition.setLazyInit(true);
+			definition.setInstanceSupplier(() -> {
+				instantiated.set(true);
+				return platformReturning(List.of());
+			});
+			ctx.registerBeanDefinition("agentPlatform", definition);
+			ctx.refresh();
+
+			assertThat(new AgentPlatformReader(ctx).readAgents()).isEmpty();
+			assertThat(instantiated).isFalse();
+		}
+	}
+
+	private static Class<?> agentPlatformType() {
+		return ClassUtils.resolveClassName("com.embabel.agent.core.AgentPlatform", null);
+	}
+
+	/**
+	 * A platform-shaped proxy. The reader locates the platform by type and reads it by
+	 * method name, so a proxy answers every method the interface declares without this
+	 * test having to track the rest of Embabel's shape.
+	 */
+	private static Object platformReturning(List<?> agents) {
+		Class<?> type = agentPlatformType();
+		return Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] { type },
+				(proxy, method, args) -> switch (method.getName()) {
+					case "agents" -> agents;
+					case "hashCode" -> System.identityHashCode(proxy);
+					case "equals" -> proxy == args[0];
+					case "toString" -> "platform";
+					default -> null;
+				});
 	}
 
 	@Test

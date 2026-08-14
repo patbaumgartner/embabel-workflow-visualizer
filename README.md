@@ -190,7 +190,7 @@ your Embabel version does not declare simply reads as "not set".
 
 The UI (`GET /embabel-workflows`) renders each discovered `@Agent` as an interactive flow diagram:
 
-- **Drag individual nodes** to rearrange the layout · **Drag the background** to pan · **Scroll** to zoom · **Double-click** background to auto-fit
+- **Drag individual nodes** to rearrange the layout · **Drag the background** to pan · **Ctrl/⌘ + scroll** to zoom · **Double-click** background to auto-fit
 - Hover over any node to spotlight its connected edges and neighbours
 - Per-agent controls: Fit, Zoom In, Zoom Out, Reset Layout
 - Node types color-coded with the 42talents brand palette (cyan, yellow, green, pink, orange)

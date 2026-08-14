@@ -343,7 +343,9 @@
             height: 100%;
             user-select: none;
             -webkit-user-select: none;
-            touch-action: none;
+            /* The browser keeps vertical panning, so a diagram never traps the page
+               scroll on a touch device; sideways gestures are left to the canvas. */
+            touch-action: pan-y;
         }
 
         /* ── Zoom controls ─────────────────────────────────────────────── */
@@ -1417,8 +1419,13 @@
                 .sort(function (a, b) { return (mpos[a].x - mpos[b].x) || (mpos[a].y - mpos[b].y); })
                 .forEach(function (i) { nodesG.appendChild(nodeGs[i]); });
 
-            // Viewport pan + zoom
+            // Viewport pan + zoom.
+            // Zoom sits behind Ctrl/Cmd because several diagrams are stacked in a
+            // scrolling page: claiming the plain wheel would stop the reader from ever
+            // scrolling past one. It is the bargain embedded maps make for the same
+            // reason.
             svg.addEventListener('wheel', function (e) {
+                if (!e.ctrlKey && !e.metaKey) return;
                 e.preventDefault();
                 var r = svg.getBoundingClientRect();
                 var mx = e.clientX - r.left, my = e.clientY - r.top;
@@ -1453,16 +1460,29 @@
             });
             svg.addEventListener('dblclick', function (e) { if (!isOnNode(e.target)) fit(); });
 
-            var ltx = 0, lty = 0;
+            // Touch pan. A predominantly vertical swipe belongs to the page — the reader
+            // scrolling past the diagram — so only a sideways gesture takes over the
+            // canvas. With `touch-action: pan-y` that keeps a tall page of diagrams
+            // scrollable on a phone, which claiming every touch did not.
+            var TOUCH_AXIS_SLOP = 8;
+            var ltx = 0, lty = 0, tsx = 0, tsy = 0, tPan = null;
             svg.addEventListener('touchstart', function (e) {
-                if (e.touches.length === 1) { ltx = e.touches[0].clientX; lty = e.touches[0].clientY; }
-                e.preventDefault();
-            }, { passive: false });
+                if (e.touches.length !== 1) { tPan = false; return; }
+                ltx = tsx = e.touches[0].clientX;
+                lty = tsy = e.touches[0].clientY;
+                tPan = null; // undecided until the gesture reveals an axis
+            }, { passive: true });
             svg.addEventListener('touchmove', function (e) {
-                if (e.touches.length === 1) {
-                    vpTx += e.touches[0].clientX - ltx; vpTy += e.touches[0].clientY - lty;
-                    ltx = e.touches[0].clientX; lty = e.touches[0].clientY; applyVp();
+                if (e.touches.length !== 1) return;
+                var x = e.touches[0].clientX, y = e.touches[0].clientY;
+                if (tPan === null) {
+                    var adx = Math.abs(x - tsx), ady = Math.abs(y - tsy);
+                    if (adx < TOUCH_AXIS_SLOP && ady < TOUCH_AXIS_SLOP) return;
+                    tPan = adx > ady;
                 }
+                if (!tPan) return;
+                vpTx += x - ltx; vpTy += y - lty;
+                ltx = x; lty = y; applyVp();
                 e.preventDefault();
             }, { passive: false });
 
@@ -1713,7 +1733,7 @@
             var btnOut = flowButton('\u2212 Zoom Out');
             var btnReset = flowButton('\u21ba Reset Layout');
             var fhint = document.createElement('span'); fhint.className = 'flow-hint';
-            fhint.textContent = 'Drag\u00a0nodes \u00b7 Scroll\u00a0to\u00a0zoom \u00b7 Drag\u00a0background\u00a0to\u00a0pan \u00b7 Dbl-click\u00a0to\u00a0fit'
+            fhint.textContent = 'Drag\u00a0nodes \u00b7 Ctrl/\u2318+scroll\u00a0to\u00a0zoom \u00b7 Drag\u00a0background\u00a0to\u00a0pan \u00b7 Dbl-click\u00a0to\u00a0fit'
                 + ' \u00b7 Tab\u00a0to\u00a0a\u00a0node, arrows\u00a0move\u00a0it';
             ctrl.append(btnFit, btnIn, btnOut, btnReset, fhint);
             panel.appendChild(ctrl);

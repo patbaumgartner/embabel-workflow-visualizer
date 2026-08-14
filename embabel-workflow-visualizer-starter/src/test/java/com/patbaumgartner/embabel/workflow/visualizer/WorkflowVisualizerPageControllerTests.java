@@ -174,6 +174,19 @@ class WorkflowVisualizerPageControllerTests {
 		return luminance;
 	}
 
+	/**
+	 * The actuator endpoint's URL depends on the servlet context path, the management
+	 * base path, the management port and whether {@code embabel} is exposed — none of
+	 * which this page can see. It used to print a fixed {@code /actuator/embabel}, which
+	 * 404s behind a context path, so it now names only the API it derives itself.
+	 */
+	@Test
+	void pageDoesNotAdvertiseAnActuatorPathItCannotResolve() {
+		String page = new WorkflowVisualizerPageController().index().getBody();
+
+		assertThat(page).doesNotContain("/actuator/embabel");
+	}
+
 	private String nonceFrom(String contentSecurityPolicy) {
 		Matcher matcher = Pattern.compile("'nonce-([^']+)'").matcher(contentSecurityPolicy);
 		assertThat(matcher.find()).describedAs("no nonce in %s", contentSecurityPolicy).isTrue();

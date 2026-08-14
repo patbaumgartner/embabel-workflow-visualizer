@@ -19,8 +19,16 @@ jobs:
     if: github.event.pull_request.user.login == 'dependabot[bot]' && github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Approve, wait for checks, and merge
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -86,7 +94,14 @@ jobs:
               }
             }
 
-            // 1. Approve the pull request (idempotent).
+            // 1. A major bump can change behaviour no test here would notice, so it is
+            //    left for a human to read the changelog rather than merged on green CI.
+            if (process.env.UPDATE_TYPE === "version-update:semver-major") {
+              await block("this is a major version update — review the changelog and merge manually");
+              return;
+            }
+
+            // 2. Approve the pull request (idempotent).
             try {
               await github.rest.pulls.createReview({
                 owner,
@@ -99,7 +114,7 @@ jobs:
               core.info(`Approval skipped: ${error.message}`);
             }
 
-            // 2. Choose a merge method the repository actually allows.
+            // 3. Choose a merge method the repository actually allows.
             const { data: repoData } = await github.rest.repos.get({ owner, repo });
             const mergeMethod = repoData.allow_squash_merge
               ? "squash"
@@ -115,7 +130,7 @@ jobs:
               return;
             }
 
-            // 3. Prefer GitHub's native auto-merge (used when branch protection is configured).
+            // 4. Prefer GitHub's native auto-merge (used when branch protection is configured).
             try {
               const query = await github.graphql(
                 `query($owner: String!, $repo: String!, $number: Int!) {
@@ -140,7 +155,7 @@ jobs:
               core.info(`Native auto-merge unavailable (${message}); falling back to wait-and-merge.`);
             }
 
-            // 4. Fallback for repositories without branch protection: wait for checks, then merge directly.
+            // 5. Fallback for repositories without branch protection: wait for checks, then merge directly.
             const maxAttempts = 60; // ~30 minutes at 30s intervals.
             const intervalMs = 30000;
 

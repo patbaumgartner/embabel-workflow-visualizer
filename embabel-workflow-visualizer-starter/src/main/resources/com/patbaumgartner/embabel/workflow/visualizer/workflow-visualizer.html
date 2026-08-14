@@ -1046,18 +1046,22 @@
                 if (s.valueMethod && costProd.has(s.valueMethod)) addEdge(costProd.get(s.valueMethod), i, 'cost', 'valueMethod');
             });
 
-            // Deduplicate edges
+            // Deduplicate edges. Labels are collected exactly: substring matching would
+            // drop "Order" as already present in "OrderId", and drop it or not depending
+            // on which of the two the scan happened to reach first.
             var edgeMap = new Map();
             rawEdges.forEach(function (e) {
                 var key = e.from + '-' + e.to + '-' + e.kind;
                 if (!edgeMap.has(key)) {
-                    edgeMap.set(key, { from: e.from, to: e.to, kind: e.kind, label: e.label });
+                    edgeMap.set(key, { from: e.from, to: e.to, kind: e.kind, labels: e.label ? [e.label] : [] });
                 } else {
-                    var ex = edgeMap.get(key);
-                    if (e.label && ex.label && ex.label.indexOf(e.label) === -1) ex.label += ', ' + e.label;
+                    var labels = edgeMap.get(key).labels;
+                    if (e.label && labels.indexOf(e.label) === -1) labels.push(e.label);
                 }
             });
-            var edges = Array.from(edgeMap.values());
+            var edges = Array.from(edgeMap.values()).map(function (e) {
+                return { from: e.from, to: e.to, kind: e.kind, label: e.labels.join(', ') };
+            });
 
             // Topological column assignment (iterative, cycle-safe).
             // Hard cap at steps.length - 1 so cycles cannot inflate the column count.

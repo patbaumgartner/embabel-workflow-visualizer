@@ -46,14 +46,31 @@ by untrusted clients, secure them like any other management surface — for
 example with Spring Security:
 
 ```java
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+
 @Bean
 SecurityFilterChain visualizerSecurity(HttpSecurity http) throws Exception {
-    return http.securityMatcher("/embabel-workflows/**")
+    return http
+        .securityMatcher(new OrRequestMatcher(
+            PathPatternRequestMatcher.withDefaults().matcher("/embabel-workflows/**"),
+            EndpointRequest.to("embabel")))
         .authorizeHttpRequests(auth -> auth.anyRequest().hasRole("ADMIN"))
         .httpBasic(Customizer.withDefaults())
         .build();
 }
 ```
+
+Two details are easy to get wrong. All three endpoints publish the same catalog,
+so matching only the UI path leaves `/actuator/embabel` serving it unprotected —
+hence both matchers above. And the path pattern has to follow
+`embabel.workflow.visualizer.base-path`: change that property and this matcher
+stops covering anything.
+
+`EndpointRequest` moved in Spring Boot 4. On the 0.3.x line (Boot 3) it is
+`org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest`
+instead.
 
 The bundled UI is a single self-contained page: it loads no third-party scripts,
 fonts, or styles, and makes exactly one request — to its own API — so it adds no

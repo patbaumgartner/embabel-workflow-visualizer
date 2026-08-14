@@ -538,6 +538,28 @@
             color: #a5b4fc;
         }
 
+        .nb-planner {
+            background: rgba(43, 183, 224, 0.22);
+            color: var(--brand-cyan);
+        }
+
+        .nb-unregistered {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--muted);
+        }
+
+        /* A declared step the planner does not run: present, but not part of the plan. */
+        .node-card.not-registered {
+            stroke-dasharray: 3 4;
+            opacity: 0.72;
+        }
+
+        .planner-runtime {
+            color: var(--brand-purple);
+            border-color: var(--brand-purple);
+            background: rgba(155, 89, 182, 0.12);
+        }
+
         .nname {
             font-size: 13px;
             font-weight: 700;
@@ -1073,6 +1095,10 @@
             if (step.llmToolReturnDirect) badges += '<span class="nb nb-returndirect">\u21a9 returnDirect</span>';
             // @Export(local = false): goal is not callable by local in-process callers
             if (step.goal && step.exportedLocal === false) badges += '<span class="nb nb-clearbb">\u2298 not local</span>';
+            // Runtime provenance. registered is null when no agent platform was available
+            // to ask, in which case we claim nothing either way.
+            if (step.plannerGenerated) badges += '<span class="nb nb-planner">\u2699 planner</span>';
+            else if (step.registered === false) badges += '<span class="nb nb-unregistered">\u26a0 not in plan</span>';
 
             var html = '<div xmlns="http://www.w3.org/1999/xhtml" class="nfo">';
             html += '<div class="ntype-row"><span class="ntype ' + tc + '">' + esc(typeLabel) + '</span>' + badges + '</div>';
@@ -1302,7 +1328,7 @@
                 g.setAttribute('transform', 'translate(' + mpos[i].x + ',' + mpos[i].y + ')');
 
                 var rect = document.createElementNS(xns, 'rect');
-                rect.setAttribute('class', 'node-card ' + tc);
+                rect.setAttribute('class', 'node-card ' + tc + (step.registered === false ? ' not-registered' : ''));
                 rect.setAttribute('width', NW);
                 rect.setAttribute('height', nh);
                 rect.setAttribute('rx', 11);
@@ -1458,6 +1484,7 @@
                 case 'HYBRID': return 'planner-hybrid';
                 case 'SUPERVISOR': return 'planner-supervisor';
                 case 'COMPONENT': return 'planner-component';
+                case 'RUNTIME': return 'planner-runtime';
                 default: return 'planner-goap';
             }
         }
@@ -1491,6 +1518,13 @@
                 ob.className = 'opaque-badge';
                 ob.textContent = 'opaque';
                 titleRow.appendChild(ob);
+            }
+            if (agent.registered === false) {
+                var nrb = document.createElement('span');
+                nrb.className = 'opaque-badge';
+                nrb.textContent = 'not deployed';
+                nrb.title = 'Annotated, but the running agent platform did not register this agent';
+                titleRow.appendChild(nrb);
             }
             // @Agent(scan = false) / @EmbabelComponent(scan = false) disables step discovery
             if (agent.scan === false) {
@@ -1537,7 +1571,10 @@
                 '<span class="leg-item"><span class="swatch" style="background:var(--goal)"></span>AchievesGoal / post-edge</span>' +
                 '<span class="leg-item"><span class="swatch" style="background:var(--cost)"></span>Cost / cost-method edge</span>' +
                 '<span class="leg-item"><span class="swatch" style="background:var(--type-col)"></span>Type flow edge</span>' +
-                '<span class="leg-item"><span class="swatch" style="background:var(--llmtool);opacity:0.8"></span>LLM Tool</span>';
+                '<span class="leg-item"><span class="swatch" style="background:var(--llmtool);opacity:0.8"></span>LLM Tool</span>' +
+                (steps.some(function (s) { return s.plannerGenerated || s.registered === false; })
+                    ? '<span class="leg-item">\u2699 planner-generated \u00b7 \u26a0 declared but not in the plan</span>'
+                    : '');
             panel.appendChild(leg);
 
             // Zoom controls

@@ -147,6 +147,35 @@ never initialises a lazy singleton or a `FactoryBean` product in your
 application. The result is computed once per context: it is derived from
 annotations on bean definitions, which do not change after refresh.
 
+## Declared vs. running
+
+Annotations say what an author *declared*; the planner decides what actually
+*runs*, and the two genuinely differ. When a live Embabel `AgentPlatform` is
+present the catalog is reconciled against it, so the UI shows both views at once:
+
+| Signal | Meaning |
+|---|---|
+| **⚙ planner** | The step exists only at runtime — the planner synthesised it and no annotation declares it |
+| **⚠ not in plan** (dashed outline) | The step is declared, but the planner does not run it |
+| **not deployed** (agent badge) | The class is annotated, but the platform never registered the agent |
+| `RUNTIME` planner badge | The agent was assembled in code and has no annotated class at all |
+
+The sample application shows why this matters. `ProductResearchAgent` uses the
+`SUPERVISOR` planner, so its declared `analyzeCompetitors` action is **not** a
+planner action — Embabel replaces the declared actions with a single synthetic
+`supervisor` action that orchestrates them as tools. Nothing in the source says
+so. Likewise `TicketRoutingAgent` gains a synthetic `Nirvana` goal from the
+`UTILITY` planner.
+
+Steps that are legitimately not plan steps — `@Cost` functions and `@LlmTool`
+methods — are never flagged, so the signal stays worth reading.
+
+Without an agent platform on the classpath nothing changes: `registered` is
+`null` throughout, meaning "not known" rather than "not registered", and the
+catalog is exactly the declared view. The platform is read reflectively and only
+when it has already been created, so this adds no compile-time dependency and
+still initialises nothing.
+
 The starter deliberately never imports Embabel types — annotations are read
 reflectively by name. `embabel-agent-api` is a test-scoped dependency, so you
 can upgrade Embabel without waiting for a visualizer release, and an attribute
@@ -162,6 +191,7 @@ The UI (`GET /embabel-workflows`) renders each discovered `@Agent` as an interac
 - Node types color-coded with the 42talents brand palette (cyan, yellow, green, pink, orange)
 - Animated flowing arrows on pre-condition edges; AchievesGoal nodes glow green
 - Node badges surface `canRerun`, `readOnly`, `clearBlackboard`, `@LlmTool`, event-triggered actions (`@Action(trigger=)`), `returnDirect` tools, MCP-exported goals (`@Export(remote = true)`), and goals withheld from local callers (`@Export(local = false)`)
+- Runtime provenance: planner-synthesised steps, and declared steps the planner does not run (see [Declared vs. running](#declared-vs-running))
 - Cost / value rows show static `cost=` / `value=` declarations, dynamic `costMethod=` / `valueMethod=` references, `@AchievesGoal(value=)`, and `@Condition(cost=)`; `retry` / `retry policy` rows show the per-action SpEL QoS key and `ActionRetryPolicy` constant, and `category`, `tool name` and metadata rows describe the `@LlmTool`
 - Goal rows show `starts from` for `@Export(startingInputTypes=)`; step rows show `provided` (`@Provided`) and `name match` (`@RequireNameMatch`) parameters
 - Agent headers show the planner badge (GOAP / UTILITY / HYBRID / SUPERVISOR / COMPONENT), `opaque`, a `scan off` badge for `scan = false`, and the `beanName` plus agent-level retry policy

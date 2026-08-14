@@ -1075,6 +1075,17 @@
                 if (!changed) break;
             }
 
+            // The cap above stops a cycle inflating the column count, but it does not
+            // stop it emptying the columns in between: every member of a revision loop
+            // is pushed to the cap, so a five-step agent can occupy columns 0 and 4 and
+            // nothing else. Those empty columns still counted towards the canvas width,
+            // so auto-fit scaled the whole diagram down to a width its content never
+            // used. Only the columns something actually sits in survive.
+            var usedCols = Array.from(new Set(col)).sort(function (a, b) { return a - b; });
+            var denseCol = {};
+            usedCols.forEach(function (c, i) { denseCol[c] = i; });
+            col = col.map(function (c) { return denseCol[c]; });
+
             var cols = {};
             steps.forEach(function (_, i) {
                 if (!cols[col[i]]) cols[col[i]] = [];

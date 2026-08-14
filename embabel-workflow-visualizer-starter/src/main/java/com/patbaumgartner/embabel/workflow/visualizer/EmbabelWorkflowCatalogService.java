@@ -316,30 +316,11 @@ public class EmbabelWorkflowCatalogService implements ApplicationListener<Applic
 	}
 
 	private AgentWorkflow withRegistered(AgentWorkflow agent, boolean registered, List<WorkflowStep> steps) {
-		return AgentWorkflow.builder(agent.agentName(), agent.className())
-			.description(agent.description())
-			.version(agent.version())
-			.plannerType(agent.plannerType())
-			.opaque(agent.opaque())
-			.steps(steps)
-			.provider(agent.provider())
-			.beanName(agent.beanName())
-			.scan(agent.scan())
-			.retryPolicy(agent.retryPolicy())
-			.retryPolicyExpression(agent.retryPolicyExpression())
-			.registered(registered)
-			.build();
+		return agent.toBuilder().steps(steps).registered(registered).build();
 	}
 
 	private WorkflowStep withRegistered(WorkflowStep step, Boolean registered) {
-		return new WorkflowStep(step.name(), step.type(), step.description(), step.method(), step.pre(), step.post(),
-				step.inputs(), step.output(), step.goal(), step.costMethod(), step.valueMethod(), step.cost(),
-				step.value(), step.goalValue(), step.possibleOutputs(), step.canRerun(), step.readOnly(),
-				step.outputBinding(), step.clearBlackboard(), step.tags(), step.examples(), step.llmTool(),
-				step.llmToolDescription(), step.exportedRemote(), step.exportName(), step.trigger(), step.retryPolicy(),
-				step.llmToolReturnDirect(), step.llmToolCategory(), step.actionRetryPolicy(), step.conditionCost(),
-				step.exportedLocal(), step.exportStartingInputTypes(), step.llmToolName(), step.llmToolMetadata(),
-				step.providedInputs(), step.nameMatchInputs(), registered, step.plannerGenerated());
+		return step.toBuilder().registered(registered).build();
 	}
 
 	private String emptyToNullValue(String value) {

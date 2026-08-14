@@ -24,6 +24,7 @@ jobs:
   build:
     name: Build & Test (Java ${{ matrix.java }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -32,6 +33,11 @@ jobs:
         java: ['21', '25']
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing here pushes, so the job has no use for a credential that
+          # every plugin and test in the build would otherwise be able to read
+          # out of .git/config.
+          persist-credentials: false
 
       - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
@@ -57,3 +63,44 @@ jobs:
             **/target/site/jacoco/**
           retention-days: 7
           if-no-files-found: ignore
+
+  # The POM pins project.build.outputTimestamp so that anyone can rebuild a tag
+  # and compare the result against Maven Central. That promise is only worth
+  # making if something checks it, so the starter is built twice here and the
+  # published jars are compared byte for byte. One JDK only: reproducibility is
+  # a claim about rebuilding the same source with the same toolchain, and javac
+  # is not obliged to emit identical bytecode across major versions.
+  reproducible:
+    name: Reproducible build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build the published artifacts twice and compare
+        run: |
+          set -euo pipefail
+          checksums() {
+            find embabel-workflow-visualizer-starter/target -maxdepth 1 -name '*.jar' \
+              -exec sha256sum {} + | sort -k2
+          }
+          build() {
+            ./mvnw -B --no-transfer-progress -pl embabel-workflow-visualizer-starter \
+              -DskipTests -Djacoco.skip=true clean package
+          }
+          build && checksums > "${RUNNER_TEMP}/first.sha256"
+          build && checksums > "${RUNNER_TEMP}/second.sha256"
+          if ! diff -u "${RUNNER_TEMP}/first.sha256" "${RUNNER_TEMP}/second.sha256"; then
+            echo "::error::The published jars are not byte-for-byte reproducible. Something in the build is capturing the wall clock, the file order, or the build path."
+            exit 1
+          fi
+          cat "${RUNNER_TEMP}/first.sha256"

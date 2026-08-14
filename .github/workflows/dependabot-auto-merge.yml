@@ -1,5 +1,15 @@
 name: Dependabot Auto Merge
 
+# pull_request_target, not pull_request: a workflow Dependabot triggers gets a
+# read-only token, and approving and merging needs a writable one.
+#
+# That trigger runs with the base branch's secrets, which is only safe as long
+# as nothing here ever runs code from the pull request. Nothing does — there is
+# deliberately no checkout step, and every step below talks to the GitHub API
+# about the pull request rather than executing anything from it. Adding a
+# checkout, a build, or any step that reads a file from the head branch would
+# hand a dependency update write access to this repository, so do not.
+
 on:
   pull_request_target:
     types:
@@ -18,6 +28,8 @@ jobs:
   auto-merge:
     if: github.event.pull_request.user.login == 'dependabot[bot]' && github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    # Longer than the wait-and-merge fallback below, which polls for ~30 minutes.
+    timeout-minutes: 45
     steps:
       - name: Fetch Dependabot metadata
         id: metadata

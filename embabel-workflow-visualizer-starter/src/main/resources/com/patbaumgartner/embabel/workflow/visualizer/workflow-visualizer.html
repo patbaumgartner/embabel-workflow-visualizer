@@ -38,6 +38,7 @@
             --cost: var(--brand-pink);
             --llmtool: var(--brand-purple);
             --type-col: var(--brand-orange);
+            --focus-ring: #7fdcff;
         }
 
         body {
@@ -59,6 +60,7 @@
                 --line: rgba(0, 0, 0, .12);
                 --hdr-bg: rgba(248, 250, 252, 0.92);
                 --shadow: rgba(0, 0, 0, 0.10);
+                --focus-ring: #0b5f8c;
             }
 
             :root:not([data-theme="dark"]) body {
@@ -79,6 +81,7 @@
             --line: rgba(0, 0, 0, .12);
             --hdr-bg: rgba(248, 250, 252, 0.92);
             --shadow: rgba(0, 0, 0, 0.10);
+            --focus-ring: #0b5f8c;
         }
 
         :root[data-theme="light"] body {
@@ -98,6 +101,7 @@
             --line: rgba(255, 255, 255, .14);
             --hdr-bg: rgba(10, 18, 32, 0.88);
             --shadow: rgba(0, 0, 0, 0.35);
+            --focus-ring: #7fdcff;
         }
 
         :root[data-theme="dark"] body {
@@ -762,9 +766,29 @@
             color: var(--brand-pink);
         }
 
-        /* ── Node drag / hover ──────────────────────────────────────────── */
+        /* ── Node drag / hover / keyboard focus ─────────────────────────── */
         .node-hit {
             cursor: move;
+        }
+
+        /* The focus ring is a drawn SVG rect rather than an outline: outlines on
+           SVG elements are rendered inconsistently across browsers, and a drawn
+           ring keeps its own width at every zoom level. */
+        .node-focus {
+            fill: none;
+            stroke: var(--focus-ring);
+            stroke-width: 3;
+            vector-effect: non-scaling-stroke;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .node-g:focus {
+            outline: none;
+        }
+
+        .node-g:focus .node-focus {
+            opacity: 1;
         }
 
         .node-g.dragging .node-card {
@@ -781,6 +805,12 @@
         }
 
         .flow-svg.has-hover .node-g.dragging {
+            opacity: 1;
+        }
+
+        /* A focused node stays legible while another node is hovered, so its
+           focus ring never fades out from under the keyboard user. */
+        .flow-svg.has-hover .node-g:focus {
             opacity: 1;
         }
 
@@ -912,6 +942,8 @@
         var CG = 110;   // column gap
         var RG = 36;    // row gap
         var PAD = 28;    // svg outer padding
+        var KSTEP = 10;   // arrow-key node nudge
+        var KSTEP_BIG = 50;   // shift + arrow-key node nudge
 
         // ── HTML escaping ─────────────────────────────────────────────────
         function esc(v) {
@@ -1253,7 +1285,9 @@
 
             var svg = document.createElementNS(xns, 'svg');
             svg.setAttribute('class', 'flow-svg');
-            svg.setAttribute('role', 'img');
+            // A group, not an image: role="img" prunes the subtree from the
+            // accessibility tree, which would hide the focusable nodes inside.
+            svg.setAttribute('role', 'group');
             svg.setAttribute('aria-label',
                 'Workflow diagram with ' + steps.length + ' step' + (steps.length === 1 ? '' : 's') +
                 ': ' + steps.map(function (s) { return s.name; }).join(', '));
@@ -1330,6 +1364,18 @@
                 g.setAttribute('class', 'node-g');
                 g.setAttribute('transform', 'translate(' + mpos[i].x + ',' + mpos[i].y + ')');
 
+                // Keyboard reachable, and named from the same step data the card
+                // shows. setAttribute writes a plain string rather than markup, so
+                // the name is used raw here, as the other aria-labels in this file do.
+                var label = step.name + ', ' + (step.type || 'Step');
+                if (step.goal && step.type !== 'AchievesGoal') label += ', goal';
+                if (step.plannerGenerated) label += ', planner-generated';
+                else if (step.registered === false) label += ', not in plan';
+                g.setAttribute('tabindex', '0');
+                g.setAttribute('role', 'button');
+                g.setAttribute('aria-roledescription', 'workflow step');
+                g.setAttribute('aria-label', label);
+
                 var rect = document.createElementNS(xns, 'rect');
                 rect.setAttribute('class', 'node-card ' + tc + (step.registered === false ? ' not-registered' : ''));
                 rect.setAttribute('width', NW);
@@ -1351,9 +1397,25 @@
                 hit.setAttribute('fill', 'transparent'); hit.setAttribute('stroke', 'none');
                 g.appendChild(hit);
 
+                // Focus ring, drawn outside the card and never a mouse target
+                var ring = document.createElementNS(xns, 'rect');
+                ring.setAttribute('class', 'node-focus');
+                ring.setAttribute('x', -5); ring.setAttribute('y', -5);
+                ring.setAttribute('width', NW + 10); ring.setAttribute('height', nh + 10);
+                ring.setAttribute('rx', 15);
+                g.appendChild(ring);
+
                 nodesG.appendChild(g);
                 nodeGs.push(g);
             });
+
+            // Tab order follows the reading order of the drawing (left to right by
+            // column, then top to bottom), which is not the order the API lists the
+            // steps in. Nodes never overlap in the computed layout, so re-appending
+            // them changes the tab order without changing what is drawn.
+            steps.map(function (_, i) { return i; })
+                .sort(function (a, b) { return (mpos[a].x - mpos[b].x) || (mpos[a].y - mpos[b].y); })
+                .forEach(function (i) { nodesG.appendChild(nodeGs[i]); });
 
             // Viewport pan + zoom
             svg.addEventListener('wheel', function (e) {
@@ -1440,25 +1502,78 @@
                 });
             });
 
-            // Hover spotlight
-            nodeGs.forEach(function (g, i) {
-                g.addEventListener('mouseenter', function () {
-                    svg.classList.add('has-hover');
-                    nodeGs.forEach(function (ng) { ng.classList.remove('node-hi'); });
-                    pathEls.forEach(function (p) { p.classList.remove('edge-hi'); });
-                    lblEls.forEach(function (l) { if (l) l.classList.remove('edge-hi'); });
-                    g.classList.add('node-hi');
-                    nodeAdj[i].forEach(function (conn) {
-                        pathEls[conn.ei].classList.add('edge-hi');
-                        if (lblEls[conn.ei]) lblEls[conn.ei].classList.add('edge-hi');
-                        nodeGs[conn.peer].classList.add('node-hi');
-                    });
+            // Spotlight: one code path, shared by hover and keyboard focus.
+            var focusedIdx = -1;
+            function clearSpotlight() {
+                nodeGs.forEach(function (ng) { ng.classList.remove('node-hi'); });
+                pathEls.forEach(function (p) { p.classList.remove('edge-hi'); });
+                lblEls.forEach(function (l) { if (l) l.classList.remove('edge-hi'); });
+            }
+            function spotlightOn(i) {
+                svg.classList.add('has-hover');
+                clearSpotlight();
+                nodeGs[i].classList.add('node-hi');
+                nodeAdj[i].forEach(function (conn) {
+                    pathEls[conn.ei].classList.add('edge-hi');
+                    if (lblEls[conn.ei]) lblEls[conn.ei].classList.add('edge-hi');
+                    nodeGs[conn.peer].classList.add('node-hi');
                 });
+            }
+            function spotlightOff() {
+                svg.classList.remove('has-hover');
+                clearSpotlight();
+            }
+
+            // Hover spotlight. The node drag handler calls preventDefault() on
+            // mousedown, so a mouse never focuses a node and focusedIdx stays -1
+            // for mouse-only use: hovering behaves exactly as it always has.
+            nodeGs.forEach(function (g, i) {
+                g.addEventListener('mouseenter', function () { spotlightOn(i); });
                 g.addEventListener('mouseleave', function () {
-                    svg.classList.remove('has-hover');
-                    nodeGs.forEach(function (ng) { ng.classList.remove('node-hi'); });
-                    pathEls.forEach(function (p) { p.classList.remove('edge-hi'); });
-                    lblEls.forEach(function (l) { if (l) l.classList.remove('edge-hi'); });
+                    if (focusedIdx >= 0) spotlightOn(focusedIdx); else spotlightOff();
+                });
+            });
+
+            // Keep the focused node on screen: a focus ring nobody can see is not
+            // a focus indicator. Only the keyboard paths below call this.
+            function ensureVisible(i) {
+                var cw = svg.clientWidth, ch = svg.clientHeight;
+                if (!cw || !ch) return;
+                var m = 16;
+                var x = mpos[i].x * vpS + vpTx, y = mpos[i].y * vpS + vpTy;
+                var w = NW * vpS, h = heights[i] * vpS;
+                if (x < m) vpTx += m - x;
+                else if (x + w > cw - m) vpTx -= Math.min(x + w - (cw - m), x - m);
+                if (y < m) vpTy += m - y;
+                else if (y + h > ch - m) vpTy -= Math.min(y + h - (ch - m), y - m);
+                applyVp();
+            }
+
+            // Keyboard: focus spotlights a node, arrow keys move it and re-route
+            // its edges exactly like dragging does.
+            function moveNode(i, dx, dy) {
+                mpos[i].x += dx; mpos[i].y += dy;
+                nodeGs[i].setAttribute('transform',
+                    'translate(' + mpos[i].x.toFixed(1) + ',' + mpos[i].y.toFixed(1) + ')');
+                refreshEdges(i);
+                ensureVisible(i);
+            }
+            nodeGs.forEach(function (g, i) {
+                g.addEventListener('focus', function () { focusedIdx = i; spotlightOn(i); ensureVisible(i); });
+                g.addEventListener('blur', function () { focusedIdx = -1; spotlightOff(); });
+                g.addEventListener('keydown', function (e) {
+                    if (e.altKey || e.ctrlKey || e.metaKey) return;
+                    var d = e.shiftKey ? KSTEP_BIG : KSTEP;
+                    var dx = 0, dy = 0;
+                    switch (e.key) {
+                        case 'ArrowLeft': dx = -d; break;
+                        case 'ArrowRight': dx = d; break;
+                        case 'ArrowUp': dy = -d; break;
+                        case 'ArrowDown': dy = d; break;
+                        default: return;
+                    }
+                    e.preventDefault();
+                    moveNode(i, dx, dy);
                 });
             });
 
@@ -1598,7 +1713,8 @@
             var btnOut = flowButton('\u2212 Zoom Out');
             var btnReset = flowButton('\u21ba Reset Layout');
             var fhint = document.createElement('span'); fhint.className = 'flow-hint';
-            fhint.textContent = 'Drag\u00a0nodes \u00b7 Scroll\u00a0to\u00a0zoom \u00b7 Drag\u00a0background\u00a0to\u00a0pan \u00b7 Dbl-click\u00a0to\u00a0fit';
+            fhint.textContent = 'Drag\u00a0nodes \u00b7 Scroll\u00a0to\u00a0zoom \u00b7 Drag\u00a0background\u00a0to\u00a0pan \u00b7 Dbl-click\u00a0to\u00a0fit'
+                + ' \u00b7 Tab\u00a0to\u00a0a\u00a0node, arrows\u00a0move\u00a0it';
             ctrl.append(btnFit, btnIn, btnOut, btnReset, fhint);
             panel.appendChild(ctrl);
 

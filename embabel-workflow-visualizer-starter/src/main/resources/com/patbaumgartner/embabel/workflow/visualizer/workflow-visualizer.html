@@ -1834,8 +1834,12 @@
         // proxy prefix, or a custom embabel.workflow.visualizer.base-path.
         var API_URL = window.location.pathname.replace(/\/+$/, '') + '/api';
 
-        document.getElementById('endpoint-hint').innerHTML =
-            'Actuator <code>/actuator/embabel</code> \u00b7 API <code>' + esc(API_URL) + '</code>';
+        // Only the API is named here. The actuator endpoint's URL is fixed by four
+        // properties this page cannot see — the servlet context path, the management
+        // base path, the management port, and whether "embabel" is exposed at all — so
+        // any path printed for it would be a guess, and was wrong behind a context path.
+        // The README documents it; this API serves the same catalog.
+        document.getElementById('endpoint-hint').innerHTML = 'API <code>' + esc(API_URL) + '</code>';
 
         fetch(API_URL, { headers: { 'Accept': 'application/json' }, cache: 'no-store' })
             .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })

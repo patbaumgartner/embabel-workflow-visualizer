@@ -92,6 +92,20 @@ class WorkflowVisualizerPageControllerTests {
 		assertThat(page).doesNotContain("fetch('/embabel-workflows/api')").contains("window.location.pathname");
 	}
 
+	/**
+	 * The filter reads this notice on every keystroke, including before the catalog has
+	 * loaded and after a load that produced no agents or failed outright. Declaring it in
+	 * the markup — outside the container each render clears — is what keeps it present on
+	 * all of those paths rather than only the one that renders agents.
+	 */
+	@Test
+	void theNoMatchNoticeIsDeclaredInMarkupRatherThanBuiltByARenderPath() {
+		String page = new WorkflowVisualizerPageController().index().getBody();
+
+		assertThat(page).contains("id=\"no-match\"").doesNotContain("noMatch.id = 'no-match'");
+		assertThat(page.indexOf("id=\"no-match\"")).isLessThan(page.indexOf("function applyFilter"));
+	}
+
 	private String nonceFrom(String contentSecurityPolicy) {
 		Matcher matcher = Pattern.compile("'nonce-([^']+)'").matcher(contentSecurityPolicy);
 		assertThat(matcher.find()).describedAs("no nonce in %s", contentSecurityPolicy).isTrue();

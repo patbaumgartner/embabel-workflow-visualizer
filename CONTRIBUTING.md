@@ -26,8 +26,15 @@ OPENAI_API_KEY=dummy ./mvnw verify
 ## Running the visualizer locally
 
 ```bash
+./mvnw install -DskipTests -pl embabel-workflow-visualizer-starter
 OPENAI_API_KEY=dummy ./mvnw -pl embabel-sample-application spring-boot:run
 ```
+
+Both lines matter. `-pl embabel-sample-application` builds that module alone, so
+it resolves the starter from your local repository rather than from your working
+tree — without the `install` first you will be looking at the last starter you
+installed, and a change to the page or the scanner will appear to have done
+nothing. Re-run the `install` after every starter change.
 
 Then open <http://localhost:8080/embabel-workflows>. Add
 `-Dspring-boot.run.arguments=--server.servlet.context-path=/demo` to check that a

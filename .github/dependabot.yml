@@ -1,4 +1,10 @@
 version: 2
+# `include: scope` appends (deps) or (deps-dev) to the prefix, so the prefix must
+# not spell the scope itself — doing both is what produced the ci(deps)(deps):
+# titles on every pull request so far, which the conventional-commits changelog
+# preset cannot group. The types match the ones CONTRIBUTING.md lists: a
+# dependency bump is `build` by the Conventional Commits definition, and a
+# workflow bump is `ci`.
 updates:
 - package-ecosystem: maven
   directory: /
@@ -10,10 +16,10 @@ updates:
   open-pull-requests-limit: 10
   labels:
   - dependencies
-  - maven
+  - java
   commit-message:
-    prefix: chore(deps)
-    prefix-development: chore(deps-dev)
+    prefix: build
+    prefix-development: build
     include: scope
 - package-ecosystem: github-actions
   directory: /
@@ -25,7 +31,7 @@ updates:
   open-pull-requests-limit: 10
   labels:
   - dependencies
-  - github-actions
+  - github_actions
   commit-message:
-    prefix: ci(deps)
+    prefix: ci
     include: scope

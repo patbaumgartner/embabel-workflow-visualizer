@@ -335,6 +335,23 @@ class EmbabelWorkflowCatalogServiceTests {
 		assertThat(agent.beanName()).isNull();
 	}
 
+	/**
+	 * A method carrying two step annotations and no {@code @Action} to break the tie has
+	 * to resolve to the same step every time. Reflection does not order annotations, so
+	 * reading "the first one" made the node's type and description a property of the
+	 * compiler rather than of the source.
+	 */
+	@Test
+	void theMoreDefiningAnnotationDecidesAStepCarryingSeveral() {
+		WorkflowStep step = fullCoverageStepsByMethod().get("goalReachableAsATool");
+
+		assertThat(step.type()).isEqualTo("AchievesGoal");
+		assertThat(step.description()).isEqualTo("Goal that is also callable as a tool");
+		assertThat(step.goal()).isTrue();
+		assertThat(step.llmTool()).isTrue();
+		assertThat(step.llmToolDescription()).isEqualTo("Tool description that must not win");
+	}
+
 	@Test
 	void actionRetryPolicyConstantIsReflected() {
 		Map<String, WorkflowStep> byMethod = fullCoverageStepsByMethod();

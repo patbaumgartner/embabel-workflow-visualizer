@@ -1,13 +1,17 @@
 name: CI
 
-# Every push and every pull request runs the same full build: both modules,
-# all tests, the formatting check, and the coverage gate. A pull request that
-# is verified less strictly than the branch it targets is not verified.
+# Every pull request runs the same full build as main: both modules, all tests,
+# the formatting check, and the coverage gate. A pull request that is verified
+# less strictly than the branch it targets is not verified.
+#
+# `push` is limited to main because a pull request from a branch in this
+# repository already triggers the `pull_request` build; running both would
+# verify every such branch twice over.
 
 on:
   pull_request:
   push:
-    branches: ['**']
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

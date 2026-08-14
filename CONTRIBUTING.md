@@ -12,8 +12,8 @@ Java 21+ is the only prerequisite; the Maven wrapper takes care of Maven.
 ./mvnw spring-javaformat:apply                 # fix formatting before committing
 ```
 
-`verify` fails on a formatting violation and on a coverage drop below 90% line /
-75% branch in the starter, so run it before opening a pull request. CI runs the
+`verify` fails on a formatting violation and on a coverage drop below 95% line /
+82% branch in the starter, so run it before opening a pull request. CI runs the
 same command on Java 21 and 25.
 
 The sample application needs `OPENAI_API_KEY` set to start its context. No test

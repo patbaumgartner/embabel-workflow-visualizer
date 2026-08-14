@@ -132,9 +132,9 @@
 
       <!--
         This is the published artifact, so its coverage is enforced rather than
-        merely reported. The thresholds sit below the current numbers (0.97 line
-        / 0.82 branch) so they act as a ratchet against regressions instead of a
-        tax on every change.
+        merely reported. The thresholds sit just below the current numbers (0.95
+        line / 0.82 branch) so they act as a ratchet against regressions instead
+        of a tax on every change.
       -->
       <plugin>
         <groupId>org.jacoco</groupId>
@@ -154,12 +154,12 @@
                     <limit>
                       <counter>LINE</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.90</minimum>
+                      <minimum>0.95</minimum>
                     </limit>
                     <limit>
                       <counter>BRANCH</counter>
                       <value>COVEREDRATIO</value>
-                      <minimum>0.75</minimum>
+                      <minimum>0.82</minimum>
                     </limit>
                   </limits>
                 </rule>

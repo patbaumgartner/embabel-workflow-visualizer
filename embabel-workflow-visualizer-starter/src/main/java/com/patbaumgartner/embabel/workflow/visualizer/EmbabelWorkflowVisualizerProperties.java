@@ -27,15 +27,14 @@ public class EmbabelWorkflowVisualizerProperties {
 	static final String BASE_PATH_PLACEHOLDER = "${embabel.workflow.visualizer.base-path:" + DEFAULT_BASE_PATH + "}";
 
 	/**
-	 * Whether to serve the visualization UI and its REST API. The
-	 * {@code /actuator/embabel} endpoint is governed by the usual actuator exposure
-	 * properties instead.
+	 * Whether to serve the visualization UI and its REST API. The /actuator/embabel
+	 * endpoint is governed by the usual actuator exposure properties instead.
 	 */
 	private boolean enabled = false;
 
 	/**
-	 * Path the UI is served from; the REST API is served from {@code <base-path>/api}.
-	 * Change it to avoid a collision with an application's own routes.
+	 * Path the UI is served from; the REST API is served from that path plus /api. Change
+	 * it to avoid a collision with an application's own routes.
 	 */
 	private String basePath = DEFAULT_BASE_PATH;
 

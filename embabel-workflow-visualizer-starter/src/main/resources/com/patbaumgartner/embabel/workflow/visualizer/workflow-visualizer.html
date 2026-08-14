@@ -1364,6 +1364,11 @@
             vp.appendChild(nodesG);
 
             var vpS = 1, vpTx = 0, vpTy = 0;
+            // Set by every pan and zoom the reader performs, cleared by fit(). The
+            // diagram is fitted to a container whose width follows the window, so a
+            // resize leaves it clipped or adrift — but re-fitting unconditionally would
+            // throw away a view the reader had just positioned by hand.
+            var viewAdjusted = false;
             function applyVp() {
                 vp.setAttribute('transform',
                     'translate(' + vpTx.toFixed(1) + ',' + vpTy.toFixed(1) + ') scale(' + vpS.toFixed(4) + ')');
@@ -1488,7 +1493,7 @@
                 var ns2 = clamp(vpS * factor, 0.05, 8);
                 vpTx = mx - (mx - vpTx) * (ns2 / vpS);
                 vpTy = my - (my - vpTy) * (ns2 / vpS);
-                vpS = ns2; applyVp();
+                vpS = ns2; applyVp(); viewAdjusted = true;
             }, { passive: false });
 
             var panning = false, panOX = 0, panOY = 0, panOTx = 0, panOTy = 0;
@@ -1500,7 +1505,7 @@
             // Listeners are attached per drag rather than for the lifetime of the page:
             // one canvas is rendered per agent, so permanent handlers would make every
             // mouse move fan out across every diagram on screen.
-            function doPanMove(e) { if (!panning) return; vpTx = panOTx + e.clientX - panOX; vpTy = panOTy + e.clientY - panOY; applyVp(); }
+            function doPanMove(e) { if (!panning) return; vpTx = panOTx + e.clientX - panOX; vpTy = panOTy + e.clientY - panOY; applyVp(); viewAdjusted = true; }
             function doPanUp() {
                 panning = false; svg.style.cursor = '';
                 window.removeEventListener('mousemove', doPanMove);
@@ -1537,7 +1542,7 @@
                 }
                 if (!tPan) return;
                 vpTx += x - ltx; vpTy += y - lty;
-                ltx = x; lty = y; applyVp();
+                ltx = x; lty = y; applyVp(); viewAdjusted = true;
                 e.preventDefault();
             }, { passive: false });
 
@@ -1547,13 +1552,14 @@
                 var scale = Math.min(cw / svgW, ch / svgH, 1) * 0.92;
                 vpS = scale; vpTx = (cw - svgW * vpS) / 2; vpTy = Math.max(10, (ch - svgH * vpS) / 2);
                 applyVp();
+                viewAdjusted = false;
             }
             function zoomBy(f) {
                 var cw = svg.clientWidth, ch = svg.clientHeight;
                 var ns2 = clamp(vpS * f, 0.05, 8);
                 vpTx = cw / 2 - (cw / 2 - vpTx) * (ns2 / vpS);
                 vpTy = ch / 2 - (ch / 2 - vpTy) * (ns2 / vpS);
-                vpS = ns2; applyVp();
+                vpS = ns2; applyVp(); viewAdjusted = true;
             }
 
             // Per-node drag
@@ -1653,6 +1659,18 @@
             });
 
             requestAnimationFrame(fit);
+
+            // A ResizeObserver rather than a window listener: it fires for a panel the
+            // filter has just shown, which has no size until then, and it reports only
+            // the canvases that actually changed.
+            if (typeof ResizeObserver === 'function') {
+                var refitPending = 0;
+                new ResizeObserver(function () {
+                    if (viewAdjusted || !svg.clientWidth) return;
+                    cancelAnimationFrame(refitPending);
+                    refitPending = requestAnimationFrame(fit);
+                }).observe(svg);
+            }
 
             return {
                 svgEl: svg, fit: fit,

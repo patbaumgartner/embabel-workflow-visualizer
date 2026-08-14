@@ -992,6 +992,30 @@ class EmbabelWorkflowCatalogServiceTests {
 		assertThat(byMethod.get("completeGoal").registered()).isFalse();
 	}
 
+	/**
+	 * A method carrying both {@code @Action} and {@code @AchievesGoal} is one declared
+	 * step, but Embabel registers two runtime steps for it — an action and a goal of the
+	 * same name. Neither was invented by the planner, so matching runtime steps against
+	 * declared names has to ignore the step's kind. Keying that match by kind as well
+	 * would leave the action matching nothing and add a phantom duplicate of a step the
+	 * author wrote themselves.
+	 */
+	@Test
+	void aMethodRegisteringBothAnActionAndAGoalGainsNoPhantomStep() {
+		FakeAgentPlatform.Platform platform = new FakeAgentPlatform.Platform(List
+			.of(FakeAgentPlatform.Agent.named("MultiGoalAgent",
+					List.of(new FakeAgentPlatform.Action("MultiGoalSampleAgent.completeFast", "Run the fast path",
+							FakeAgentPlatform.IoBinding.of("it:com.example.Inspection"),
+							FakeAgentPlatform.IoBinding.of("it:com.example.Result"), Map.of(), Map.of(), false, false)),
+					Set.of(new FakeAgentPlatform.Goal("MultiGoalSampleAgent.completeFast", "Fast path completion",
+							Set.of(), new FakeAgentPlatform.DomainType("com.example.Result"))))));
+
+		AgentWorkflow agent = catalogWithPlatform(platform, MultiGoalSampleAgent.class).agents().get(0);
+
+		assertThat(agent.steps()).noneMatch(WorkflowStep::plannerGenerated);
+		assertThat(agent.steps()).filteredOn(step -> "completeFast".equals(step.method())).hasSize(1);
+	}
+
 	@Test
 	void addsStepsThePlannerSynthesised() {
 		FakeAgentPlatform.Platform platform = new FakeAgentPlatform.Platform(List

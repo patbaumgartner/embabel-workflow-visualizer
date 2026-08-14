@@ -746,6 +746,46 @@ class EmbabelWorkflowCatalogServiceTests {
 	}
 
 	// -------------------------------------------------------------------------
+	// @State routing
+	// -------------------------------------------------------------------------
+
+	/**
+	 * A routing action's declared return type says nothing about where the workflow
+	 * actually goes. The concrete types come from the {@code @State} records on the same
+	 * agent, and without them the diagram cannot draw an edge out of the routing step at
+	 * all.
+	 */
+	@Test
+	void aRoutingStepReportsTheStateTypesItMayReallyProduce() {
+		AgentWorkflow agent = catalogWith(StateRoutingSampleAgent.class).agents().get(0);
+
+		WorkflowStep route = stepByMethod(agent, "route");
+		assertThat(route.output()).isEqualTo("Object");
+		assertThat(route.possibleOutputs()).containsExactlyInAnyOrder("BillingTicket", "TechnicalTicket");
+	}
+
+	/**
+	 * A handler declared inside a {@code @State} record takes only an
+	 * {@code OperationContext}, but it consumes the ticket its state holds. Reporting the
+	 * signature alone would leave the terminal step of every branch looking like it needs
+	 * no input.
+	 */
+	@Test
+	void aStateHandlerReportsTheTypeItsStateHolds() {
+		AgentWorkflow agent = catalogWith(StateRoutingSampleAgent.class).agents().get(0);
+
+		assertThat(stepByMethod(agent, "handleBilling").inputs()).containsExactly("BillingTicket");
+		assertThat(stepByMethod(agent, "handleTechnical").inputs()).containsExactly("TechnicalTicket");
+	}
+
+	@Test
+	void aStepWithAnExactReturnTypeHasNoAlternatives() {
+		AgentWorkflow agent = catalogWith(StateRoutingSampleAgent.class).agents().get(0);
+
+		assertThat(stepByMethod(agent, "handleBilling").possibleOutputs()).isNull();
+	}
+
+	// -------------------------------------------------------------------------
 	// Runtime reconciliation
 	// -------------------------------------------------------------------------
 

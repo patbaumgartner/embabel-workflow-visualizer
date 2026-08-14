@@ -40,6 +40,100 @@ class WorkflowModelsTests {
 				"retryPolicyExpression", "registered");
 	}
 
+	/**
+	 * The 1.0.x constructors are kept so code compiled against that release still links,
+	 * and they are the only members here nothing else calls. Each hands twenty-nine
+	 * arguments to a thirty-nine-component record positionally, where neighbours of the
+	 * same type — {@code costMethod} beside {@code valueMethod}, {@code tags} beside
+	 * {@code examples} — would swap without a compiler error and quietly mislabel every
+	 * step of a consumer still on 1.0.x. Giving each argument its own name as its value
+	 * is what makes such a swap visible.
+	 */
+	@Test
+	@SuppressWarnings("removal")
+	void theOneZeroStepConstructorStillLandsEveryArgumentWhereItBelongs() {
+		WorkflowStep step = new WorkflowStep("name", "type", "description", "method", List.of("pre"), List.of("post"),
+				List.of("inputs"), "output", true, "costMethod", "valueMethod", 1.0, 2.0, 3.0,
+				List.of("possibleOutputs"), false, true, "outputBinding", false, List.of("tags"), List.of("examples"),
+				true, "llmToolDescription", false, "exportName", "trigger", "retryPolicy", true, "llmToolCategory");
+
+		assertThat(step.name()).isEqualTo("name");
+		assertThat(step.type()).isEqualTo("type");
+		assertThat(step.description()).isEqualTo("description");
+		assertThat(step.method()).isEqualTo("method");
+		assertThat(step.pre()).containsExactly("pre");
+		assertThat(step.post()).containsExactly("post");
+		assertThat(step.inputs()).containsExactly("inputs");
+		assertThat(step.output()).isEqualTo("output");
+		assertThat(step.goal()).isTrue();
+		assertThat(step.costMethod()).isEqualTo("costMethod");
+		assertThat(step.valueMethod()).isEqualTo("valueMethod");
+		assertThat(step.cost()).isEqualTo(1.0);
+		assertThat(step.value()).isEqualTo(2.0);
+		assertThat(step.goalValue()).isEqualTo(3.0);
+		assertThat(step.possibleOutputs()).containsExactly("possibleOutputs");
+		assertThat(step.canRerun()).isFalse();
+		assertThat(step.readOnly()).isTrue();
+		assertThat(step.outputBinding()).isEqualTo("outputBinding");
+		assertThat(step.clearBlackboard()).isFalse();
+		assertThat(step.tags()).containsExactly("tags");
+		assertThat(step.examples()).containsExactly("examples");
+		assertThat(step.llmTool()).isTrue();
+		assertThat(step.llmToolDescription()).isEqualTo("llmToolDescription");
+		assertThat(step.exportedRemote()).isFalse();
+		assertThat(step.exportName()).isEqualTo("exportName");
+		assertThat(step.trigger()).isEqualTo("trigger");
+		assertThat(step.retryPolicy()).isEqualTo("retryPolicy");
+		assertThat(step.llmToolReturnDirect()).isTrue();
+		assertThat(step.llmToolCategory()).isEqualTo("llmToolCategory");
+	}
+
+	/**
+	 * Everything the 1.0.x constructor cannot express. {@code exportedLocal} is knowingly
+	 * wrong — Embabel defaults {@code @Export(local)} to {@code true} — because a
+	 * positional constructor has nowhere to say so; the builder is what corrects it.
+	 */
+	@Test
+	@SuppressWarnings("removal")
+	void theOneZeroStepConstructorLeavesTheLaterAttributesUndeclared() {
+		WorkflowStep step = new WorkflowStep("n", "Action", "", "m", List.of(), List.of(), List.of(), "void", false,
+				null, null, null, null, null, null, false, false, null, false, List.of(), List.of(), false, null, false,
+				null, null, null, false, null);
+
+		assertThat(step.actionRetryPolicy()).isNull();
+		assertThat(step.conditionCost()).isNull();
+		assertThat(step.exportedLocal()).isFalse();
+		assertThat(step.exportStartingInputTypes()).isEmpty();
+		assertThat(step.llmToolName()).isNull();
+		assertThat(step.llmToolMetadata()).isEmpty();
+		assertThat(step.providedInputs()).isEmpty();
+		assertThat(step.nameMatchInputs()).isEmpty();
+		assertThat(step.registered()).isNull();
+		assertThat(step.plannerGenerated()).isFalse();
+	}
+
+	@Test
+	@SuppressWarnings("removal")
+	void theOneZeroAgentConstructorStillLandsEveryArgumentWhereItBelongs() {
+		AgentWorkflow agent = new AgentWorkflow("agentName", "description", "version", "plannerType", true, "className",
+				List.of(WorkflowStep.builder("n", "Action", "m").build()), "provider");
+
+		assertThat(agent.agentName()).isEqualTo("agentName");
+		assertThat(agent.description()).isEqualTo("description");
+		assertThat(agent.version()).isEqualTo("version");
+		assertThat(agent.plannerType()).isEqualTo("plannerType");
+		assertThat(agent.opaque()).isTrue();
+		assertThat(agent.className()).isEqualTo("className");
+		assertThat(agent.steps()).singleElement().extracting(WorkflowStep::name).isEqualTo("n");
+		assertThat(agent.provider()).isEqualTo("provider");
+
+		assertThat(agent.beanName()).isNull();
+		assertThat(agent.scan()).isTrue();
+		assertThat(agent.retryPolicy()).isNull();
+		assertThat(agent.retryPolicyExpression()).isNull();
+		assertThat(agent.registered()).isNull();
+	}
+
 	@Test
 	void stepBuilderDefaultsMeanNotDeclared() {
 		WorkflowStep step = WorkflowStep.builder("draft", "Action", "draftPlan").build();

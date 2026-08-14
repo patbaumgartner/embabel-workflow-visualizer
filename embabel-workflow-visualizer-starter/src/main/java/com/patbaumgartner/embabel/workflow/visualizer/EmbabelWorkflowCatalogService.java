@@ -68,6 +68,21 @@ public class EmbabelWorkflowCatalogService implements ApplicationListener<Applic
 
 	private static final String REQUIRE_NAME_MATCH_ANNOTATION_FQN = "com.embabel.agent.api.annotation.RequireNameMatch";
 
+	private static final String COST_ANNOTATION_FQN = "com.embabel.agent.api.annotation.Cost";
+
+	/**
+	 * The annotations that make a method a step, most defining first.
+	 *
+	 * <p>
+	 * A method can carry several — {@code @Action} with {@code @AchievesGoal},
+	 * {@code @AchievesGoal} with {@code @LlmTool} — and one of them has to decide what
+	 * the step is called and what type it reports. {@link Method#getAnnotations()} does
+	 * not specify its order, so taking whichever came first would let a compiler or JDK
+	 * change silently rename a step and reclassify its node in the diagram.
+	 */
+	private static final List<String> STEP_ANNOTATIONS_BY_PRECEDENCE = List.of(ACTION_ANNOTATION_FQN,
+			ACHIEVES_GOAL_ANNOTATION_FQN, CONDITION_ANNOTATION_FQN, COST_ANNOTATION_FQN, LLM_TOOL_ANNOTATION_FQN);
+
 	/**
 	 * Step types the planner registers. A {@code @Cost} function and an {@code @LlmTool}
 	 * are deliberately not plan steps — flagging every one of them as missing from the
@@ -93,8 +108,7 @@ public class EmbabelWorkflowCatalogService implements ApplicationListener<Applic
 	 */
 	private static final String DEFAULT_OUTPUT_BINDING = "it";
 
-	private static final Set<String> STEP_ANNOTATION_FQNS = Set.of(ACTION_ANNOTATION_FQN, ACHIEVES_GOAL_ANNOTATION_FQN,
-			CONDITION_ANNOTATION_FQN, "com.embabel.agent.api.annotation.Cost", LLM_TOOL_ANNOTATION_FQN);
+	private static final Set<String> STEP_ANNOTATION_FQNS = Set.copyOf(STEP_ANNOTATIONS_BY_PRECEDENCE);
 
 	/** Framework parameter types that should not be reported as workflow inputs. */
 	private static final Set<String> FRAMEWORK_PARAMETER_TYPES = Set.of("com.embabel.agent.api.common.OperationContext",
@@ -474,7 +488,12 @@ public class EmbabelWorkflowCatalogService implements ApplicationListener<Applic
 				}
 			}
 		}
+		grouped.values().forEach(annotations -> annotations.sort(Comparator.comparingInt(this::precedenceOf)));
 		return grouped;
+	}
+
+	private int precedenceOf(Annotation annotation) {
+		return STEP_ANNOTATIONS_BY_PRECEDENCE.indexOf(annotation.annotationType().getName());
 	}
 
 	private boolean hasStepAnnotation(Method method) {
@@ -525,10 +544,9 @@ public class EmbabelWorkflowCatalogService implements ApplicationListener<Applic
 
 	private WorkflowStep toStep(Method method, List<Annotation> annotations, List<String> implicitInputs,
 			List<String> possibleOutputs) {
-		Annotation primary = annotations.stream()
-			.filter(a -> ACTION_ANNOTATION_FQN.equals(a.annotationType().getName()))
-			.findFirst()
-			.orElse(annotations.get(0));
+		// Sorted by precedence in findStepMethods, so the most defining annotation leads
+		// and both the step's identity and its description are read from it.
+		Annotation primary = annotations.get(0);
 
 		boolean achievesGoal = annotations.stream()
 			.anyMatch(a -> ACHIEVES_GOAL_ANNOTATION_FQN.equals(a.annotationType().getName()));

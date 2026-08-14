@@ -58,4 +58,15 @@ public class FullCoverageSampleAgent {
 		return input;
 	}
 
+	/**
+	 * Two step annotations and no {@code @Action} to break the tie, which is the case
+	 * where the reported type used to depend on the order reflection happened to hand the
+	 * annotations back in.
+	 */
+	@AchievesGoal(description = "Goal that is also callable as a tool")
+	@LlmTool(description = "Tool description that must not win")
+	public String goalReachableAsATool() {
+		return "both";
+	}
+
 }

@@ -1425,7 +1425,11 @@
                 if (step.plannerGenerated) label += ', planner-generated';
                 else if (step.registered === false) label += ', not in plan';
                 g.setAttribute('tabindex', '0');
-                g.setAttribute('role', 'button');
+                // Not a button: focusing a node spotlights it and the arrow keys move
+                // it, but there is nothing to activate, so announcing "button" promised
+                // an Enter or Space that does nothing. A group carries the label and the
+                // roledescription below without offering an affordance that is not there.
+                g.setAttribute('role', 'group');
                 g.setAttribute('aria-roledescription', 'workflow step');
                 g.setAttribute('aria-label', label);
 

@@ -1009,11 +1009,6 @@
                     if (!typeProd.has(s.output)) typeProd.set(s.output, []);
                     typeProd.get(s.output).push(i);
                 }
-                // outputBinding also acts as a type producer for dependency resolution
-                if (s.outputBinding) {
-                    if (!typeProd.has(s.outputBinding)) typeProd.set(s.outputBinding, []);
-                    typeProd.get(s.outputBinding).push(i);
-                }
                 (s.possibleOutputs || []).forEach(function (t) {
                     if (!typeProd.has(t)) typeProd.set(t, []);
                     typeProd.get(t).push(i);
@@ -1040,7 +1035,11 @@
                     if (typeof c === 'string' && c.indexOf('spel:') === 0) return;
                     (condProd.get(c) || []).forEach(function (src) { addEdge(src, i, 'pre', c); });
                 });
+                // @Provided parameters come from the platform context rather than the
+                // blackboard, so whatever else produces that type did not produce this.
+                var provided = new Set(s.providedInputs || []);
                 (s.inputs || []).forEach(function (t) {
+                    if (provided.has(t)) return;
                     (typeProd.get(t) || []).forEach(function (src) { addEdge(src, i, 'type', t); });
                 });
                 if (s.costMethod && costProd.has(s.costMethod)) addEdge(costProd.get(s.costMethod), i, 'cost', 'costMethod');

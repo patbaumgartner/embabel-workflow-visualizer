@@ -31,15 +31,17 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
 permissions:
-  contents: write       # create the GitHub release and upload assets
-  id-token: write       # mint the short-lived OIDC token the attestation is signed with
-  attestations: write   # record the provenance attestation against this repository
+  contents: read
 
 jobs:
   release:
     name: Release (Java 21)
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: write       # create the GitHub release and upload assets
+      id-token: write       # mint the short-lived OIDC token the attestation is signed with
+      attestations: write   # record the provenance attestation against this repository
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

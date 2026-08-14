@@ -773,6 +773,49 @@ class EmbabelWorkflowCatalogServiceTests {
 		assertThat(agent.steps()).extracting(WorkflowStep::registered).containsOnlyNulls();
 	}
 
+	/**
+	 * {@code SampleEmbabelAgent} declares a condition named {@code hasInput}. A runtime
+	 * <em>action</em> of that name is a different step, and treating it as proof that the
+	 * condition runs would hide exactly the divergence this view exists to show.
+	 */
+	@Test
+	void aRuntimeStepDoesNotVouchForADeclaredStepOfAnotherKind() {
+		FakeAgentPlatform.Platform platform = new FakeAgentPlatform.Platform(List.of(FakeAgentPlatform.Agent.named(
+				"demo-agent", List.of(FakeAgentPlatform.Action.named(SampleEmbabelAgent.class.getName() + ".hasInput")),
+				Set.of())));
+
+		AgentWorkflow agent = catalogWithPlatform(platform, SampleEmbabelAgent.class).agents().get(0);
+
+		assertThat(stepByMethod(agent, "hasInput").type()).isEqualTo("Condition");
+		assertThat(stepByMethod(agent, "hasInput").registered()).isFalse();
+	}
+
+	/**
+	 * Two classes can answer to one agent name — one because the annotation says so, the
+	 * other because that is what its class is called. A runtime agent named after the
+	 * second one's class belongs to it, and must not be claimed by whichever of the two
+	 * the bean scan happened to reach first.
+	 */
+	@Test
+	void anExactClassNameClaimsItsRuntimeAgentBeforeAnySimpleNameDoes() {
+		FakeAgentPlatform.Platform platform = new FakeAgentPlatform.Platform(
+				List.of(FakeAgentPlatform.Agent.named(Namesake.class.getName(), List.of(), Set.of())));
+
+		WorkflowCatalog catalog = catalogWithPlatform(platform, AliasedNamesakeAgent.class, Namesake.class);
+
+		assertThat(catalog.agents()).extracting(AgentWorkflow::className, AgentWorkflow::registered)
+			.containsExactlyInAnyOrder(tuple(Namesake.class.getName(), true),
+					tuple(AliasedNamesakeAgent.class.getName(), false));
+	}
+
+	private WorkflowStep stepByMethod(AgentWorkflow agent, String method) {
+		return agent.steps()
+			.stream()
+			.filter(step -> method.equals(step.method()))
+			.findFirst()
+			.orElseThrow(() -> new AssertionError("no step " + method + " on " + agent.agentName()));
+	}
+
 	@Test
 	void marksDeclaredStepsThePlatformRegistered() {
 		FakeAgentPlatform.Platform platform = new FakeAgentPlatform.Platform(

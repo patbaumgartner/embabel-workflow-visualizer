@@ -43,6 +43,12 @@ class AgentPlatformReader {
 
 	private static final String UNOBTAINABLE = "__unobtanium__";
 
+	/**
+	 * JVM array-element codes, which appear in a binding naming an array of primitives.
+	 */
+	private static final Map<String, String> PRIMITIVE_DESCRIPTORS = Map.of("B", "byte", "C", "char", "D", "double",
+			"F", "float", "I", "int", "J", "long", "S", "short", "Z", "boolean");
+
 	private final ApplicationContext applicationContext;
 
 	AgentPlatformReader(ApplicationContext applicationContext) {
@@ -190,15 +196,27 @@ class AgentPlatformReader {
 	}
 
 	/**
-	 * Simple name of a type, nested types included: a runtime binding names them in
-	 * binary form ({@code com.foo.Models$Request}), while the annotation scan reports
-	 * {@link Class#getSimpleName()} ({@code Request}). They have to agree, or the diagram
-	 * fails to connect a runtime step to the declared step producing its input.
+	 * Simple name of a type, nested types and arrays included: a runtime binding names
+	 * them the way the JVM does ({@code com.foo.Models$Request},
+	 * {@code [Lcom.foo.Order;}), while the annotation scan reports
+	 * {@link Class#getSimpleName()} ({@code Request}, {@code Order[]}). They have to
+	 * agree, or the diagram fails to connect a runtime step to the declared step
+	 * producing its input.
 	 */
 	private static String simpleTypeName(String qualifiedType) {
-		String afterPackage = simpleName(qualifiedType);
+		int dimensions = 0;
+		String type = qualifiedType;
+		while (type.startsWith("[")) {
+			dimensions++;
+			type = type.substring(1);
+		}
+		if (dimensions > 0) {
+			type = type.startsWith("L") && type.endsWith(";") ? type.substring(1, type.length() - 1)
+					: PRIMITIVE_DESCRIPTORS.getOrDefault(type, type);
+		}
+		String afterPackage = simpleName(type);
 		int lastNested = afterPackage.lastIndexOf('$');
-		return lastNested < 0 ? afterPackage : afterPackage.substring(lastNested + 1);
+		return (lastNested < 0 ? afterPackage : afterPackage.substring(lastNested + 1)) + "[]".repeat(dimensions);
 	}
 
 	/** An agent as the platform registered it. */

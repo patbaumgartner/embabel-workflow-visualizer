@@ -1,0 +1,14 @@
+{
+  "properties": [
+    {
+      "name": "embabel.workflow.visualizer.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": false
+    },
+    {
+      "name": "embabel.workflow.visualizer.base-path",
+      "type": "java.lang.String",
+      "defaultValue": "/embabel-workflows"
+    }
+  ]
+}

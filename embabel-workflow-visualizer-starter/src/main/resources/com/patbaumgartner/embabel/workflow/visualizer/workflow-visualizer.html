@@ -16,6 +16,15 @@
     </script>
     <style>
         /* ── Theme tokens ──────────────────────────────────────────────── */
+        /*
+           The brand palette is declared twice, once per theme. Every brand colour
+           is carried as text or as a border — a node's type label, a badge, an
+           edge caption — never as a fill behind text, so each one has to hold up
+           against the surface its theme actually paints. The values below are
+           tuned for the dark card; the light theme restates all six darker,
+           because the same hues that read cleanly on #111a2a drop to between
+           1.6:1 and 3.9:1 on a white card, well under WCAG AA.
+        */
         :root {
             color-scheme: dark;
             --brand-cyan: #2bb7e0;
@@ -23,7 +32,7 @@
             --brand-green: #6ec829;
             --brand-yellow: #ffc600;
             --brand-orange: #ff6c2c;
-            --brand-purple: #9b59b6;
+            --brand-purple: #ac75c2;
             --bg: #0a1220;
             --bg-2: #0c1630;
             --card: #111a2a;
@@ -52,6 +61,12 @@
         @media (prefers-color-scheme: light) {
             :root:not([data-theme="dark"]) {
                 color-scheme: light;
+                --brand-cyan: #167895;
+                --brand-pink: #d51f5f;
+                --brand-green: #457d1a;
+                --brand-yellow: #8a6b00;
+                --brand-orange: #ca3d00;
+                --brand-purple: #9753b3;
                 --bg: #f0f4fa;
                 --bg-2: #ffffff;
                 --card: #ffffff;
@@ -73,6 +88,12 @@
 
         :root[data-theme="light"] {
             color-scheme: light;
+            --brand-cyan: #167895;
+            --brand-pink: #d51f5f;
+            --brand-green: #457d1a;
+            --brand-yellow: #8a6b00;
+            --brand-orange: #ca3d00;
+            --brand-purple: #9753b3;
             --bg: #f0f4fa;
             --bg-2: #ffffff;
             --card: #ffffff;
@@ -222,12 +243,18 @@
             align-items: center;
             gap: 0.6rem;
             flex-wrap: wrap;
+            /* A flex item defaults to min-width:auto and so refuses to shrink below
+               its longest word. Agent and class names come from the application being
+               described, so an unbroken one would push the header past the viewport
+               instead of wrapping. */
+            min-width: 0;
         }
 
         .agent-header h2 {
             font-size: 1.05rem;
             font-weight: 700;
             color: var(--action);
+            overflow-wrap: anywhere;
         }
 
         /* Planner type badge */
@@ -292,6 +319,10 @@
             color: var(--muted);
             font-family: ui-monospace, Consolas, monospace;
             margin-top: 0.15rem;
+            /* Fully-qualified class names, bean names and SpEL retry expressions are
+               long and unbroken, and all three come from the described application. */
+            min-width: 0;
+            overflow-wrap: anywhere;
         }
 
         .agent .desc {

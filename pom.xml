@@ -55,7 +55,7 @@
     <java.version>21</java.version>
     <jreleaser.version>1.25.0</jreleaser.version>
     <log4j2.version>2.25.5</log4j2.version>
-    <maven-enforcer.version>3.6.2</maven-enforcer.version>
+    <maven-enforcer.version>3.6.3</maven-enforcer.version>
     <!--
       Fixed timestamp for every archive entry, which makes the published jars
       byte-for-byte reproducible: anyone can rebuild the tag and compare against

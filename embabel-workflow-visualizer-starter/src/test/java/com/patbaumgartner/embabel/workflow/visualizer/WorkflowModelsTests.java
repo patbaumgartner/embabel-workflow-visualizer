@@ -17,8 +17,9 @@ class WorkflowModelsTests {
 
 	/**
 	 * The JSON emitted by {@code /actuator/embabel} and {@code /embabel-workflows/api} is
-	 * a public contract consumed by the bundled UI and by third-party tooling. Renaming,
-	 * dropping, or adding a property is a breaking change and must be a deliberate one.
+	 * a public contract consumed by the bundled UI and by third-party tooling. Adding a
+	 * property is backwards compatible; renaming or dropping one is not. Either way the
+	 * change must be deliberate, which is what this test forces.
 	 */
 	@Test
 	void stepJsonContractIsStable() {
@@ -28,14 +29,14 @@ class WorkflowModelsTests {
 				"tags", "examples", "llmTool", "llmToolDescription", "exportedRemote", "exportName", "trigger",
 				"retryPolicy", "llmToolReturnDirect", "llmToolCategory", "actionRetryPolicy", "conditionCost",
 				"exportedLocal", "exportStartingInputTypes", "llmToolName", "llmToolMetadata", "providedInputs",
-				"nameMatchInputs");
+				"nameMatchInputs", "registered", "plannerGenerated");
 	}
 
 	@Test
 	void agentJsonContractIsStable() {
 		assertThat(propertiesOf(AgentWorkflow.builder("a", "C").build())).containsOnlyKeys("agentName", "description",
 				"version", "plannerType", "opaque", "className", "steps", "provider", "beanName", "scan", "retryPolicy",
-				"retryPolicyExpression");
+				"retryPolicyExpression", "registered");
 	}
 
 	@Test
@@ -52,6 +53,9 @@ class WorkflowModelsTests {
 		assertThat(step.outputBinding()).isNull();
 		assertThat(step.possibleOutputs()).isNull();
 		assertThat(step.goal()).isFalse();
+		// null means "no platform was available to ask", not "not registered"
+		assertThat(step.registered()).isNull();
+		assertThat(step.plannerGenerated()).isFalse();
 		// @Export(local) defaults to true in Embabel, so a step is locally callable
 		// unless it opts out
 		assertThat(step.exportedLocal()).isTrue();
@@ -67,6 +71,7 @@ class WorkflowModelsTests {
 		assertThat(agent.retryPolicy()).isNull();
 		// @Agent(scan) defaults to true in Embabel
 		assertThat(agent.scan()).isTrue();
+		assertThat(agent.registered()).isNull();
 	}
 
 	@Test

@@ -1,5 +1,7 @@
 package com.patbaumgartner.embabel.workflow.visualizer;
 
+import com.patbaumgartner.embabel.workflow.visualizer.AgentPlatformReader.RuntimeAgent;
+import com.patbaumgartner.embabel.workflow.visualizer.AgentPlatformReader.RuntimeStep;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.AgentWorkflow;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.ToolMetadata;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowCatalog;
@@ -20,12 +22,14 @@ import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -60,6 +64,14 @@ public class EmbabelWorkflowCatalogService {
 
 	private static final String REQUIRE_NAME_MATCH_ANNOTATION_FQN = "com.embabel.agent.api.annotation.RequireNameMatch";
 
+	/**
+	 * Step types the planner registers. A {@code @Cost} function and an {@code @LlmTool}
+	 * are deliberately not plan steps — flagging every one of them as missing from the
+	 * plan would bury the case that actually matters, a declared action the planner does
+	 * not run.
+	 */
+	private static final Set<String> PLANNABLE_STEP_TYPES = Set.of("Action", "AchievesGoal", "Condition");
+
 	/** {@code ActionRetryPolicy.DEFAULT} means "not configured" and is not reported. */
 	private static final String DEFAULT_RETRY_POLICY = "DEFAULT";
 
@@ -80,10 +92,17 @@ public class EmbabelWorkflowCatalogService {
 
 	private final ApplicationContext applicationContext;
 
+	private final AgentPlatformReader platformReader;
+
 	private volatile WorkflowCatalog cached;
 
 	public EmbabelWorkflowCatalogService(ApplicationContext applicationContext) {
+		this(applicationContext, new AgentPlatformReader(applicationContext));
+	}
+
+	EmbabelWorkflowCatalogService(ApplicationContext applicationContext, AgentPlatformReader platformReader) {
 		this.applicationContext = applicationContext;
+		this.platformReader = platformReader;
 	}
 
 	/**
@@ -110,17 +129,23 @@ public class EmbabelWorkflowCatalogService {
 		}
 		Scan scanned = scan();
 		// A racing scan produces an equal, immutable result, so no lock is needed.
-		// Only a complete, non-empty scan is cached. An empty result also covers "asked
-		// before the context finished refreshing", and caching a scan that skipped a
-		// bean would make one transient failure permanent.
-		if (scanned.complete() && !scanned.catalog().agents().isEmpty()) {
+		if (scanned.worthCaching()) {
 			this.cached = scanned.catalog();
 		}
 		return scanned.catalog();
 	}
 
-	/** A catalog plus whether every bean in the context could be inspected. */
-	private record Scan(WorkflowCatalog catalog, boolean complete) {
+	/**
+	 * A catalog plus whether it is safe to keep. A scan is only worth caching when every
+	 * bean could be inspected and, where Embabel is on the classpath, the agent platform
+	 * was up to reconcile against — otherwise a catalog produced before the platform
+	 * existed would freeze the declared-only view for the life of the context.
+	 */
+	private record Scan(WorkflowCatalog catalog, boolean complete, boolean reconciled) {
+
+		boolean worthCaching() {
+			return this.complete && this.reconciled && !this.catalog.agents().isEmpty();
+		}
 	}
 
 	private Scan scan() {
@@ -130,7 +155,7 @@ public class EmbabelWorkflowCatalogService {
 		}
 		catch (RuntimeException ex) {
 			log.warn("Failed to enumerate beans for the Embabel workflow catalog", ex);
-			return new Scan(new WorkflowCatalog(List.of()), false);
+			return new Scan(new WorkflowCatalog(List.of()), false, false);
 		}
 
 		List<AgentWorkflow> agents = new ArrayList<>();
@@ -144,8 +169,141 @@ public class EmbabelWorkflowCatalogService {
 				log.warn("Skipping bean '{}' while scanning for Embabel agents", beanName, ex);
 			}
 		}
-		agents.sort(Comparator.comparing(AgentWorkflow::agentName, String.CASE_INSENSITIVE_ORDER));
-		return new Scan(new WorkflowCatalog(agents), complete);
+		List<RuntimeAgent> runtimeAgents = this.platformReader.readAgents();
+		List<AgentWorkflow> merged = withRuntimeView(agents, runtimeAgents);
+		merged.sort(Comparator.comparing(AgentWorkflow::agentName, String.CASE_INSENSITIVE_ORDER));
+		boolean reconciled = !runtimeAgents.isEmpty() || !this.platformReader.platformExpected();
+		return new Scan(new WorkflowCatalog(List.copyOf(merged)), complete, reconciled);
+	}
+
+	/**
+	 * Reconciles the declared workflows with the agents a live {@code AgentPlatform}
+	 * actually registered.
+	 *
+	 * <p>
+	 * Annotations describe intent; the planner decides what runs, and the two diverge in
+	 * ways an author cannot see from the source. A {@code SUPERVISOR} agent's declared
+	 * actions are replaced by one synthetic supervisor action, a {@code UTILITY} agent
+	 * gains a synthetic goal, and an agent assembled in code carries no annotations at
+	 * all. Each declared step is therefore marked with whether the planner registered it,
+	 * runtime-only steps are added, and agents with no annotated class are reported in
+	 * their own right.
+	 *
+	 * <p>
+	 * With no platform available every {@code registered} flag stays {@code null},
+	 * meaning "not known" rather than "not registered", and the catalog is exactly the
+	 * declared view.
+	 */
+	private List<AgentWorkflow> withRuntimeView(List<AgentWorkflow> declared, List<RuntimeAgent> runtimeAgents) {
+		if (runtimeAgents.isEmpty()) {
+			return new ArrayList<>(declared);
+		}
+
+		List<RuntimeAgent> unmatched = new ArrayList<>(runtimeAgents);
+		List<AgentWorkflow> reconciled = new ArrayList<>();
+		for (AgentWorkflow agent : declared) {
+			RuntimeAgent runtime = unmatched.stream()
+				.filter(candidate -> matches(candidate, agent))
+				.findFirst()
+				.orElse(null);
+			if (runtime == null) {
+				reconciled.add(withRegistered(agent, false, agent.steps()));
+				continue;
+			}
+			unmatched.remove(runtime);
+			reconciled.add(withRegistered(agent, true, reconcileSteps(agent, runtime)));
+		}
+		unmatched.forEach(runtime -> reconciled.add(toDeclaredlessAgent(runtime)));
+		return reconciled;
+	}
+
+	private boolean matches(RuntimeAgent runtime, AgentWorkflow declared) {
+		return runtime.name().equals(declared.className()) || runtime.name().equals(declared.agentName())
+				|| AgentPlatformReader.simpleName(runtime.name()).equals(declared.agentName());
+	}
+
+	private List<WorkflowStep> reconcileSteps(AgentWorkflow declared, RuntimeAgent runtime) {
+		Set<String> registeredNames = runtime.steps()
+			.stream()
+			.map(RuntimeStep::simpleStepName)
+			.collect(Collectors.toSet());
+
+		List<WorkflowStep> steps = new ArrayList<>();
+		Set<String> declaredNames = new HashSet<>();
+		for (WorkflowStep step : declared.steps()) {
+			declaredNames.add(step.method());
+			declaredNames.add(step.name());
+			Boolean registered = PLANNABLE_STEP_TYPES.contains(step.type())
+					? registeredNames.contains(step.method()) || registeredNames.contains(step.name()) : null;
+			steps.add(withRegistered(step, registered));
+		}
+		runtime.steps()
+			.stream()
+			.filter(runtimeStep -> !declaredNames.contains(runtimeStep.simpleStepName()))
+			.map(this::toPlannerGeneratedStep)
+			.forEach(steps::add);
+
+		steps.sort(Comparator.comparing(WorkflowStep::name, String.CASE_INSENSITIVE_ORDER));
+		return steps;
+	}
+
+	private AgentWorkflow toDeclaredlessAgent(RuntimeAgent runtime) {
+		List<WorkflowStep> steps = new ArrayList<>(runtime.steps().stream().map(this::toPlannerGeneratedStep).toList());
+		steps.sort(Comparator.comparing(WorkflowStep::name, String.CASE_INSENSITIVE_ORDER));
+		return AgentWorkflow.builder(AgentPlatformReader.simpleName(runtime.name()), runtime.name())
+			.description(runtime.description())
+			.plannerType("RUNTIME")
+			.opaque(runtime.opaque())
+			.steps(steps)
+			.provider(emptyToNullValue(runtime.provider()))
+			.registered(true)
+			.build();
+	}
+
+	private WorkflowStep toPlannerGeneratedStep(RuntimeStep runtimeStep) {
+		return WorkflowStep.builder(runtimeStep.simpleStepName(), runtimeStep.type(), runtimeStep.simpleStepName())
+			.description(runtimeStep.description())
+			.inputs(runtimeStep.inputs())
+			.output(runtimeStep.output())
+			.pre(runtimeStep.pre())
+			.post(runtimeStep.post())
+			.goal("AchievesGoal".equals(runtimeStep.type()))
+			.canRerun(runtimeStep.canRerun())
+			.readOnly(runtimeStep.readOnly())
+			.registered(true)
+			.plannerGenerated(true)
+			.build();
+	}
+
+	private AgentWorkflow withRegistered(AgentWorkflow agent, boolean registered, List<WorkflowStep> steps) {
+		return AgentWorkflow.builder(agent.agentName(), agent.className())
+			.description(agent.description())
+			.version(agent.version())
+			.plannerType(agent.plannerType())
+			.opaque(agent.opaque())
+			.steps(steps)
+			.provider(agent.provider())
+			.beanName(agent.beanName())
+			.scan(agent.scan())
+			.retryPolicy(agent.retryPolicy())
+			.retryPolicyExpression(agent.retryPolicyExpression())
+			.registered(registered)
+			.build();
+	}
+
+	private WorkflowStep withRegistered(WorkflowStep step, Boolean registered) {
+		return new WorkflowStep(step.name(), step.type(), step.description(), step.method(), step.pre(), step.post(),
+				step.inputs(), step.output(), step.goal(), step.costMethod(), step.valueMethod(), step.cost(),
+				step.value(), step.goalValue(), step.possibleOutputs(), step.canRerun(), step.readOnly(),
+				step.outputBinding(), step.clearBlackboard(), step.tags(), step.examples(), step.llmTool(),
+				step.llmToolDescription(), step.exportedRemote(), step.exportName(), step.trigger(), step.retryPolicy(),
+				step.llmToolReturnDirect(), step.llmToolCategory(), step.actionRetryPolicy(), step.conditionCost(),
+				step.exportedLocal(), step.exportStartingInputTypes(), step.llmToolName(), step.llmToolMetadata(),
+				step.providedInputs(), step.nameMatchInputs(), registered, step.plannerGenerated());
+	}
+
+	private String emptyToNullValue(String value) {
+		return StringUtils.hasText(value) ? value : null;
 	}
 
 	/**

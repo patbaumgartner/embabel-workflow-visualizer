@@ -52,6 +52,16 @@ discovery, check the behaviour against the Embabel source rather than guessing â
 inherited actions and the `outputBinding` default are both cases where the
 obvious implementation was wrong.
 
+Where the annotations cannot answer the question, `AgentPlatformReader` asks the
+running platform instead, again by name and never by import. Its unit tests use
+platform-shaped fakes, which prove the reflective reading but cannot prove the
+shape still matches Embabel â€” `EmbabelWorkflowCatalogRuntimeIntegrationTests` in
+the sample application is what fails when Embabel changes its runtime API. If you
+extend the runtime view, extend that test too, and remember that runtime names
+are qualified (`com.foo.MyAgent.myAction`) while nested types arrive in binary
+form (`Models$Request`); both have to be reduced to what the annotation scan
+reports or the diagram silently loses edges.
+
 Also worth knowing:
 
 - Scanning must never instantiate application beans. Resolve types via

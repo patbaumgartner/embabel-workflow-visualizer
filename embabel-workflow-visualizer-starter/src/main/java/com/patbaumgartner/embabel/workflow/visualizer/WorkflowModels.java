@@ -55,10 +55,13 @@ public final class WorkflowModels {
 	 * {@code ActionRetryPolicy.DEFAULT}
 	 * @param retryPolicyExpression agent-wide retry SpEL expression from
 	 * {@code @Agent(actionRetryPolicyExpression = "...")}; {@code null} if not set
+	 * @param registered {@code true} when a live Embabel {@code AgentPlatform} reported
+	 * this agent as deployed, {@code false} when it did not, and {@code null} when no
+	 * platform was available to ask
 	 */
 	public record AgentWorkflow(String agentName, String description, String version, String plannerType,
 			boolean opaque, String className, List<WorkflowStep> steps, String provider, String beanName, boolean scan,
-			String retryPolicy, String retryPolicyExpression) {
+			String retryPolicy, String retryPolicyExpression, Boolean registered) {
 
 		public AgentWorkflow {
 			steps = copyOf(steps);
@@ -72,7 +75,7 @@ public final class WorkflowModels {
 		public AgentWorkflow(String agentName, String description, String version, String plannerType, boolean opaque,
 				String className, List<WorkflowStep> steps, String provider) {
 			this(agentName, description, version, plannerType, opaque, className, steps, provider, null, true, null,
-					null);
+					null, null);
 		}
 
 		public static Builder builder(String agentName, String className) {
@@ -105,6 +108,8 @@ public final class WorkflowModels {
 			private String retryPolicy;
 
 			private String retryPolicyExpression;
+
+			private Boolean registered;
 
 			private Builder(String agentName, String className) {
 				this.agentName = agentName;
@@ -161,10 +166,15 @@ public final class WorkflowModels {
 				return this;
 			}
 
+			public Builder registered(Boolean registered) {
+				this.registered = registered;
+				return this;
+			}
+
 			public AgentWorkflow build() {
 				return new AgentWorkflow(this.agentName, this.description, this.version, this.plannerType, this.opaque,
 						this.className, this.steps, this.provider, this.beanName, this.scan, this.retryPolicy,
-						this.retryPolicyExpression);
+						this.retryPolicyExpression, this.registered);
 			}
 
 		}
@@ -248,6 +258,12 @@ public final class WorkflowModels {
 	 * supplied by the platform rather than produced by another action
 	 * @param nameMatchInputs parameters annotated {@code @RequireNameMatch}, rendered as
 	 * {@code Type} or {@code Type:boundName} when an explicit binding name is given
+	 * @param registered {@code true} when a live Embabel {@code AgentPlatform} registered
+	 * this step for its agent, {@code false} when the step is declared but the planner
+	 * does not run it, and {@code null} when no platform was available to ask
+	 * @param plannerGenerated {@code true} for a step that exists only at runtime — the
+	 * planner synthesised it and no annotation declares it, such as the single supervisor
+	 * action a {@code SUPERVISOR} agent is reduced to
 	 */
 	public record WorkflowStep(String name, String type, String description, String method, List<String> pre,
 			List<String> post, List<String> inputs, String output, boolean goal, String costMethod, String valueMethod,
@@ -256,7 +272,8 @@ public final class WorkflowModels {
 			boolean llmTool, String llmToolDescription, boolean exportedRemote, String exportName, String trigger,
 			String retryPolicy, boolean llmToolReturnDirect, String llmToolCategory, String actionRetryPolicy,
 			Double conditionCost, boolean exportedLocal, List<String> exportStartingInputTypes, String llmToolName,
-			List<ToolMetadata> llmToolMetadata, List<String> providedInputs, List<String> nameMatchInputs) {
+			List<ToolMetadata> llmToolMetadata, List<String> providedInputs, List<String> nameMatchInputs,
+			Boolean registered, boolean plannerGenerated) {
 
 		public WorkflowStep {
 			pre = copyOf(pre);
@@ -289,7 +306,7 @@ public final class WorkflowModels {
 			this(name, type, description, method, pre, post, inputs, output, goal, costMethod, valueMethod, cost, value,
 					goalValue, possibleOutputs, canRerun, readOnly, outputBinding, clearBlackboard, tags, examples,
 					llmTool, llmToolDescription, exportedRemote, exportName, trigger, retryPolicy, llmToolReturnDirect,
-					llmToolCategory, null, null, false, List.of(), null, List.of(), List.of(), List.of());
+					llmToolCategory, null, null, false, List.of(), null, List.of(), List.of(), List.of(), null, false);
 		}
 
 		public static Builder builder(String name, String type, String method) {
@@ -379,6 +396,10 @@ public final class WorkflowModels {
 			private List<String> providedInputs = List.of();
 
 			private List<String> nameMatchInputs = List.of();
+
+			private Boolean registered;
+
+			private boolean plannerGenerated;
 
 			private Builder(String name, String type, String method) {
 				this.name = name;
@@ -556,6 +577,16 @@ public final class WorkflowModels {
 				return this;
 			}
 
+			public Builder registered(Boolean registered) {
+				this.registered = registered;
+				return this;
+			}
+
+			public Builder plannerGenerated(boolean plannerGenerated) {
+				this.plannerGenerated = plannerGenerated;
+				return this;
+			}
+
 			public WorkflowStep build() {
 				return new WorkflowStep(this.name, this.type, this.description, this.method, this.pre, this.post,
 						this.inputs, this.output, this.goal, this.costMethod, this.valueMethod, this.cost, this.value,
@@ -564,7 +595,7 @@ public final class WorkflowModels {
 						this.exportedRemote, this.exportName, this.trigger, this.retryPolicy, this.llmToolReturnDirect,
 						this.llmToolCategory, this.actionRetryPolicy, this.conditionCost, this.exportedLocal,
 						this.exportStartingInputTypes, this.llmToolName, this.llmToolMetadata, this.providedInputs,
-						this.nameMatchInputs);
+						this.nameMatchInputs, this.registered, this.plannerGenerated);
 			}
 
 		}

@@ -19,10 +19,7 @@ on:
       - ready_for_review
 
 permissions:
-  contents: write
-  pull-requests: write
-  checks: read
-  statuses: read
+  contents: read
 
 jobs:
   auto-merge:
@@ -30,6 +27,11 @@ jobs:
     runs-on: ubuntu-latest
     # Longer than the wait-and-merge fallback below, which polls for ~30 minutes.
     timeout-minutes: 45
+    permissions:
+      contents: write        # merge the pull request
+      pull-requests: write   # approve it, and label or comment when merging is blocked
+      checks: read
+      statuses: read
     steps:
       - name: Fetch Dependabot metadata
         id: metadata

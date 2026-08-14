@@ -11,16 +11,20 @@ on:
   schedule:
     - cron: '0 9 * * 1'
 
+# Read-only by default so that a step added to a future job cannot quietly
+# inherit a write scope; the one job that needs to write asks for it below.
 permissions:
   contents: read
-  security-events: write
-  actions: read
 
 jobs:
   analyze:
     name: Analyze Java (CodeQL)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write   # upload the SARIF results
+      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

@@ -908,6 +908,12 @@
     <main id="canvas">
         <p class="empty">Loading workflows&hellip;</p>
     </main>
+    <!--
+        Outside #canvas, which every render clears. Owning it here rather than
+        appending it to one of render()'s three exits is what stops the filter
+        from reaching for an element that a given exit never created.
+    -->
+    <p class="empty" id="no-match" hidden>No agent matches this filter.</p>
 
     <script nonce="__CSP_NONCE__">
         // ── Theme ──────────────────────────────────────────────────────────
@@ -1773,8 +1779,7 @@
             } else {
                 count.textContent = shown + ' of ' + panels.length + ' agents';
             }
-            var noMatch = document.getElementById('no-match');
-            noMatch.hidden = shown > 0 || !panels.length;
+            document.getElementById('no-match').hidden = shown > 0 || !panels.length;
         }
 
         // ── Render full catalog ───────────────────────────────────────────
@@ -1784,18 +1789,9 @@
             var agents = catalog.agents || [];
             if (!agents.length) {
                 canvas.innerHTML = '<p class="empty">No Embabel <code>@Agent</code> beans found in the application context.</p>';
-                document.getElementById('agent-count').textContent = '';
-                return;
+            } else {
+                agents.forEach(function (a) { canvas.appendChild(renderAgent(a)); });
             }
-            agents.forEach(function (a) { canvas.appendChild(renderAgent(a)); });
-
-            var noMatch = document.createElement('p');
-            noMatch.id = 'no-match';
-            noMatch.className = 'empty';
-            noMatch.hidden = true;
-            noMatch.textContent = 'No agent matches this filter.';
-            canvas.appendChild(noMatch);
-
             applyFilter();
         }
 

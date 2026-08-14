@@ -84,6 +84,24 @@ public final class WorkflowModels {
 			return new Builder(agentName, className);
 		}
 
+		/**
+		 * A builder holding this agent's attributes, for deriving one that differs in a
+		 * few of them.
+		 */
+		public Builder toBuilder() {
+			return builder(this.agentName, this.className).description(this.description)
+				.version(this.version)
+				.plannerType(this.plannerType)
+				.opaque(this.opaque)
+				.steps(this.steps)
+				.provider(this.provider)
+				.beanName(this.beanName)
+				.scan(this.scan)
+				.retryPolicy(this.retryPolicy)
+				.retryPolicyExpression(this.retryPolicyExpression)
+				.registered(this.registered);
+		}
+
 		/** Fluent builder; every attribute other than name and class is optional. */
 		public static final class Builder {
 
@@ -313,6 +331,52 @@ public final class WorkflowModels {
 
 		public static Builder builder(String name, String type, String method) {
 			return new Builder(name, type, method);
+		}
+
+		/**
+		 * A builder holding this step's attributes, for deriving one that differs in a
+		 * few of them. Deriving a step by calling the canonical constructor instead means
+		 * lining up thirty-nine positional arguments, most of them the same handful of
+		 * types, where a single transposition compiles and silently reports the wrong
+		 * thing.
+		 */
+		public Builder toBuilder() {
+			return builder(this.name, this.type, this.method).description(this.description)
+				.pre(this.pre)
+				.post(this.post)
+				.inputs(this.inputs)
+				.output(this.output)
+				.goal(this.goal)
+				.costMethod(this.costMethod)
+				.valueMethod(this.valueMethod)
+				.cost(this.cost)
+				.value(this.value)
+				.goalValue(this.goalValue)
+				.possibleOutputs(this.possibleOutputs)
+				.canRerun(this.canRerun)
+				.readOnly(this.readOnly)
+				.outputBinding(this.outputBinding)
+				.clearBlackboard(this.clearBlackboard)
+				.tags(this.tags)
+				.examples(this.examples)
+				.llmTool(this.llmTool)
+				.llmToolDescription(this.llmToolDescription)
+				.exportedRemote(this.exportedRemote)
+				.exportName(this.exportName)
+				.trigger(this.trigger)
+				.retryPolicy(this.retryPolicy)
+				.llmToolReturnDirect(this.llmToolReturnDirect)
+				.llmToolCategory(this.llmToolCategory)
+				.actionRetryPolicy(this.actionRetryPolicy)
+				.conditionCost(this.conditionCost)
+				.exportedLocal(this.exportedLocal)
+				.exportStartingInputTypes(this.exportStartingInputTypes)
+				.llmToolName(this.llmToolName)
+				.llmToolMetadata(this.llmToolMetadata)
+				.providedInputs(this.providedInputs)
+				.nameMatchInputs(this.nameMatchInputs)
+				.registered(this.registered)
+				.plannerGenerated(this.plannerGenerated);
 		}
 
 		/**

@@ -10,6 +10,7 @@ import com.embabel.agent.api.annotation.Agent;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.aop.support.AopUtils;
+import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -655,6 +656,48 @@ class EmbabelWorkflowCatalogServiceTests {
 		given(broken.getBeanNamesForType(Object.class, false, false)).willThrow(new IllegalStateException("closed"));
 
 		assertThat(new EmbabelWorkflowCatalogService(broken).catalog().agents()).isEmpty();
+	}
+
+	/**
+	 * A {@code FactoryBean} publishes its product, not itself, so the product is the bean
+	 * the annotations belong to. Once the factory has been created, reading the singleton
+	 * hands back the factory — which carries no {@code @Agent} — so an agent published
+	 * this way would disappear from the catalog exactly when the application is warm.
+	 */
+	@Test
+	void discoversAnAgentPublishedThroughAFactoryBean() {
+		try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
+			ctx.register(FactoryBeanConfiguration.class);
+			ctx.refresh();
+			ctx.getBean("agentFactory");
+
+			assertThat(new EmbabelWorkflowCatalogService(ctx).catalog().agents()).extracting(AgentWorkflow::agentName)
+				.contains("demo-agent");
+		}
+	}
+
+	@Configuration
+	static class FactoryBeanConfiguration {
+
+		@Bean
+		AgentFactoryBean agentFactory() {
+			return new AgentFactoryBean();
+		}
+
+	}
+
+	static class AgentFactoryBean implements FactoryBean<SampleEmbabelAgent> {
+
+		@Override
+		public SampleEmbabelAgent getObject() {
+			return new SampleEmbabelAgent();
+		}
+
+		@Override
+		public Class<?> getObjectType() {
+			return SampleEmbabelAgent.class;
+		}
+
 	}
 
 	@Configuration

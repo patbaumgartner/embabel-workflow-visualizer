@@ -6,7 +6,8 @@ name: Release
 #   1. Validate the tag matches the POM version and that the build timestamp was
 #      bumped for this release (prevents accidental mismatches).
 #   2. Stage all artifacts to a local directory via mvn deploy.
-#   3. JReleaser signs the artifacts (GPG), publishes to Maven Central via the
+#   3. Attest build provenance for the staged jars, before anything is published.
+#   4. JReleaser signs the artifacts (GPG), publishes to Maven Central via the
 #      Sonatype Central Portal, and creates a GitHub Release with changelog.
 #
 # Release workflow for maintainers:
@@ -30,7 +31,9 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+'
 
 permissions:
-  contents: write   # create GitHub release and upload assets
+  contents: write       # create the GitHub release and upload assets
+  id-token: write       # mint the short-lived OIDC token the attestation is signed with
+  attestations: write   # record the provenance attestation against this repository
 
 jobs:
   release:
@@ -94,8 +97,27 @@ jobs:
           fi
           echo "Build timestamp $TIMESTAMP (previous release: ${PREVIOUS_TAG:-none} ${PREVIOUS_TIMESTAMP:-n/a})"
 
+      # jacoco.skip because the coverage gate has no business on the publishing
+      # path: CI already enforces it on every push and pull request, and here it
+      # only passes because a fresh checkout has no coverage data for it to read.
+      # That makes its verdict an accident of whether target/ happens to be
+      # empty — it fails outright anywhere it is not, such as a maintainer
+      # running these same steps locally.
       - name: Stage artifacts to local directory
-        run: ./mvnw -B --no-transfer-progress -Dmaven.test.skip=true deploy -DaltDeploymentRepository=local::file://${GITHUB_WORKSPACE}/target/staging-deploy
+        run: ./mvnw -B --no-transfer-progress -Dmaven.test.skip=true -Djacoco.skip=true deploy -DaltDeploymentRepository="local::file://${GITHUB_WORKSPACE}/target/staging-deploy"
+
+      # Deliberately before JReleaser publishes rather than after. An attestation
+      # that fails here costs a re-run; one that fails after the upload leaves a
+      # version on Maven Central that can never be attested and never withdrawn.
+      #
+      # The GPG signature says the release came from whoever holds the key. This
+      # says which workflow, at which commit, built these exact bytes — which is
+      # what lets a consumer verify a jar against this repository rather than
+      # against a keyholder.
+      - name: Attest build provenance for the staged artifacts
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ github.workspace }}/target/staging-deploy/**/*.jar
 
       - name: Run JReleaser
         uses: jreleaser/release-action@90ac653bb9c79d11179e65d81499f3f34527dcd5 # 2.5.0

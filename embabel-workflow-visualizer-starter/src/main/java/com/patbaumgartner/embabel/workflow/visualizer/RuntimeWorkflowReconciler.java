@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
@@ -50,14 +51,19 @@ class RuntimeWorkflowReconciler {
 	 * <p>
 	 * With no platform available every {@code registered} flag stays {@code null},
 	 * meaning "not known" rather than "not registered", and the catalog is exactly the
-	 * declared view.
+	 * declared view. A platform that registered nothing is a different answer: it is
+	 * known, and it says every declared agent went undeployed.
+	 * @param declared the workflows the annotations describe
+	 * @param platformAgents the agents a live platform registered, or empty when no
+	 * platform could be read
+	 * @return the declared workflows marked up with what actually runs
 	 */
-	List<AgentWorkflow> reconcile(List<AgentWorkflow> declared, List<RuntimeAgent> runtimeAgents) {
-		if (runtimeAgents.isEmpty()) {
+	List<AgentWorkflow> reconcile(List<AgentWorkflow> declared, Optional<List<RuntimeAgent>> platformAgents) {
+		if (platformAgents.isEmpty()) {
 			return new ArrayList<>(declared);
 		}
 
-		List<RuntimeAgent> unmatched = new ArrayList<>(runtimeAgents);
+		List<RuntimeAgent> unmatched = new ArrayList<>(platformAgents.get());
 		Map<AgentWorkflow, RuntimeAgent> pairs = new LinkedHashMap<>();
 		// Certain identity first, across all of them, before anyone falls back to a
 		// simple name: two agents of the same simple name in different packages would

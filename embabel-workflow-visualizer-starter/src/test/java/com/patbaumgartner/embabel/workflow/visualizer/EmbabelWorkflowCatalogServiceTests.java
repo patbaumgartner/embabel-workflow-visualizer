@@ -20,6 +20,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -844,12 +845,24 @@ class EmbabelWorkflowCatalogServiceTests {
 			ctx.refresh();
 			AgentPlatformReader reader = new AgentPlatformReader(ctx) {
 				@Override
-				List<RuntimeAgent> readAgents() {
-					return readAgentsFrom(platform);
+				Optional<List<RuntimeAgent>> readAgents() {
+					return Optional.of(readAgentsFrom(platform));
 				}
 			};
 			return new EmbabelWorkflowCatalogService(ctx, reader).catalog();
 		}
+	}
+
+	/**
+	 * A platform that registered nothing has still answered: every declared agent went
+	 * undeployed. Reading that as "no platform" would hide the one thing worth seeing.
+	 */
+	@Test
+	void aPlatformThatRegisteredNothingSaysSoRatherThanSayingNothing() {
+		WorkflowCatalog catalog = catalogWithPlatform(new FakeAgentPlatform.Platform(List.of()),
+				SampleEmbabelAgent.class);
+
+		assertThat(catalog.agents()).singleElement().extracting(AgentWorkflow::registered).isEqualTo(Boolean.FALSE);
 	}
 
 	@Test

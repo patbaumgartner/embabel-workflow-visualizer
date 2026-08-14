@@ -30,10 +30,31 @@
   </modules>
 
   <properties>
+    <!--
+      Default so that Surefire's @{argLine} still resolves when JaCoCo's
+      prepare-agent has not run (for example `mvn surefire:test` on its own).
+    -->
+    <argLine></argLine>
+    <!--
+      Patch versions of libraries Spring Boot 4.1.0 still manages at a
+      vulnerable level. Each is the same minor line as the managed version, so
+      this advances the fix without taking an upgrade Boot has not tested:
+
+        jackson-2-bom  2.21.4 -> GHSA-5gvw-p9qm-jgwh, GHSA-5jmj-h7xm-6q6v, GHSA-mhm7-754m-9p8w
+        jackson-bom    3.1.4  -> GHSA-5gvw-p9qm-jgwh
+        log4j2         2.25.4 -> GHSA-qv9r-c865-cp47
+
+      jackson-databind reaches the published starter as a compile dependency of
+      the web layer, so this is the consumer's classpath and not only ours.
+      Delete each override once a Spring Boot release manages a version at or
+      above it.
+    -->
+    <jackson-2-bom.version>2.21.5</jackson-2-bom.version>
+    <jackson-bom.version>3.1.5</jackson-bom.version>
+    <jacoco.version>0.8.14</jacoco.version>
     <java.version>21</java.version>
     <jreleaser.version>1.25.0</jreleaser.version>
-    <spring-javaformat.version>0.0.47</spring-javaformat.version>
-    <jacoco.version>0.8.14</jacoco.version>
+    <log4j2.version>2.25.5</log4j2.version>
     <maven-enforcer.version>3.6.2</maven-enforcer.version>
     <!--
       Fixed timestamp for every archive entry, which makes the published jars
@@ -41,11 +62,7 @@
       Maven Central. Bump it when cutting a release.
     -->
     <project.build.outputTimestamp>2026-08-14T00:00:00Z</project.build.outputTimestamp>
-    <!--
-      Default so that Surefire's @{argLine} still resolves when JaCoCo's
-      prepare-agent has not run (for example `mvn surefire:test` on its own).
-    -->
-    <argLine></argLine>
+    <spring-javaformat.version>0.0.47</spring-javaformat.version>
   </properties>
 
   <build>
@@ -74,7 +91,7 @@
                 <requireMavenVersion>
                   <version>[3.9.0,)</version>
                 </requireMavenVersion>
-                <banDuplicatePomDependencyVersions />
+                <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
               </rules>
             </configuration>
           </execution>

@@ -1228,8 +1228,11 @@
             });
             document.body.appendChild(host);
             var heights = wraps.map(function (w) {
-                var h = Math.ceil(w.firstChild.getBoundingClientRect().height);
-                return Math.max(NH_MIN, h + 2);
+                // A hidden or not-yet-laid-out host measures as 0; NH_MIN would then
+                // clip a tall node, so fall back to a height that fits one instead.
+                var box = w.firstChild && w.firstChild.getBoundingClientRect();
+                if (!box || box.height <= 0) return NH_FALLB;
+                return Math.max(NH_MIN, Math.ceil(box.height) + 2);
             });
             document.body.removeChild(host);
             return heights;

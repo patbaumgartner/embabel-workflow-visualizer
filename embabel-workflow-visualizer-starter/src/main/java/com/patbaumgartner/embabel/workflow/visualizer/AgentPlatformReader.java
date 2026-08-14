@@ -50,15 +50,6 @@ class AgentPlatformReader {
 	}
 
 	/**
-	 * Whether this context declares an agent platform at all, which decides what an empty
-	 * read means: "there is no Embabel here" — a legitimate, final answer — or "the
-	 * platform bean exists but has not been created yet", which is worth re-asking.
-	 */
-	boolean platformExpected() {
-		return !platformBeanNames().isEmpty();
-	}
-
-	/**
 	 * The registered agents, or an empty list when no usable platform is available.
 	 *
 	 * <p>

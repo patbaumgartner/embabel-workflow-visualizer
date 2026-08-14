@@ -16,6 +16,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.ContextRefreshedEvent;
 
 import java.util.List;
 import java.util.Map;
@@ -521,11 +522,13 @@ class EmbabelWorkflowCatalogServiceTests {
 	}
 
 	/**
-	 * A bean that could not be inspected may well be readable on the next attempt, so
-	 * caching a scan that skipped one would make a transient failure permanent.
+	 * A bean that could not be inspected is reported and stepped over. The scan is not
+	 * repeated on its account: a bean that fails to resolve its type is overwhelmingly
+	 * likely to keep failing, and re-reflecting over the whole application on every
+	 * request to a diagnostic endpoint is a worse answer than a logged omission.
 	 */
 	@Test
-	void anIncompleteScanIsNotCached() {
+	void oneUnreadableBeanCostsThatBeanAndNothingElse() {
 		ApplicationContext failingOnOneBean = mock(ApplicationContext.class);
 		given(failingOnOneBean.getBeanNamesForType(Object.class, false, false))
 			.willReturn(new String[] { "broken", "sampleAgent" });
@@ -536,7 +539,21 @@ class EmbabelWorkflowCatalogServiceTests {
 		assertThat(service.catalog().agents()).hasSize(1);
 		assertThat(service.catalog().agents()).hasSize(1);
 
-		verify(failingOnOneBean, times(2)).getBeanNamesForType(Object.class, false, false);
+		verify(failingOnOneBean, times(1)).getBeanNamesForType(Object.class, false, false);
+	}
+
+	/** A bean whose class is missing is skipped like any other unreadable bean. */
+	@Test
+	void aBeanWhoseClassCannotBeLinkedIsSkipped() {
+		ApplicationContext failingOnOneBean = mock(ApplicationContext.class);
+		given(failingOnOneBean.getBeanNamesForType(Object.class, false, false))
+			.willReturn(new String[] { "unlinkable", "sampleAgent" });
+		given(failingOnOneBean.getType("unlinkable", false)).willThrow(new NoClassDefFoundError("com/absent/Type"));
+		given(failingOnOneBean.getType("sampleAgent", false)).willReturn((Class) SampleEmbabelAgent.class);
+
+		assertThat(new EmbabelWorkflowCatalogService(failingOnOneBean).catalog().agents())
+			.extracting(AgentWorkflow::agentName)
+			.containsExactly("demo-agent");
 	}
 
 	@Test
@@ -556,11 +573,12 @@ class EmbabelWorkflowCatalogServiceTests {
 	}
 
 	/**
-	 * An empty result may simply mean the context had not finished refreshing when the
-	 * catalog was first asked for, so it must not be cached forever.
+	 * An application with no agents at all is the case the endpoint answers fastest and
+	 * re-scanned hardest: there was nothing to find, so nothing looked "worth caching".
+	 * Emptiness is an answer, not a symptom.
 	 */
 	@Test
-	void anEmptyCatalogIsNotCached() {
+	void anEmptyCatalogIsScannedOnceLikeAnyOther() {
 		try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
 			ctx.refresh();
 			ApplicationContext counting = spy(ctx);
@@ -569,7 +587,47 @@ class EmbabelWorkflowCatalogServiceTests {
 			assertThat(service.catalog().agents()).isEmpty();
 			assertThat(service.catalog().agents()).isEmpty();
 
+			verify(counting, times(1)).getBeanNamesForType(Object.class, false, false);
+		}
+	}
+
+	/**
+	 * The web server accepts requests before the context has finished refreshing, so a
+	 * caller can be answered from a half-built application. That answer is cached like
+	 * any other and thrown away when the milestone it preceded arrives — which is what
+	 * lets an agent registered late still show up.
+	 */
+	@Test
+	void aStartupMilestoneDiscardsAnAnswerGivenBeforeIt() {
+		try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
+			ctx.refresh();
+			ApplicationContext counting = spy(ctx);
+			EmbabelWorkflowCatalogService service = new EmbabelWorkflowCatalogService(counting);
+
+			WorkflowCatalog beforeRefresh = service.catalog();
+			service.onApplicationEvent(new ContextRefreshedEvent(counting));
+			WorkflowCatalog afterRefresh = service.catalog();
+
+			assertThat(afterRefresh).isNotSameAs(beforeRefresh);
 			verify(counting, times(2)).getBeanNamesForType(Object.class, false, false);
+		}
+	}
+
+	/** A child context refreshing says nothing about the beans this service scans. */
+	@Test
+	void anotherContextRefreshingDoesNotDiscardTheCatalog() {
+		try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
+				AnnotationConfigApplicationContext other = new AnnotationConfigApplicationContext()) {
+			ctx.refresh();
+			other.refresh();
+			ApplicationContext counting = spy(ctx);
+			EmbabelWorkflowCatalogService service = new EmbabelWorkflowCatalogService(counting);
+
+			WorkflowCatalog first = service.catalog();
+			service.onApplicationEvent(new ContextRefreshedEvent(other));
+
+			assertThat(service.catalog()).isSameAs(first);
+			verify(counting, times(1)).getBeanNamesForType(Object.class, false, false);
 		}
 	}
 

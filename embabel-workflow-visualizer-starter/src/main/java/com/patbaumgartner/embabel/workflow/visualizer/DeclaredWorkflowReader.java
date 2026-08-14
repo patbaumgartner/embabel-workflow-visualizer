@@ -6,6 +6,7 @@ import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowSte
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.support.AopUtils;
+import org.springframework.beans.factory.FactoryBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.util.ClassUtils;
@@ -148,8 +149,10 @@ class DeclaredWorkflowReader {
 	 * <p>
 	 * An already-created singleton is the most reliable source — it reveals the concrete
 	 * class behind a JDK dynamic proxy, which no declared type can — and reading one that
-	 * already exists initialises nothing. Otherwise the declared type is used, which
-	 * Spring resolves from the bean definition.
+	 * already exists initialises nothing. A {@link FactoryBean} is the exception, because
+	 * there the singleton is the factory rather than the bean it publishes. Otherwise the
+	 * declared type is used, which Spring resolves from the bean definition, and for a
+	 * factory resolves to its product.
 	 *
 	 * <p>
 	 * That leaves exactly one blind spot: a bean that has not been created <em>and</em>
@@ -160,7 +163,11 @@ class DeclaredWorkflowReader {
 	 */
 	private Optional<Class<?>> agentTypeOf(String beanName) {
 		Object existing = existingSingleton(beanName);
-		if (existing != null) {
+		// A FactoryBean singleton is the factory, and the bean it publishes is its
+		// product — which is where the annotations are. Reading the factory instead
+		// would lose the agent from the moment the factory was created, so the declared
+		// type is used, which Spring resolves to the product.
+		if (existing != null && !(existing instanceof FactoryBean<?>)) {
 			return Optional.of(ClassUtils.getUserClass(AopUtils.getTargetClass(existing)));
 		}
 

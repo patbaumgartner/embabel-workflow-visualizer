@@ -9,7 +9,9 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.support.StaticWebApplicationContext;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -185,6 +187,48 @@ class WorkflowVisualizerPageControllerTests {
 		String page = new WorkflowVisualizerPageController().index().getBody();
 
 		assertThat(page).doesNotContain("/actuator/embabel");
+	}
+
+	/**
+	 * Everything the diagram draws — step names, descriptions, SpEL expressions, tool
+	 * metadata — comes from the application being described, and reaches the DOM through
+	 * {@code buildNodeHtml}, which is the only place untrusted values are concatenated
+	 * into markup. Every one of them goes through {@code esc()} today; this fails if one
+	 * ever stops.
+	 *
+	 * <p>
+	 * The Content-Security-Policy is the second line of defence, not the first: a nonce
+	 * in {@code script-src} stops injected markup executing, but it does not stop a name
+	 * from rewriting the card it is drawn on.
+	 */
+	@Test
+	void everyUntrustedValueReachingMarkupIsEscaped() {
+		String page = new WorkflowVisualizerPageController().index().getBody();
+
+		Matcher function = Pattern.compile("function buildNodeHtml\\(step\\) \\{(.*?)\\n        }\\n", Pattern.DOTALL)
+			.matcher(page);
+		assertThat(function.find()).describedAs("buildNodeHtml not found — this test would assert nothing").isTrue();
+
+		Pattern buildsMarkup = Pattern.compile("\\b(?:html|nioHtml|badges)\\s*\\+?=");
+		Pattern escaped = Pattern.compile("esc\\((?:[^()]|\\([^()]*\\))*\\)");
+		Pattern concatenatedValue = Pattern
+			.compile("\\+\\s*(?:step|meta)\\.\\w+|(?:step|meta)\\.\\w+(?:\\(\\))?\\s*\\+");
+
+		List<String> unescaped = new ArrayList<>();
+		int markupLines = 0;
+		for (String line : function.group(1).split("\n")) {
+			if (!buildsMarkup.matcher(line).find()) {
+				continue;
+			}
+			markupLines++;
+			if (concatenatedValue.matcher(escaped.matcher(line).replaceAll("ESCAPED")).find()) {
+				unescaped.add(line.strip());
+			}
+		}
+
+		assertThat(markupLines).describedAs("no markup-building lines matched — the shape of buildNodeHtml changed")
+			.isGreaterThan(20);
+		assertThat(unescaped).describedAs("values concatenated into markup without esc()").isEmpty();
 	}
 
 	private String nonceFrom(String contentSecurityPolicy) {

@@ -9,8 +9,12 @@ import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowSte
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.support.AopUtils;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
@@ -42,7 +46,7 @@ import java.util.stream.Stream;
  * classpath.
  * </p>
  */
-public class EmbabelWorkflowCatalogService {
+public class EmbabelWorkflowCatalogService implements ApplicationListener<ApplicationEvent> {
 
 	private static final Logger log = LoggerFactory.getLogger(EmbabelWorkflowCatalogService.class);
 
@@ -101,6 +105,8 @@ public class EmbabelWorkflowCatalogService {
 
 	private final AgentPlatformReader platformReader;
 
+	private final Object scanLock = new Object();
+
 	private volatile WorkflowCatalog cached;
 
 	public EmbabelWorkflowCatalogService(ApplicationContext applicationContext) {
@@ -116,10 +122,18 @@ public class EmbabelWorkflowCatalogService {
 	 * The workflow catalog for this application context.
 	 *
 	 * <p>
-	 * Computed once and reused: agent metadata comes from annotations on bean
-	 * definitions, which no longer change after the context has refreshed, and a
+	 * Scanned once and reused until the application reaches its next startup milestone. A
 	 * monitoring system polling {@code /actuator/embabel} should not re-reflect over
-	 * every bean in the application on every request.
+	 * every bean in the application on every request, and the answer only changes while
+	 * the application is still starting: agent metadata comes from annotations on bean
+	 * definitions, which do not change after refresh, and the planner has registered
+	 * everything it is going to register once the runners have finished.
+	 *
+	 * <p>
+	 * The web server accepts requests before either milestone, so an early caller can be
+	 * answered from a context that is not finished yet. That answer is cached like any
+	 * other — repeating the scan per request would not make it more correct — and
+	 * discarded when the milestone it preceded arrives.
 	 *
 	 * <p>
 	 * Only bean <em>types</em> are resolved, never bean instances. Asking for instances
@@ -134,53 +148,58 @@ public class EmbabelWorkflowCatalogService {
 		if (current != null) {
 			return current;
 		}
-		Scan scanned = scan();
-		// A racing scan produces an equal, immutable result, so no lock is needed.
-		if (scanned.worthCaching()) {
-			this.cached = scanned.catalog();
+		synchronized (this.scanLock) {
+			if (this.cached == null) {
+				this.cached = scan();
+			}
+			return this.cached;
 		}
-		return scanned.catalog();
 	}
 
 	/**
-	 * A catalog plus whether it is safe to keep. A scan is only worth caching when every
-	 * bean could be inspected and, where Embabel is on the classpath, the agent platform
-	 * was up to reconcile against — otherwise a catalog produced before the platform
-	 * existed would freeze the declared-only view for the life of the context.
+	 * Discards the cached catalog when the application reaches a startup milestone that
+	 * can have changed the answer.
+	 *
+	 * <p>
+	 * {@code ContextRefreshedEvent} covers everything created during refresh, and
+	 * {@code ApplicationReadyEvent} covers agents a runner deployed afterwards —
+	 * Embabel's {@code AgentPlatform} is mutable, so being readable is not the same as
+	 * being finished. Both fire after the server is already accepting requests, which is
+	 * precisely why an answer given before them must not be kept.
 	 */
-	private record Scan(WorkflowCatalog catalog, boolean complete, boolean reconciled) {
-
-		boolean worthCaching() {
-			return this.complete && this.reconciled && !this.catalog.agents().isEmpty();
+	@Override
+	public void onApplicationEvent(ApplicationEvent event) {
+		boolean ownRefresh = event instanceof ContextRefreshedEvent refreshed
+				&& refreshed.getApplicationContext() == this.applicationContext;
+		if (ownRefresh || event instanceof ApplicationReadyEvent) {
+			synchronized (this.scanLock) {
+				this.cached = null;
+			}
 		}
 	}
 
-	private Scan scan() {
+	private WorkflowCatalog scan() {
 		String[] beanNames;
 		try {
 			beanNames = this.applicationContext.getBeanNamesForType(Object.class, false, false);
 		}
-		catch (RuntimeException ex) {
+		catch (RuntimeException | LinkageError ex) {
 			log.warn("Failed to enumerate beans for the Embabel workflow catalog", ex);
-			return new Scan(new WorkflowCatalog(List.of()), false, false);
+			return new WorkflowCatalog(List.of());
 		}
 
 		List<AgentWorkflow> agents = new ArrayList<>();
-		boolean complete = true;
 		for (String beanName : beanNames) {
 			try {
 				agentTypeOf(beanName).flatMap(this::toAgentWorkflow).ifPresent(agents::add);
 			}
 			catch (Exception | LinkageError ex) {
-				complete = false;
 				log.warn("Skipping bean '{}' while scanning for Embabel agents", beanName, ex);
 			}
 		}
-		List<RuntimeAgent> runtimeAgents = this.platformReader.readAgents();
-		List<AgentWorkflow> merged = withRuntimeView(agents, runtimeAgents);
+		List<AgentWorkflow> merged = withRuntimeView(agents, this.platformReader.readAgents());
 		merged.sort(Comparator.comparing(AgentWorkflow::agentName, String.CASE_INSENSITIVE_ORDER));
-		boolean reconciled = !runtimeAgents.isEmpty() || !this.platformReader.platformExpected();
-		return new Scan(new WorkflowCatalog(List.copyOf(merged)), complete, reconciled);
+		return new WorkflowCatalog(List.copyOf(merged));
 	}
 
 	/**

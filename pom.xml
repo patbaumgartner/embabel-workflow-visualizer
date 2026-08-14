@@ -237,7 +237,13 @@
     </developer>
   </developers>
 
-  <scm>
+  <!--
+    Maven appends a module's artifactId to every inherited SCM path unless told
+    not to, which is right for a project whose modules live in a repository each
+    and wrong for this one. Left alone, the published starter POM carries a
+    browse URL that 404s and a connection URL that does not clone.
+  -->
+  <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
     <connection>scm:git:https://github.com/patbaumgartner/embabel-workflow-visualizer.git</connection>
     <developerConnection>scm:git:https://github.com/patbaumgartner/embabel-workflow-visualizer.git</developerConnection>
     <url>https://github.com/patbaumgartner/embabel-workflow-visualizer</url>

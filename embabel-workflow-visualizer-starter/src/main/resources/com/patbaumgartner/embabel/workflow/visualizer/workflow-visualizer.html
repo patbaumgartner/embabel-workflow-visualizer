@@ -7,7 +7,7 @@
     <title>Embabel Workflow Visualizer</title>
     <link rel="icon" href="data:," />
     <!-- Restore theme before first paint to prevent flash of wrong theme -->
-    <script>
+    <script nonce="__CSP_NONCE__">
         try {
             var _t = localStorage.getItem('embabel-theme');
             if (_t === 'light' || _t === 'dark')
@@ -909,7 +909,7 @@
         <p class="empty">Loading workflows&hellip;</p>
     </main>
 
-    <script>
+    <script nonce="__CSP_NONCE__">
         // ── Theme ──────────────────────────────────────────────────────────
         function isDark() {
             var t = document.documentElement.getAttribute('data-theme');

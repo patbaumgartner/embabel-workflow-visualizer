@@ -149,8 +149,11 @@ All beans use `@ConditionalOnMissingBean` — declare your own bean to replace a
 
 Discovery inspects bean **types**, never bean instances, so reading the catalog
 never initialises a lazy singleton or a `FactoryBean` product in your
-application. The result is computed once per context: it is derived from
-annotations on bean definitions, which do not change after refresh.
+application. The result is scanned once and reused, and re-scanned only when the
+application reaches a startup milestone that can have changed it — the context
+refreshing, and the application becoming ready. The server accepts requests
+before both, so an early caller gets an honest answer from a half-built
+application rather than a repeated full scan on every request.
 
 ## Declared vs. running
 

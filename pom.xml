@@ -34,6 +34,13 @@
     <jreleaser.version>1.25.0</jreleaser.version>
     <spring-javaformat.version>0.0.47</spring-javaformat.version>
     <jacoco.version>0.8.14</jacoco.version>
+    <maven-enforcer.version>3.6.2</maven-enforcer.version>
+    <!--
+      Fixed timestamp for every archive entry, which makes the published jars
+      byte-for-byte reproducible: anyone can rebuild the tag and compare against
+      Maven Central. Bump it when cutting a release.
+    -->
+    <project.build.outputTimestamp>2026-08-14T00:00:00Z</project.build.outputTimestamp>
     <!--
       Default so that Surefire's @{argLine} still resolves when JaCoCo's
       prepare-agent has not run (for example `mvn surefire:test` on its own).
@@ -43,6 +50,37 @@
 
   <build>
     <plugins>
+      <!--
+        Fail the build on an environment that cannot produce the artifact this
+        project promises, rather than on a mysterious compiler or runtime error
+        much later. Bans duplicate dependency declarations for the same reason.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>${maven-enforcer.version}</version>
+        <executions>
+          <execution>
+            <id>enforce-build-environment</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <phase>validate</phase>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[${java.version},)</version>
+                </requireJavaVersion>
+                <requireMavenVersion>
+                  <version>[3.9.0,)</version>
+                </requireMavenVersion>
+                <banDuplicatePomDependencyVersions />
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <!--
         Attach sources jar to every module so consumers can navigate to library
         source code in their IDE and so that GitHub Packages / Maven Central serve them.
@@ -62,13 +100,16 @@
 
       <!--
         Attach javadoc jar for the same reason.
+        doclint is on so that a broken tag or a dangling {@link} fails the build
+        instead of shipping to Maven Central; `missing` is excluded because this
+        is a starter whose package-private plumbing needs no formal @param prose.
         Javadoc failures are treated as errors during the release lifecycle.
       -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
-          <doclint>none</doclint>
+          <doclint>all,-missing</doclint>
           <source>${java.version}</source>
           <release>${java.version}</release>
         </configuration>

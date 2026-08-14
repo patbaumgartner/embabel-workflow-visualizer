@@ -14,12 +14,14 @@ import org.springframework.util.StringUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
-import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -223,38 +225,141 @@ class DeclaredWorkflowReader {
 			.build());
 	}
 
-	private List<WorkflowStep> collectSteps(Class<?> targetType) {
-		return collectSteps(targetType, List.of());
-	}
-
-	private List<WorkflowStep> collectSteps(Class<?> targetType, List<String> implicitInputs) {
-		Map<Method, List<Annotation>> stepMethods = findStepMethods(targetType);
-
-		// Compute @State component types so that steps returning Object can expose
-		// the concrete types the @State routing actually produces.
-		List<String> stateComponentTypes = stateComponentTypesOf(targetType);
-
+	private List<WorkflowStep> collectSteps(Class<?> agentType) {
 		List<WorkflowStep> steps = new ArrayList<>();
-		for (Map.Entry<Method, List<Annotation>> entry : stepMethods.entrySet()) {
-			Method m = entry.getKey();
-			boolean returnsStateType = m.getReturnType() == Object.class
-					|| AnnotationAttributes.find(m.getReturnType(), STATE_ANNOTATION_FQN) != null;
-			List<String> possibleOutputs = (returnsStateType && !stateComponentTypes.isEmpty()) ? stateComponentTypes
-					: null;
-			steps.add(toStep(m, entry.getValue(), implicitInputs, possibleOutputs));
-		}
-
-		// Scan @State-annotated inner classes; pass their record components as implicit
-		// inputs so that e.g. handleBilling(OperationContext) shows BillingTicket as
-		// its input (because the BillingState record holds a BillingTicket field).
-		for (Class<?> inner : targetType.getDeclaredClasses()) {
-			if (AnnotationAttributes.find(inner, STATE_ANNOTATION_FQN) != null) {
-				steps.addAll(collectSteps(inner, recordComponentSimpleNames(inner)));
-			}
-		}
-
+		collectStepsInto(agentType, agentType, List.of(), steps, new LinkedHashSet<>());
 		steps.sort(Comparator.comparing(WorkflowStep::name, String.CASE_INSENSITIVE_ORDER));
 		return steps;
+	}
+
+	/**
+	 * Collects the steps {@code owner} declares, then follows each one's return type into
+	 * the {@code @State} classes it can produce.
+	 *
+	 * <p>
+	 * Embabel reaches a state through an action's <em>return type</em>, not through where
+	 * the state happens to be written, and it binds the state class itself as an input of
+	 * every action declared inside it. Both are reproduced here, because a state nobody
+	 * returns is never unrolled and a handler that takes only an {@code OperationContext}
+	 * still consumes the state it belongs to.
+	 * @param owner the type whose step methods are being read
+	 * @param agentType the agent the scan started from, whose nested types are candidate
+	 * state implementations
+	 * @param implicitInputs inputs every step of {@code owner} consumes regardless of its
+	 * signature — the enclosing state class, when {@code owner} is one
+	 * @param steps accumulates the steps found
+	 * @param unrolledStates state classes already visited, which stops a routing cycle
+	 * from recursing forever
+	 */
+	private void collectStepsInto(Class<?> owner, Class<?> agentType, List<String> implicitInputs,
+			List<WorkflowStep> steps, Set<Class<?>> unrolledStates) {
+		boolean insideState = !implicitInputs.isEmpty();
+		for (Map.Entry<Method, List<Annotation>> entry : findStepMethods(owner).entrySet()) {
+			Method method = entry.getKey();
+			// Embabel only unrolls @Action methods of a state class; a @Condition or
+			// @Cost written there is never registered, so reporting it would invent a
+			// step the planner does not have.
+			if (insideState && !declaresAction(entry.getValue())) {
+				continue;
+			}
+			List<Class<?>> reachableStates = statesReachableFrom(method.getReturnType(), agentType);
+			steps.add(toStep(method, entry.getValue(), implicitInputs, alternativeOutputs(method, reachableStates)));
+
+			for (Class<?> state : reachableStates) {
+				if (unrolledStates.add(state)) {
+					collectStepsInto(state, agentType, List.of(state.getSimpleName()), steps, unrolledStates);
+				}
+			}
+		}
+	}
+
+	private boolean declaresAction(List<Annotation> annotations) {
+		return annotations.stream().anyMatch(a -> ACTION_ANNOTATION_FQN.equals(a.annotationType().getName()));
+	}
+
+	/**
+	 * The concrete states a step may really produce, or {@code null} when its return type
+	 * already names the one thing it returns.
+	 *
+	 * <p>
+	 * A routing action returns the common supertype — {@code TicketCategory}, or bare
+	 * {@code Object} — which says nothing about where the workflow goes next. Only then
+	 * is there anything to add.
+	 */
+	private List<String> alternativeOutputs(Method method, List<Class<?>> reachableStates) {
+		if (reachableStates.isEmpty() || reachableStates.equals(List.of(method.getReturnType()))) {
+			return null;
+		}
+		return reachableStates.stream().map(Class::getSimpleName).distinct().toList();
+	}
+
+	/**
+	 * The {@code @State} classes an action returning {@code returnType} can produce: the
+	 * type itself when it is one, plus the implementations Embabel would find for it.
+	 *
+	 * <p>
+	 * Embabel scans the classpath for subtypes. This resolves the two shapes that scan
+	 * can be reproduced from without one — a sealed type's permitted subclasses, and the
+	 * agent's own nested types — which together cover how a routing state is written in
+	 * practice. {@code Object} is excluded deliberately: every nested state would be
+	 * assignable to it, so honouring it would claim a branch to every state in the agent
+	 * from any method that happens to return {@code Object}.
+	 */
+	private List<Class<?>> statesReachableFrom(Class<?> returnType, Class<?> agentType) {
+		if (returnType == null || returnType == Object.class || returnType.isPrimitive()) {
+			return List.of();
+		}
+		List<Class<?>> states = new ArrayList<>();
+		// An interface or abstract class is how a routing action names its branches, not
+		// something it can return: only its implementations are ever produced.
+		if (isStateType(returnType) && !isAbstract(returnType)) {
+			states.add(returnType);
+		}
+		Stream.concat(Arrays.stream(candidateSubtypes(returnType)), Arrays.stream(agentType.getDeclaredClasses()))
+			.filter(candidate -> candidate != returnType && returnType.isAssignableFrom(candidate))
+			.filter(this::isStateType)
+			.forEach(candidate -> {
+				if (!states.contains(candidate)) {
+					states.add(candidate);
+				}
+			});
+		return List.copyOf(states);
+	}
+
+	private boolean isAbstract(Class<?> type) {
+		return type.isInterface() || Modifier.isAbstract(type.getModifiers());
+	}
+
+	private Class<?>[] candidateSubtypes(Class<?> returnType) {
+		Class<?>[] permitted = returnType.getPermittedSubclasses();
+		return permitted != null ? permitted : new Class<?>[0];
+	}
+
+	/**
+	 * Whether Embabel would treat this as a state, which it decides by looking for
+	 * {@code @State} on the type, its superclasses and its interfaces. A record carrying
+	 * no annotation of its own is still a state if the interface it implements is one.
+	 */
+	private boolean isStateType(Class<?> type) {
+		return isStateType(type, new HashSet<>());
+	}
+
+	private boolean isStateType(Class<?> type, Set<Class<?>> visited) {
+		if (type == null || type == Object.class || !visited.add(type)) {
+			return false;
+		}
+		if (AnnotationAttributes.find(type, STATE_ANNOTATION_FQN) != null) {
+			return true;
+		}
+		if (isStateType(type.getSuperclass(), visited)) {
+			return true;
+		}
+		for (Class<?> implemented : type.getInterfaces()) {
+			if (isStateType(implemented, visited)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -305,35 +410,6 @@ class DeclaredWorkflowReader {
 			signature.add(parameterType.getName());
 		}
 		return signature.toString();
-	}
-
-	/**
-	 * Returns the simple class names of all record components for a record class.
-	 */
-	private List<String> recordComponentSimpleNames(Class<?> type) {
-		if (!type.isRecord()) {
-			return List.of();
-		}
-		return Arrays.stream(type.getRecordComponents())
-			.map(RecordComponent::getType)
-			.filter(t -> !FRAMEWORK_PARAMETER_TYPES.contains(t.getName()))
-			.map(Class::getSimpleName)
-			.toList();
-	}
-
-	/**
-	 * Collects the simple class names of all record components from every @State inner
-	 * record on {@code targetType}.
-	 */
-	private List<String> stateComponentTypesOf(Class<?> targetType) {
-		return Arrays.stream(targetType.getDeclaredClasses())
-			.filter(inner -> AnnotationAttributes.find(inner, STATE_ANNOTATION_FQN) != null && inner.isRecord())
-			.flatMap(inner -> Arrays.stream(inner.getRecordComponents()))
-			.map(RecordComponent::getType)
-			.filter(t -> !FRAMEWORK_PARAMETER_TYPES.contains(t.getName()))
-			.map(Class::getSimpleName)
-			.distinct()
-			.toList();
 	}
 
 	private WorkflowStep toStep(Method method, List<Annotation> annotations, List<String> implicitInputs,

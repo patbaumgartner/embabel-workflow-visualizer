@@ -750,32 +750,45 @@ class EmbabelWorkflowCatalogServiceTests {
 	// -------------------------------------------------------------------------
 
 	/**
-	 * A routing action's declared return type says nothing about where the workflow
-	 * actually goes. The concrete types come from the {@code @State} records on the same
-	 * agent, and without them the diagram cannot draw an edge out of the routing step at
-	 * all.
+	 * A routing action's declared return type is the branch marker, which says nothing
+	 * about where the workflow actually goes. Embabel resolves that to the concrete
+	 * states implementing the marker, and without them the diagram cannot draw an edge
+	 * out of the routing step at all.
 	 */
 	@Test
-	void aRoutingStepReportsTheStateTypesItMayReallyProduce() {
+	void aRoutingStepReportsTheStatesItMayReallyProduce() {
 		AgentWorkflow agent = catalogWith(StateRoutingSampleAgent.class).agents().get(0);
 
 		WorkflowStep route = stepByMethod(agent, "route");
-		assertThat(route.output()).isEqualTo("Object");
-		assertThat(route.possibleOutputs()).containsExactlyInAnyOrder("BillingTicket", "TechnicalTicket");
+		assertThat(route.output()).isEqualTo("Branch");
+		assertThat(route.possibleOutputs()).containsExactlyInAnyOrder("BillingState", "TechnicalState");
 	}
 
 	/**
-	 * A handler declared inside a {@code @State} record takes only an
-	 * {@code OperationContext}, but it consumes the ticket its state holds. Reporting the
-	 * signature alone would leave the terminal step of every branch looking like it needs
-	 * no input.
+	 * A handler declared inside a state takes only an {@code OperationContext}, but
+	 * Embabel binds the state class itself as an extra input. Reporting the signature
+	 * alone would leave the terminal step of every branch looking like it needs no input,
+	 * and naming anything other than the state would not join up with what the routing
+	 * step produces.
 	 */
 	@Test
-	void aStateHandlerReportsTheTypeItsStateHolds() {
+	void aStateHandlerReportsTheStateEmbabelBindsToIt() {
 		AgentWorkflow agent = catalogWith(StateRoutingSampleAgent.class).agents().get(0);
 
-		assertThat(stepByMethod(agent, "handleBilling").inputs()).containsExactly("BillingTicket");
-		assertThat(stepByMethod(agent, "handleTechnical").inputs()).containsExactly("TechnicalTicket");
+		assertThat(stepByMethod(agent, "handleBilling").inputs()).containsExactly("BillingState");
+		assertThat(stepByMethod(agent, "handleTechnical").inputs()).containsExactly("TechnicalState");
+	}
+
+	/**
+	 * Embabel decides state-ness by walking superclasses and interfaces, so a record that
+	 * declares no {@code @State} of its own is still a state when the interface it
+	 * implements is one.
+	 */
+	@Test
+	void aStateInheritedFromItsInterfaceIsStillUnrolled() {
+		AgentWorkflow agent = catalogWith(StateRoutingSampleAgent.class).agents().get(0);
+
+		assertThat(stepByMethod(agent, "handleBilling")).isNotNull();
 	}
 
 	@Test
@@ -783,6 +796,40 @@ class EmbabelWorkflowCatalogServiceTests {
 		AgentWorkflow agent = catalogWith(StateRoutingSampleAgent.class).agents().get(0);
 
 		assertThat(stepByMethod(agent, "handleBilling").possibleOutputs()).isNull();
+	}
+
+	/**
+	 * Every state in the agent is assignable to {@code Object}, so an action returning it
+	 * would claim a branch to all of them if reachability were read from assignability
+	 * alone. Embabel unrolls nothing for such a return, and neither does this.
+	 */
+	@Test
+	void anActionReturningObjectClaimsNoBranches() {
+		AgentWorkflow agent = catalogWith(StateRoutingSampleAgent.class).agents().get(0);
+
+		assertThat(stepByMethod(agent, "describe").possibleOutputs()).isNull();
+	}
+
+	/**
+	 * Embabel reaches a state through a return type, so one nothing returns is not one.
+	 */
+	@Test
+	void aStateNoActionReturnsIsNotReported() {
+		AgentWorkflow agent = catalogWith(StateRoutingSampleAgent.class).agents().get(0);
+
+		assertThat(agent.steps()).extracting(WorkflowStep::method).doesNotContain("handleUnreachable");
+	}
+
+	/**
+	 * Only {@code @Action} methods of a state class are unrolled. A {@code @Condition}
+	 * written inside one is never registered, so reporting it would put a step in the
+	 * diagram that the planner does not have.
+	 */
+	@Test
+	void aNonActionMethodInsideAStateIsNotAStep() {
+		AgentWorkflow agent = catalogWith(StateRoutingSampleAgent.class).agents().get(0);
+
+		assertThat(agent.steps()).extracting(WorkflowStep::method).doesNotContain("urgent");
 	}
 
 	// -------------------------------------------------------------------------

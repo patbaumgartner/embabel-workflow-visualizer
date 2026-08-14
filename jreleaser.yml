@@ -12,7 +12,7 @@ project:
       groupId: com.patbaumgartner.embabel
       artifactId: embabel-workflow-visualizer-parent
       version: 21
-  inceptionYear: '2024'
+  inceptionYear: '2026'
 
 release:
   github:

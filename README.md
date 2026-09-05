@@ -39,7 +39,7 @@ test calls a model, so a placeholder is enough. See
 
 ## Usage
 
-Compatibility note: this project is built against [Spring Boot](https://spring.io/projects/spring-boot) 4.1 and validated against [Embabel](https://github.com/embabel/embabel-agent) 1.5.0 (the latest release, available on Maven Central). Embabel 1.5.0 requires Spring Boot 4.x / Spring AI 2.x, so this line of the starter is **Spring Boot 4 only**.
+Compatibility note: this project is built against [Spring Boot](https://spring.io/projects/spring-boot) 4.1 and validated against [Embabel](https://github.com/embabel/embabel-agent) 1.5.1 (the latest release, available on Maven Central). Embabel 1.5 requires Spring Boot 4.x / Spring AI 2.x, so this line of the starter is **Spring Boot 4 only**.
 
 | Visualizer | Spring Boot | Embabel | Java |
 |---|---|---|---|
@@ -77,7 +77,7 @@ configurable `base-path` — are on `main` and ship with the next release; check
 [Maven Central](https://central.sonatype.com/artifact/com.patbaumgartner.embabel/embabel-workflow-visualizer-starter)
 for the latest version.
 
-Embabel 1.5.0 and the visualizer starter are both published to Maven Central, so no extra repository configuration is needed. Only if your project uses Embabel *snapshot* dependencies, add the Embabel snapshot repository:
+Embabel 1.5.1 and the visualizer starter are both published to Maven Central, so no extra repository configuration is needed. Only if your project uses Embabel *snapshot* dependencies, add the Embabel snapshot repository:
 
 ```xml
 <repositories>

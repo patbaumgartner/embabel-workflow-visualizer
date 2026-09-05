@@ -14,9 +14,6 @@
   <description>Sample Embabel application that uses embabel-workflow-visualizer-starter</description>
 
   <properties>
-    <embabel-agent.version>1.5.1</embabel-agent.version>
-    <embabel-workflow-visualizer.version>${project.version}</embabel-workflow-visualizer.version>
-    <java.version>21</java.version>
     <!-- This module is a runnable application, not a deployable library artifact. -->
     <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
@@ -38,7 +35,7 @@
     <dependency>
       <groupId>com.patbaumgartner.embabel</groupId>
       <artifactId>embabel-workflow-visualizer-starter</artifactId>
-      <version>${embabel-workflow-visualizer.version}</version>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>

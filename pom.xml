@@ -4,7 +4,7 @@
 
   <!--
       Build the starter against Spring Boot 4.1 (minimum supported version).
-      Embabel 1.5.0 requires Spring Boot 4.x / Spring AI 2.x, so this line of the
+      Embabel 1.5.x requires Spring Boot 4.x / Spring AI 2.x, so this line of the
       starter is Boot 4 only. Consumers still on Spring Boot 3.5 must stay on the
       0.3.x line of this starter — a single artifact cannot support both
       Boot 3 and Boot 4 (Spring Framework 7 baseline).
@@ -36,25 +36,15 @@
     -->
     <argLine></argLine>
     <!--
-      Patch versions of libraries Spring Boot 4.1.0 still manages at a
-      vulnerable level. Each is the same minor line as the managed version, so
-      this advances the fix without taking an upgrade Boot has not tested:
-
-        jackson-2-bom  2.21.4 -> GHSA-5gvw-p9qm-jgwh, GHSA-5jmj-h7xm-6q6v, GHSA-mhm7-754m-9p8w
-        jackson-bom    3.1.4  -> GHSA-5gvw-p9qm-jgwh
-        log4j2         2.25.4 -> GHSA-qv9r-c865-cp47
-
-      jackson-databind reaches the published starter as a compile dependency of
-      the web layer, so this is the consumer's classpath and not only ours.
-      Delete each override once a Spring Boot release manages a version at or
-      above it.
+      The Embabel version this starter is validated against. It is a test-scoped
+      dependency of the starter and the runtime of the sample application; one
+      property keeps the two in step and gives Dependabot a single line to bump.
     -->
-    <jackson-2-bom.version>2.21.5</jackson-2-bom.version>
-    <jackson-bom.version>3.1.5</jackson-bom.version>
+    <embabel-agent.version>1.5.1</embabel-agent.version>
+    <flatten-maven-plugin.version>1.8.0</flatten-maven-plugin.version>
     <jacoco.version>0.8.15</jacoco.version>
     <java.version>21</java.version>
-    <jreleaser.version>1.25.0</jreleaser.version>
-    <log4j2.version>2.25.5</log4j2.version>
+    <jreleaser.version>1.26.0</jreleaser.version>
     <maven-enforcer.version>3.6.3</maven-enforcer.version>
     <!--
       Fixed timestamp for every archive entry, which makes the published jars

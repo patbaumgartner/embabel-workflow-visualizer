@@ -43,7 +43,7 @@ Compatibility note: this project is built against [Spring Boot](https://spring.i
 
 | Visualizer | Spring Boot | Embabel | Java |
 |---|---|---|---|
-| `1.1.x` (unreleased) | 4.1.x | 1.5.x | 21+ |
+| `1.1.x` | 4.1.x | 1.5.x | 21+ |
 | `1.0.x` | 4.1.x | 1.5.x | 21+ |
 | `0.3.x` | 3.5.x | 1.0.x | 21+ |
 
@@ -68,14 +68,14 @@ The library is published to [Maven Central](https://central.sonatype.com/artifac
 <dependency>
     <groupId>com.patbaumgartner.embabel</groupId>
     <artifactId>embabel-workflow-visualizer-starter</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
-`1.0.0` is the current release. Features marked *Since 1.1* below — the
-configurable `base-path` — are on `main` and ship with the next release; check
+`1.1.0` is the current release; check
 [Maven Central](https://central.sonatype.com/artifact/com.patbaumgartner.embabel/embabel-workflow-visualizer-starter)
-for the latest version.
+for the latest version. The *Since* column in the configuration table below
+says which release introduced each property.
 
 Embabel 1.5.1 and the visualizer starter are both published to Maven Central, so no extra repository configuration is needed. Only if your project uses Embabel *snapshot* dependencies, add the Embabel snapshot repository:
 

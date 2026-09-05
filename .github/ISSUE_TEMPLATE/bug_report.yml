@@ -40,7 +40,7 @@ body:
     attributes:
       label: Versions
       description: Visualizer, Embabel, Spring Boot, and Java versions.
-      placeholder: visualizer 1.0.0, embabel 1.5.1, boot 4.1.1, java 21
+      placeholder: visualizer 1.1.0, embabel 1.5.1, boot 4.1.1, java 21
     validations:
       required: true
 

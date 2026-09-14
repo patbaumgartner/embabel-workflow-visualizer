@@ -22,6 +22,9 @@ updates:
     prefix-development: build
     include: scope
 - package-ecosystem: github-actions
+  groups:
+    codeql-action:
+      patterns: ["github/codeql-action*"]
   directory: /
   schedule:
     interval: weekly

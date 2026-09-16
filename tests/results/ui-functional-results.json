@@ -1,0 +1,1154 @@
+{
+  "timestamp": "2026-09-17T11:53:30.828Z",
+  "sourceSha256": "fbfacc4b35fad57e841468306ce959a70232f3e9f1a131740e5d15338b544fb1",
+  "node": "v24.19.0",
+  "playwright": "1.61.1",
+  "versions": {
+    "chromium": "149.0.7827.55",
+    "firefox": "151.0",
+    "webkit": "26.5"
+  },
+  "results": [
+    {
+      "engine": "chromium",
+      "id": "D01",
+      "name": "All sample agents, nodes, edges, costs and finite layouts",
+      "result": "PASS",
+      "ms": 5816
+    },
+    {
+      "engine": "chromium",
+      "id": "D02",
+      "name": "Empty catalog shows an empty state",
+      "result": "PASS",
+      "ms": 350
+    },
+    {
+      "engine": "chromium",
+      "id": "D03",
+      "name": "Agent with no steps has an empty state",
+      "result": "PASS",
+      "ms": 341
+    },
+    {
+      "engine": "chromium",
+      "id": "D04",
+      "name": "Legacy dependency-only catalog keeps all controls usable",
+      "result": "PASS",
+      "ms": 659
+    },
+    {
+      "engine": "chromium",
+      "id": "D05",
+      "name": "HTTP failure is visible and escaped",
+      "result": "PASS",
+      "ms": 373
+    },
+    {
+      "engine": "chromium",
+      "id": "D06",
+      "name": "Malformed JSON is reported",
+      "result": "PASS",
+      "ms": 472
+    },
+    {
+      "engine": "chromium",
+      "id": "D07",
+      "name": "Network failure is reported",
+      "result": "PASS",
+      "ms": 425
+    },
+    {
+      "engine": "chromium",
+      "id": "D08",
+      "name": "Slow loading remains usable and eventually renders",
+      "result": "PASS",
+      "ms": 1196
+    },
+    {
+      "engine": "chromium",
+      "id": "D09",
+      "name": "Context prefix and trailing slash resolve the same API",
+      "result": "PASS",
+      "ms": 713
+    },
+    {
+      "engine": "chromium",
+      "id": "D10",
+      "name": "Catalog text cannot execute HTML or script",
+      "result": "PASS",
+      "ms": 505
+    },
+    {
+      "engine": "chromium",
+      "id": "D11",
+      "name": "Long labels and metadata fit their cards",
+      "result": "PASS",
+      "ms": 1109
+    },
+    {
+      "engine": "chromium",
+      "id": "D12",
+      "name": "No route, component and detached nodes remain understandable",
+      "result": "PASS",
+      "ms": 787
+    },
+    {
+      "engine": "chromium",
+      "id": "D13",
+      "name": "Truncated and many routes disclose correctly",
+      "result": "PASS",
+      "ms": 496
+    },
+    {
+      "engine": "chromium",
+      "id": "D14",
+      "name": "Empty flow layout remains finite and dependency fallback works",
+      "result": "PASS",
+      "ms": 798
+    },
+    {
+      "engine": "chromium",
+      "id": "D15",
+      "name": "All dependency metadata fields and badges render without clipping",
+      "result": "PASS",
+      "ms": 917
+    },
+    {
+      "engine": "chromium",
+      "id": "D16",
+      "name": "Optional inputs, dynamic costs and unknown costs display correctly",
+      "result": "PASS",
+      "ms": 407
+    },
+    {
+      "engine": "chromium",
+      "id": "D17",
+      "name": "Dependency edges retain distinct substring labels and deduplicate exact labels",
+      "result": "PASS",
+      "ms": 413
+    },
+    {
+      "engine": "chromium",
+      "id": "N01",
+      "name": "Tab click, arrows, Home/End and ARIA agree",
+      "result": "PASS",
+      "ms": 1188
+    },
+    {
+      "engine": "chromium",
+      "id": "N02",
+      "name": "Filter supports name/class/planner/description and clear",
+      "result": "PASS",
+      "ms": 808
+    },
+    {
+      "engine": "chromium",
+      "id": "N03",
+      "name": "Filter hide/show preserves view, size and moved layout",
+      "result": "PASS",
+      "ms": 927
+    },
+    {
+      "engine": "chromium",
+      "id": "N04",
+      "name": "Theme persists after reload and labels match",
+      "result": "PASS",
+      "ms": 1174
+    },
+    {
+      "engine": "chromium",
+      "id": "N05",
+      "name": "System theme changes update colors and toggle state",
+      "result": "PASS",
+      "ms": 1003
+    },
+    {
+      "engine": "chromium",
+      "id": "N06",
+      "name": "Denied local storage does not break theme or render",
+      "result": "PASS",
+      "ms": 712
+    },
+    {
+      "engine": "chromium",
+      "id": "N07",
+      "name": "Invalid saved theme follows the system",
+      "result": "PASS",
+      "ms": 829
+    },
+    {
+      "engine": "chromium",
+      "id": "I01",
+      "name": "Both views share the larger initial height",
+      "result": "PASS",
+      "ms": 699
+    },
+    {
+      "engine": "chromium",
+      "id": "I02",
+      "name": "Resize either view grows/shrinks without overlap or cross-agent changes",
+      "result": "PASS",
+      "ms": 1849
+    },
+    {
+      "engine": "chromium",
+      "id": "I03",
+      "name": "Keyboard resize, minimum and cancellation are stable",
+      "result": "PASS",
+      "ms": 429
+    },
+    {
+      "engine": "chromium",
+      "id": "I04",
+      "name": "Fit and double-click fit include nodes/labels and clear scroll",
+      "result": "PASS",
+      "ms": 847
+    },
+    {
+      "engine": "chromium",
+      "id": "I05",
+      "name": "Zoom in/out are reversible with finite clamp limits",
+      "result": "PASS",
+      "ms": 3646
+    },
+    {
+      "engine": "chromium",
+      "id": "I06",
+      "name": "Zoom stays anchored to the scrolled viewport center",
+      "result": "PASS",
+      "ms": 577
+    },
+    {
+      "engine": "chromium",
+      "id": "I07",
+      "name": "Plain wheel scrolls; Ctrl-wheel zooms about the cursor",
+      "result": "PASS",
+      "ms": 789
+    },
+    {
+      "engine": "chromium",
+      "id": "I08",
+      "name": "Background pan changes viewport without moving nodes",
+      "result": "PASS",
+      "ms": 859
+    },
+    {
+      "engine": "chromium",
+      "id": "I09",
+      "name": "Mouse node drag updates connected edges; Reset restores everything",
+      "result": "PASS",
+      "ms": 1060
+    },
+    {
+      "engine": "chromium",
+      "id": "I10",
+      "name": "Keyboard node moves stay visible beyond original canvas bounds",
+      "result": "PASS",
+      "ms": 808
+    },
+    {
+      "engine": "chromium",
+      "id": "I11",
+      "name": "Negative-coordinate moves and Fit recover the entire graph",
+      "result": "PASS",
+      "ms": 822
+    },
+    {
+      "engine": "chromium",
+      "id": "I12",
+      "name": "Node hover/focus spotlight clears and restores correctly",
+      "result": "PASS",
+      "ms": 691
+    },
+    {
+      "engine": "chromium",
+      "id": "I13",
+      "name": "Route hover lights exactly its edges",
+      "result": "PASS",
+      "ms": 610
+    },
+    {
+      "engine": "chromium",
+      "id": "I14",
+      "name": "Focused route keeps its highlight when mouse leaves",
+      "result": "PASS",
+      "ms": 575
+    },
+    {
+      "engine": "chromium",
+      "id": "I15",
+      "name": "Resizing a zoomed SVG updates scroll extent",
+      "result": "PASS",
+      "ms": 1052
+    },
+    {
+      "engine": "chromium",
+      "id": "R320",
+      "name": "Responsive layout at 320px in both themes",
+      "result": "PASS",
+      "ms": 1641
+    },
+    {
+      "engine": "chromium",
+      "id": "R390",
+      "name": "Responsive layout at 390px in both themes",
+      "result": "PASS",
+      "ms": 1452
+    },
+    {
+      "engine": "chromium",
+      "id": "R768",
+      "name": "Responsive layout at 768px in both themes",
+      "result": "PASS",
+      "ms": 1476
+    },
+    {
+      "engine": "chromium",
+      "id": "R1440",
+      "name": "Responsive layout at 1440px in both themes",
+      "result": "PASS",
+      "ms": 1705
+    },
+    {
+      "engine": "chromium",
+      "id": "R1920",
+      "name": "Responsive layout at 1920px in both themes",
+      "result": "PASS",
+      "ms": 1873
+    },
+    {
+      "engine": "chromium",
+      "id": "R01",
+      "name": "Short viewport and enlarged text do not overlap panels",
+      "result": "PASS",
+      "ms": 1054
+    },
+    {
+      "engine": "chromium",
+      "id": "R02",
+      "name": "All controls are named, IDs unique, hidden panels not focusable",
+      "result": "PASS",
+      "ms": 888
+    },
+    {
+      "engine": "chromium",
+      "id": "R03",
+      "name": "Touch horizontal pan moves graph and vertical gesture leaves it alone",
+      "result": "PASS",
+      "ms": 297
+    },
+    {
+      "engine": "chromium",
+      "id": "R04",
+      "name": "Stress catalog stays finite, searchable and recoverable",
+      "result": "PASS",
+      "ms": 446
+    },
+    {
+      "engine": "chromium",
+      "id": "R05",
+      "name": "Repeated render and filter do not leave stale content",
+      "result": "PASS",
+      "ms": 1013
+    },
+    {
+      "engine": "chromium",
+      "id": "R06",
+      "name": "Scaled card text paints inside its SVG card in both themes",
+      "result": "PASS",
+      "ms": 1844
+    },
+    {
+      "engine": "chromium",
+      "id": "I16",
+      "name": "Focused nodes stay visible after native scrolling",
+      "result": "PASS",
+      "ms": 331
+    },
+    {
+      "engine": "chromium",
+      "id": "I17",
+      "name": "Tab changes preserve each graph layout and remain independent by agent",
+      "result": "PASS",
+      "ms": 513
+    },
+    {
+      "engine": "chromium",
+      "id": "I18",
+      "name": "Layout and edge labels survive loops and detached-node dragging",
+      "result": "PASS",
+      "ms": 495
+    },
+    {
+      "engine": "chromium",
+      "id": "I19",
+      "name": "Window blur ends node dragging and panning",
+      "result": "PASS",
+      "ms": 512
+    },
+    {
+      "engine": "chromium",
+      "id": "T01",
+      "name": "Native touchscreen pan, page scroll and resize",
+      "result": "PASS",
+      "ms": 1514
+    },
+    {
+      "engine": "firefox",
+      "id": "D01",
+      "name": "All sample agents, nodes, edges, costs and finite layouts",
+      "result": "PASS",
+      "ms": 14813
+    },
+    {
+      "engine": "firefox",
+      "id": "D02",
+      "name": "Empty catalog shows an empty state",
+      "result": "PASS",
+      "ms": 971
+    },
+    {
+      "engine": "firefox",
+      "id": "D03",
+      "name": "Agent with no steps has an empty state",
+      "result": "PASS",
+      "ms": 771
+    },
+    {
+      "engine": "firefox",
+      "id": "D04",
+      "name": "Legacy dependency-only catalog keeps all controls usable",
+      "result": "PASS",
+      "ms": 901
+    },
+    {
+      "engine": "firefox",
+      "id": "D05",
+      "name": "HTTP failure is visible and escaped",
+      "result": "PASS",
+      "ms": 390
+    },
+    {
+      "engine": "firefox",
+      "id": "D06",
+      "name": "Malformed JSON is reported",
+      "result": "PASS",
+      "ms": 377
+    },
+    {
+      "engine": "firefox",
+      "id": "D07",
+      "name": "Network failure is reported",
+      "result": "PASS",
+      "ms": 409
+    },
+    {
+      "engine": "firefox",
+      "id": "D08",
+      "name": "Slow loading remains usable and eventually renders",
+      "result": "PASS",
+      "ms": 708
+    },
+    {
+      "engine": "firefox",
+      "id": "D09",
+      "name": "Context prefix and trailing slash resolve the same API",
+      "result": "PASS",
+      "ms": 574
+    },
+    {
+      "engine": "firefox",
+      "id": "D10",
+      "name": "Catalog text cannot execute HTML or script",
+      "result": "PASS",
+      "ms": 461
+    },
+    {
+      "engine": "firefox",
+      "id": "D11",
+      "name": "Long labels and metadata fit their cards",
+      "result": "PASS",
+      "ms": 923
+    },
+    {
+      "engine": "firefox",
+      "id": "D12",
+      "name": "No route, component and detached nodes remain understandable",
+      "result": "PASS",
+      "ms": 1092
+    },
+    {
+      "engine": "firefox",
+      "id": "D13",
+      "name": "Truncated and many routes disclose correctly",
+      "result": "PASS",
+      "ms": 1037
+    },
+    {
+      "engine": "firefox",
+      "id": "D14",
+      "name": "Empty flow layout remains finite and dependency fallback works",
+      "result": "PASS",
+      "ms": 1437
+    },
+    {
+      "engine": "firefox",
+      "id": "D15",
+      "name": "All dependency metadata fields and badges render without clipping",
+      "result": "PASS",
+      "ms": 1257
+    },
+    {
+      "engine": "firefox",
+      "id": "D16",
+      "name": "Optional inputs, dynamic costs and unknown costs display correctly",
+      "result": "PASS",
+      "ms": 842
+    },
+    {
+      "engine": "firefox",
+      "id": "D17",
+      "name": "Dependency edges retain distinct substring labels and deduplicate exact labels",
+      "result": "PASS",
+      "ms": 799
+    },
+    {
+      "engine": "firefox",
+      "id": "N01",
+      "name": "Tab click, arrows, Home/End and ARIA agree",
+      "result": "PASS",
+      "ms": 2049
+    },
+    {
+      "engine": "firefox",
+      "id": "N02",
+      "name": "Filter supports name/class/planner/description and clear",
+      "result": "PASS",
+      "ms": 1436
+    },
+    {
+      "engine": "firefox",
+      "id": "N03",
+      "name": "Filter hide/show preserves view, size and moved layout",
+      "result": "PASS",
+      "ms": 1612
+    },
+    {
+      "engine": "firefox",
+      "id": "N04",
+      "name": "Theme persists after reload and labels match",
+      "result": "PASS",
+      "ms": 2167
+    },
+    {
+      "engine": "firefox",
+      "id": "N05",
+      "name": "System theme changes update colors and toggle state",
+      "result": "PASS",
+      "ms": 1570
+    },
+    {
+      "engine": "firefox",
+      "id": "N06",
+      "name": "Denied local storage does not break theme or render",
+      "result": "PASS",
+      "ms": 1025
+    },
+    {
+      "engine": "firefox",
+      "id": "N07",
+      "name": "Invalid saved theme follows the system",
+      "result": "PASS",
+      "ms": 635
+    },
+    {
+      "engine": "firefox",
+      "id": "I01",
+      "name": "Both views share the larger initial height",
+      "result": "PASS",
+      "ms": 746
+    },
+    {
+      "engine": "firefox",
+      "id": "I02",
+      "name": "Resize either view grows/shrinks without overlap or cross-agent changes",
+      "result": "PASS",
+      "ms": 1705
+    },
+    {
+      "engine": "firefox",
+      "id": "I03",
+      "name": "Keyboard resize, minimum and cancellation are stable",
+      "result": "PASS",
+      "ms": 663
+    },
+    {
+      "engine": "firefox",
+      "id": "I04",
+      "name": "Fit and double-click fit include nodes/labels and clear scroll",
+      "result": "PASS",
+      "ms": 2322
+    },
+    {
+      "engine": "firefox",
+      "id": "I05",
+      "name": "Zoom in/out are reversible with finite clamp limits",
+      "result": "PASS",
+      "ms": 8147
+    },
+    {
+      "engine": "firefox",
+      "id": "I06",
+      "name": "Zoom stays anchored to the scrolled viewport center",
+      "result": "PASS",
+      "ms": 1408
+    },
+    {
+      "engine": "firefox",
+      "id": "I07",
+      "name": "Plain wheel scrolls; Ctrl-wheel zooms about the cursor",
+      "result": "PASS",
+      "ms": 1674
+    },
+    {
+      "engine": "firefox",
+      "id": "I08",
+      "name": "Background pan changes viewport without moving nodes",
+      "result": "PASS",
+      "ms": 1598
+    },
+    {
+      "engine": "firefox",
+      "id": "I09",
+      "name": "Mouse node drag updates connected edges; Reset restores everything",
+      "result": "PASS",
+      "ms": 1896
+    },
+    {
+      "engine": "firefox",
+      "id": "I10",
+      "name": "Keyboard node moves stay visible beyond original canvas bounds",
+      "result": "PASS",
+      "ms": 930
+    },
+    {
+      "engine": "firefox",
+      "id": "I11",
+      "name": "Negative-coordinate moves and Fit recover the entire graph",
+      "result": "PASS",
+      "ms": 1142
+    },
+    {
+      "engine": "firefox",
+      "id": "I12",
+      "name": "Node hover/focus spotlight clears and restores correctly",
+      "result": "PASS",
+      "ms": 973
+    },
+    {
+      "engine": "firefox",
+      "id": "I13",
+      "name": "Route hover lights exactly its edges",
+      "result": "PASS",
+      "ms": 855
+    },
+    {
+      "engine": "firefox",
+      "id": "I14",
+      "name": "Focused route keeps its highlight when mouse leaves",
+      "result": "PASS",
+      "ms": 725
+    },
+    {
+      "engine": "firefox",
+      "id": "I15",
+      "name": "Resizing a zoomed SVG updates scroll extent",
+      "result": "PASS",
+      "ms": 1845
+    },
+    {
+      "engine": "firefox",
+      "id": "R320",
+      "name": "Responsive layout at 320px in both themes",
+      "result": "PASS",
+      "ms": 2025
+    },
+    {
+      "engine": "firefox",
+      "id": "R390",
+      "name": "Responsive layout at 390px in both themes",
+      "result": "PASS",
+      "ms": 2511
+    },
+    {
+      "engine": "firefox",
+      "id": "R768",
+      "name": "Responsive layout at 768px in both themes",
+      "result": "PASS",
+      "ms": 2304
+    },
+    {
+      "engine": "firefox",
+      "id": "R1440",
+      "name": "Responsive layout at 1440px in both themes",
+      "result": "PASS",
+      "ms": 2914
+    },
+    {
+      "engine": "firefox",
+      "id": "R1920",
+      "name": "Responsive layout at 1920px in both themes",
+      "result": "PASS",
+      "ms": 2713
+    },
+    {
+      "engine": "firefox",
+      "id": "R01",
+      "name": "Short viewport and enlarged text do not overlap panels",
+      "result": "PASS",
+      "ms": 1548
+    },
+    {
+      "engine": "firefox",
+      "id": "R02",
+      "name": "All controls are named, IDs unique, hidden panels not focusable",
+      "result": "PASS",
+      "ms": 2714
+    },
+    {
+      "engine": "firefox",
+      "id": "R03",
+      "name": "Touch horizontal pan moves graph and vertical gesture leaves it alone",
+      "result": "PASS",
+      "ms": 1416
+    },
+    {
+      "engine": "firefox",
+      "id": "R04",
+      "name": "Stress catalog stays finite, searchable and recoverable",
+      "result": "PASS",
+      "ms": 927
+    },
+    {
+      "engine": "firefox",
+      "id": "R05",
+      "name": "Repeated render and filter do not leave stale content",
+      "result": "PASS",
+      "ms": 1309
+    },
+    {
+      "engine": "firefox",
+      "id": "R06",
+      "name": "Scaled card text paints inside its SVG card in both themes",
+      "result": "PASS",
+      "ms": 1825
+    },
+    {
+      "engine": "firefox",
+      "id": "I16",
+      "name": "Focused nodes stay visible after native scrolling",
+      "result": "PASS",
+      "ms": 1809
+    },
+    {
+      "engine": "firefox",
+      "id": "I17",
+      "name": "Tab changes preserve each graph layout and remain independent by agent",
+      "result": "PASS",
+      "ms": 2241
+    },
+    {
+      "engine": "firefox",
+      "id": "I18",
+      "name": "Layout and edge labels survive loops and detached-node dragging",
+      "result": "PASS",
+      "ms": 1614
+    },
+    {
+      "engine": "firefox",
+      "id": "I19",
+      "name": "Window blur ends node dragging and panning",
+      "result": "PASS",
+      "ms": 1733
+    },
+    {
+      "engine": "webkit",
+      "id": "D01",
+      "name": "All sample agents, nodes, edges, costs and finite layouts",
+      "result": "PASS",
+      "ms": 14990
+    },
+    {
+      "engine": "webkit",
+      "id": "D02",
+      "name": "Empty catalog shows an empty state",
+      "result": "PASS",
+      "ms": 542
+    },
+    {
+      "engine": "webkit",
+      "id": "D03",
+      "name": "Agent with no steps has an empty state",
+      "result": "PASS",
+      "ms": 557
+    },
+    {
+      "engine": "webkit",
+      "id": "D04",
+      "name": "Legacy dependency-only catalog keeps all controls usable",
+      "result": "PASS",
+      "ms": 1017
+    },
+    {
+      "engine": "webkit",
+      "id": "D05",
+      "name": "HTTP failure is visible and escaped",
+      "result": "PASS",
+      "ms": 567
+    },
+    {
+      "engine": "webkit",
+      "id": "D06",
+      "name": "Malformed JSON is reported",
+      "result": "PASS",
+      "ms": 1037
+    },
+    {
+      "engine": "webkit",
+      "id": "D07",
+      "name": "Network failure is reported",
+      "result": "PASS",
+      "ms": 1058
+    },
+    {
+      "engine": "webkit",
+      "id": "D08",
+      "name": "Slow loading remains usable and eventually renders",
+      "result": "PASS",
+      "ms": 3568
+    },
+    {
+      "engine": "webkit",
+      "id": "D09",
+      "name": "Context prefix and trailing slash resolve the same API",
+      "result": "PASS",
+      "ms": 2602
+    },
+    {
+      "engine": "webkit",
+      "id": "D10",
+      "name": "Catalog text cannot execute HTML or script",
+      "result": "PASS",
+      "ms": 1529
+    },
+    {
+      "engine": "webkit",
+      "id": "D11",
+      "name": "Long labels and metadata fit their cards",
+      "result": "PASS",
+      "ms": 2543
+    },
+    {
+      "engine": "webkit",
+      "id": "D12",
+      "name": "No route, component and detached nodes remain understandable",
+      "result": "PASS",
+      "ms": 2816
+    },
+    {
+      "engine": "webkit",
+      "id": "D13",
+      "name": "Truncated and many routes disclose correctly",
+      "result": "PASS",
+      "ms": 1660
+    },
+    {
+      "engine": "webkit",
+      "id": "D14",
+      "name": "Empty flow layout remains finite and dependency fallback works",
+      "result": "PASS",
+      "ms": 1684
+    },
+    {
+      "engine": "webkit",
+      "id": "D15",
+      "name": "All dependency metadata fields and badges render without clipping",
+      "result": "PASS",
+      "ms": 1024
+    },
+    {
+      "engine": "webkit",
+      "id": "D16",
+      "name": "Optional inputs, dynamic costs and unknown costs display correctly",
+      "result": "PASS",
+      "ms": 755
+    },
+    {
+      "engine": "webkit",
+      "id": "D17",
+      "name": "Dependency edges retain distinct substring labels and deduplicate exact labels",
+      "result": "PASS",
+      "ms": 585
+    },
+    {
+      "engine": "webkit",
+      "id": "N01",
+      "name": "Tab click, arrows, Home/End and ARIA agree",
+      "result": "PASS",
+      "ms": 1949
+    },
+    {
+      "engine": "webkit",
+      "id": "N02",
+      "name": "Filter supports name/class/planner/description and clear",
+      "result": "PASS",
+      "ms": 3170
+    },
+    {
+      "engine": "webkit",
+      "id": "N03",
+      "name": "Filter hide/show preserves view, size and moved layout",
+      "result": "PASS",
+      "ms": 4117
+    },
+    {
+      "engine": "webkit",
+      "id": "N04",
+      "name": "Theme persists after reload and labels match",
+      "result": "PASS",
+      "ms": 4768
+    },
+    {
+      "engine": "webkit",
+      "id": "N05",
+      "name": "System theme changes update colors and toggle state",
+      "result": "PASS",
+      "ms": 2056
+    },
+    {
+      "engine": "webkit",
+      "id": "N06",
+      "name": "Denied local storage does not break theme or render",
+      "result": "PASS",
+      "ms": 1750
+    },
+    {
+      "engine": "webkit",
+      "id": "N07",
+      "name": "Invalid saved theme follows the system",
+      "result": "PASS",
+      "ms": 2868
+    },
+    {
+      "engine": "webkit",
+      "id": "I01",
+      "name": "Both views share the larger initial height",
+      "result": "PASS",
+      "ms": 2951
+    },
+    {
+      "engine": "webkit",
+      "id": "I02",
+      "name": "Resize either view grows/shrinks without overlap or cross-agent changes",
+      "result": "PASS",
+      "ms": 5075
+    },
+    {
+      "engine": "webkit",
+      "id": "I03",
+      "name": "Keyboard resize, minimum and cancellation are stable",
+      "result": "PASS",
+      "ms": 3591
+    },
+    {
+      "engine": "webkit",
+      "id": "I04",
+      "name": "Fit and double-click fit include nodes/labels and clear scroll",
+      "result": "PASS",
+      "ms": 4822
+    },
+    {
+      "engine": "webkit",
+      "id": "I05",
+      "name": "Zoom in/out are reversible with finite clamp limits",
+      "result": "PASS",
+      "ms": 10763
+    },
+    {
+      "engine": "webkit",
+      "id": "I06",
+      "name": "Zoom stays anchored to the scrolled viewport center",
+      "result": "PASS",
+      "ms": 4297
+    },
+    {
+      "engine": "webkit",
+      "id": "I07",
+      "name": "Plain wheel scrolls; Ctrl-wheel zooms about the cursor",
+      "result": "PASS",
+      "ms": 3742
+    },
+    {
+      "engine": "webkit",
+      "id": "I08",
+      "name": "Background pan changes viewport without moving nodes",
+      "result": "PASS",
+      "ms": 2510
+    },
+    {
+      "engine": "webkit",
+      "id": "I09",
+      "name": "Mouse node drag updates connected edges; Reset restores everything",
+      "result": "PASS",
+      "ms": 2726
+    },
+    {
+      "engine": "webkit",
+      "id": "I10",
+      "name": "Keyboard node moves stay visible beyond original canvas bounds",
+      "result": "PASS",
+      "ms": 1747
+    },
+    {
+      "engine": "webkit",
+      "id": "I11",
+      "name": "Negative-coordinate moves and Fit recover the entire graph",
+      "result": "PASS",
+      "ms": 2120
+    },
+    {
+      "engine": "webkit",
+      "id": "I12",
+      "name": "Node hover/focus spotlight clears and restores correctly",
+      "result": "PASS",
+      "ms": 3963
+    },
+    {
+      "engine": "webkit",
+      "id": "I13",
+      "name": "Route hover lights exactly its edges",
+      "result": "PASS",
+      "ms": 3375
+    },
+    {
+      "engine": "webkit",
+      "id": "I14",
+      "name": "Focused route keeps its highlight when mouse leaves",
+      "result": "PASS",
+      "ms": 3383
+    },
+    {
+      "engine": "webkit",
+      "id": "I15",
+      "name": "Resizing a zoomed SVG updates scroll extent",
+      "result": "PASS",
+      "ms": 4771
+    },
+    {
+      "engine": "webkit",
+      "id": "R320",
+      "name": "Responsive layout at 320px in both themes",
+      "result": "PASS",
+      "ms": 5454
+    },
+    {
+      "engine": "webkit",
+      "id": "R390",
+      "name": "Responsive layout at 390px in both themes",
+      "result": "PASS",
+      "ms": 3321
+    },
+    {
+      "engine": "webkit",
+      "id": "R768",
+      "name": "Responsive layout at 768px in both themes",
+      "result": "PASS",
+      "ms": 2587
+    },
+    {
+      "engine": "webkit",
+      "id": "R1440",
+      "name": "Responsive layout at 1440px in both themes",
+      "result": "PASS",
+      "ms": 6201
+    },
+    {
+      "engine": "webkit",
+      "id": "R1920",
+      "name": "Responsive layout at 1920px in both themes",
+      "result": "PASS",
+      "ms": 5919
+    },
+    {
+      "engine": "webkit",
+      "id": "R01",
+      "name": "Short viewport and enlarged text do not overlap panels",
+      "result": "PASS",
+      "ms": 3090
+    },
+    {
+      "engine": "webkit",
+      "id": "R02",
+      "name": "All controls are named, IDs unique, hidden panels not focusable",
+      "result": "PASS",
+      "ms": 3835
+    },
+    {
+      "engine": "webkit",
+      "id": "R03",
+      "name": "Touch horizontal pan moves graph and vertical gesture leaves it alone",
+      "result": "PASS",
+      "ms": 3135
+    },
+    {
+      "engine": "webkit",
+      "id": "R04",
+      "name": "Stress catalog stays finite, searchable and recoverable",
+      "result": "PASS",
+      "ms": 2191
+    },
+    {
+      "engine": "webkit",
+      "id": "R05",
+      "name": "Repeated render and filter do not leave stale content",
+      "result": "PASS",
+      "ms": 4269
+    },
+    {
+      "engine": "webkit",
+      "id": "R06",
+      "name": "Scaled card text paints inside its SVG card in both themes",
+      "result": "PASS",
+      "ms": 6853
+    },
+    {
+      "engine": "webkit",
+      "id": "I16",
+      "name": "Focused nodes stay visible after native scrolling",
+      "result": "PASS",
+      "ms": 3618
+    },
+    {
+      "engine": "webkit",
+      "id": "I17",
+      "name": "Tab changes preserve each graph layout and remain independent by agent",
+      "result": "PASS",
+      "ms": 2921
+    },
+    {
+      "engine": "webkit",
+      "id": "I18",
+      "name": "Layout and edge labels survive loops and detached-node dragging",
+      "result": "PASS",
+      "ms": 2053
+    },
+    {
+      "engine": "webkit",
+      "id": "I19",
+      "name": "Window blur ends node dragging and panning",
+      "result": "PASS",
+      "ms": 2866
+    }
+  ]
+}

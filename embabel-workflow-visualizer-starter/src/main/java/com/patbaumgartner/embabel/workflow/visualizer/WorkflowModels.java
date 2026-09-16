@@ -60,10 +60,13 @@ public final class WorkflowModels {
 	 * @param registered {@code true} when a live Embabel {@code AgentPlatform} reported
 	 * this agent as deployed, {@code false} when it did not, and {@code null} when no
 	 * platform was available to ask
+	 * @param flow every way the planner can get from the agent's entry types to one of
+	 * its goals, derived statically from the steps; {@code null} only for catalogs built
+	 * by code that predates it
 	 */
 	public record AgentWorkflow(String agentName, String description, String version, String plannerType,
 			boolean opaque, String className, List<WorkflowStep> steps, String provider, String beanName, boolean scan,
-			String retryPolicy, String retryPolicyExpression, Boolean registered) {
+			String retryPolicy, String retryPolicyExpression, Boolean registered, WorkflowFlow flow) {
 
 		public AgentWorkflow {
 			steps = copyOf(steps);
@@ -77,7 +80,19 @@ public final class WorkflowModels {
 		public AgentWorkflow(String agentName, String description, String version, String plannerType, boolean opaque,
 				String className, List<WorkflowStep> steps, String provider) {
 			this(agentName, description, version, plannerType, opaque, className, steps, provider, null, true, null,
-					null, null);
+					null, null, null);
+		}
+
+		/**
+		 * @deprecated since 1.2.0, retained for binary compatibility with 1.1.x. Use
+		 * {@link #builder(String, String)}.
+		 */
+		@Deprecated(since = "1.2.0", forRemoval = true)
+		public AgentWorkflow(String agentName, String description, String version, String plannerType, boolean opaque,
+				String className, List<WorkflowStep> steps, String provider, String beanName, boolean scan,
+				String retryPolicy, String retryPolicyExpression, Boolean registered) {
+			this(agentName, description, version, plannerType, opaque, className, steps, provider, beanName, scan,
+					retryPolicy, retryPolicyExpression, registered, null);
 		}
 
 		public static Builder builder(String agentName, String className) {
@@ -99,7 +114,8 @@ public final class WorkflowModels {
 				.scan(this.scan)
 				.retryPolicy(this.retryPolicy)
 				.retryPolicyExpression(this.retryPolicyExpression)
-				.registered(this.registered);
+				.registered(this.registered)
+				.flow(this.flow);
 		}
 
 		/** Fluent builder; every attribute other than name and class is optional. */
@@ -130,6 +146,8 @@ public final class WorkflowModels {
 			private String retryPolicyExpression;
 
 			private Boolean registered;
+
+			private WorkflowFlow flow;
 
 			private Builder(String agentName, String className) {
 				this.agentName = agentName;
@@ -191,12 +209,111 @@ public final class WorkflowModels {
 				return this;
 			}
 
+			public Builder flow(WorkflowFlow flow) {
+				this.flow = flow;
+				return this;
+			}
+
 			public AgentWorkflow build() {
 				return new AgentWorkflow(this.agentName, this.description, this.version, this.plannerType, this.opaque,
 						this.className, this.steps, this.provider, this.beanName, this.scan, this.retryPolicy,
-						this.retryPolicyExpression, this.registered);
+						this.retryPolicyExpression, this.registered, this.flow);
 			}
 
+		}
+	}
+
+	/**
+	 * Every way the planner can get from an agent's entry types to one of its goals, laid
+	 * out as a flow chart: a start node, the actions, decision points where the planner
+	 * has more than one option, fork / join pairs around order-independent actions, and
+	 * one end node per goal.
+	 *
+	 * <p>
+	 * Embabel re-plans after every step, so no single sequence is <em>the</em> plan. This
+	 * is the static union of all of them: every branch is an option the planner may take,
+	 * derived from the declared inputs, outputs, and conditions alone.
+	 *
+	 * @param entryTypes the types a caller has to put on the blackboard to start the
+	 * agent
+	 * @param nodes the flow chart's nodes
+	 * @param edges the transitions between them, in execution order
+	 * @param paths every complete route from start to a goal, one per option
+	 * @param truncated {@code true} when the agent admits more routes than were
+	 * enumerated, so {@code paths} — and the nodes and edges built from them — are a
+	 * sample rather than the whole
+	 */
+	public record WorkflowFlow(List<String> entryTypes, List<FlowNode> nodes, List<FlowEdge> edges,
+			List<FlowPath> paths, boolean truncated) {
+
+		public WorkflowFlow {
+			entryTypes = copyOf(entryTypes);
+			nodes = copyOf(nodes);
+			edges = copyOf(edges);
+			paths = copyOf(paths);
+		}
+	}
+
+	/**
+	 * A node of the flow chart.
+	 *
+	 * @param id unique within the flow; edges refer to it
+	 * @param kind {@code START}, {@code ACTION}, {@code DECISION}, {@code FORK},
+	 * {@code JOIN}, {@code END}, or {@code DETACHED} for a step that is drawn beside the
+	 * chart because no route runs through it
+	 * @param step the {@link WorkflowStep#name()} this node stands for — set for
+	 * {@code ACTION}, {@code END} (the goal) and {@code DETACHED}, {@code null} otherwise
+	 * @param label caption: the goal's output type for {@code END}, the question for a
+	 * {@code DECISION} (the SpEL expression when that is what decides), the reason for a
+	 * {@code DETACHED} step
+	 * @param detail what decides at a {@code DECISION} — {@code CONDITION},
+	 * {@code STATE}, {@code SPEL}, or {@code PLANNER} when nothing declared tells the
+	 * options apart; why a {@code DETACHED} step is outside the flow —
+	 * {@code NOT_IN_PLAN} or {@code NO_GOAL_PATH}; {@code null} for other kinds
+	 */
+	public record FlowNode(String id, String kind, String step, String label, String detail) {
+	}
+
+	/**
+	 * A transition of the flow chart.
+	 *
+	 * @param from source {@link FlowNode#id()}
+	 * @param to target {@link FlowNode#id()}
+	 * @param types the blackboard types handed over along this edge
+	 * @param conditions the conditions that must hold to take it: names posted by the
+	 * source, {@code @Condition} names and SpEL expressions the planner evaluates at
+	 * runtime
+	 * @param loop {@code true} for an edge that leads back to an earlier step, which a
+	 * {@code canRerun} action makes possible
+	 * @param paths indices into {@link WorkflowFlow#paths()} of the routes that take this
+	 * edge; empty for a loop
+	 */
+	public record FlowEdge(String from, String to, List<String> types, List<String> conditions, boolean loop,
+			List<Integer> paths) {
+
+		public FlowEdge {
+			types = copyOf(types);
+			conditions = copyOf(conditions);
+			paths = copyOf(paths);
+		}
+	}
+
+	/**
+	 * One complete route from the entry types to a goal.
+	 *
+	 * @param goal the {@link WorkflowStep#name()} of the goal this route achieves
+	 * @param steps the action names along the route, in an order they can run in
+	 * @param totalCost the sum of the static {@code @Action(cost = ...)} declarations
+	 * along the route; {@code null} when no step on it declares one
+	 * @param dynamicCost {@code true} when a step on the route computes its cost through
+	 * a {@code costMethod}, so {@code totalCost} is a lower bound
+	 * @param cheapest {@code true} for the route(s) with the lowest declared cost when
+	 * the routes differ in cost — the plan a cost-driven planner such as GOAP prefers
+	 */
+	public record FlowPath(String goal, List<String> steps, Double totalCost, boolean dynamicCost, boolean cheapest) {
+
+		public FlowPath {
+			steps = copyOf(steps);
 		}
 	}
 
@@ -284,6 +401,9 @@ public final class WorkflowModels {
 	 * @param plannerGenerated {@code true} for a step that exists only at runtime — the
 	 * planner synthesised it and no annotation declares it, such as the single supervisor
 	 * action a {@code SUPERVISOR} agent is reduced to
+	 * @param optionalInputs simple type names of the inputs this step can run without: a
+	 * parameter annotated {@code @Nullable} (any package) or declared as
+	 * {@code Optional<T>}, which the planner may leave unfilled
 	 */
 	public record WorkflowStep(String name, String type, String description, String method, List<String> pre,
 			List<String> post, List<String> inputs, String output, boolean goal, String costMethod, String valueMethod,
@@ -293,7 +413,7 @@ public final class WorkflowModels {
 			String retryPolicy, boolean llmToolReturnDirect, String llmToolCategory, String actionRetryPolicy,
 			Double conditionCost, boolean exportedLocal, List<String> exportStartingInputTypes, String llmToolName,
 			List<ToolMetadata> llmToolMetadata, List<String> providedInputs, List<String> nameMatchInputs,
-			Boolean registered, boolean plannerGenerated) {
+			Boolean registered, boolean plannerGenerated, List<String> optionalInputs) {
 
 		public WorkflowStep {
 			pre = copyOf(pre);
@@ -305,8 +425,32 @@ public final class WorkflowModels {
 			llmToolMetadata = copyOf(llmToolMetadata);
 			providedInputs = copyOf(providedInputs);
 			nameMatchInputs = copyOf(nameMatchInputs);
+			optionalInputs = copyOf(optionalInputs);
 			// possibleOutputs stays nullable: null means "the return type is exact"
 			possibleOutputs = possibleOutputs == null ? null : List.copyOf(possibleOutputs);
+		}
+
+		/**
+		 * @deprecated since 1.2.0, retained for binary compatibility with 1.1.x. Use
+		 * {@link #builder(String, String, String)}.
+		 */
+		@Deprecated(since = "1.2.0", forRemoval = true)
+		public WorkflowStep(String name, String type, String description, String method, List<String> pre,
+				List<String> post, List<String> inputs, String output, boolean goal, String costMethod,
+				String valueMethod, Double cost, Double value, Double goalValue, List<String> possibleOutputs,
+				boolean canRerun, boolean readOnly, String outputBinding, boolean clearBlackboard, List<String> tags,
+				List<String> examples, boolean llmTool, String llmToolDescription, boolean exportedRemote,
+				String exportName, String trigger, String retryPolicy, boolean llmToolReturnDirect,
+				String llmToolCategory, String actionRetryPolicy, Double conditionCost, boolean exportedLocal,
+				List<String> exportStartingInputTypes, String llmToolName, List<ToolMetadata> llmToolMetadata,
+				List<String> providedInputs, List<String> nameMatchInputs, Boolean registered,
+				boolean plannerGenerated) {
+			this(name, type, description, method, pre, post, inputs, output, goal, costMethod, valueMethod, cost, value,
+					goalValue, possibleOutputs, canRerun, readOnly, outputBinding, clearBlackboard, tags, examples,
+					llmTool, llmToolDescription, exportedRemote, exportName, trigger, retryPolicy, llmToolReturnDirect,
+					llmToolCategory, actionRetryPolicy, conditionCost, exportedLocal, exportStartingInputTypes,
+					llmToolName, llmToolMetadata, providedInputs, nameMatchInputs, registered, plannerGenerated,
+					List.of());
 		}
 
 		/**
@@ -326,7 +470,8 @@ public final class WorkflowModels {
 			this(name, type, description, method, pre, post, inputs, output, goal, costMethod, valueMethod, cost, value,
 					goalValue, possibleOutputs, canRerun, readOnly, outputBinding, clearBlackboard, tags, examples,
 					llmTool, llmToolDescription, exportedRemote, exportName, trigger, retryPolicy, llmToolReturnDirect,
-					llmToolCategory, null, null, false, List.of(), null, List.of(), List.of(), List.of(), null, false);
+					llmToolCategory, null, null, false, List.of(), null, List.of(), List.of(), List.of(), null, false,
+					List.of());
 		}
 
 		public static Builder builder(String name, String type, String method) {
@@ -376,7 +521,8 @@ public final class WorkflowModels {
 				.providedInputs(this.providedInputs)
 				.nameMatchInputs(this.nameMatchInputs)
 				.registered(this.registered)
-				.plannerGenerated(this.plannerGenerated);
+				.plannerGenerated(this.plannerGenerated)
+				.optionalInputs(this.optionalInputs);
 		}
 
 		/**
@@ -466,6 +612,8 @@ public final class WorkflowModels {
 			private Boolean registered;
 
 			private boolean plannerGenerated;
+
+			private List<String> optionalInputs = List.of();
 
 			private Builder(String name, String type, String method) {
 				this.name = name;
@@ -653,6 +801,11 @@ public final class WorkflowModels {
 				return this;
 			}
 
+			public Builder optionalInputs(List<String> optionalInputs) {
+				this.optionalInputs = optionalInputs;
+				return this;
+			}
+
 			public WorkflowStep build() {
 				return new WorkflowStep(this.name, this.type, this.description, this.method, this.pre, this.post,
 						this.inputs, this.output, this.goal, this.costMethod, this.valueMethod, this.cost, this.value,
@@ -661,7 +814,7 @@ public final class WorkflowModels {
 						this.exportedRemote, this.exportName, this.trigger, this.retryPolicy, this.llmToolReturnDirect,
 						this.llmToolCategory, this.actionRetryPolicy, this.conditionCost, this.exportedLocal,
 						this.exportStartingInputTypes, this.llmToolName, this.llmToolMetadata, this.providedInputs,
-						this.nameMatchInputs, this.registered, this.plannerGenerated);
+						this.nameMatchInputs, this.registered, this.plannerGenerated, this.optionalInputs);
 			}
 
 		}

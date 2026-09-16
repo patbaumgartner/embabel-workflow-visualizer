@@ -16,11 +16,12 @@ import java.util.List;
  * {@link WorkflowCatalog} describing their workflow.
  *
  * <p>
- * The work itself belongs to three collaborators, each answering a different question:
+ * The work itself belongs to four collaborators, each answering a different question:
  * {@link DeclaredWorkflowReader} reads what the source declares,
- * {@link AgentPlatformReader} reads what the planner registered, and
- * {@link RuntimeWorkflowReconciler} says where the two differ. What is left here is when
- * to ask them and how long to keep the answer.
+ * {@link AgentPlatformReader} reads what the planner registered,
+ * {@link RuntimeWorkflowReconciler} says where the two differ, and
+ * {@link WorkflowFlowBuilder} works out every route the planner can take through what is
+ * left. What is left here is when to ask them and how long to keep the answer.
  *
  * <p>
  * Discovery is purely reflective and never imports Embabel types directly so that the
@@ -36,6 +37,8 @@ public class EmbabelWorkflowCatalogService implements ApplicationListener<Applic
 	private final AgentPlatformReader platformReader;
 
 	private final RuntimeWorkflowReconciler reconciler = new RuntimeWorkflowReconciler();
+
+	private final WorkflowFlowBuilder flowBuilder = new WorkflowFlowBuilder();
 
 	private final Object scanLock = new Object();
 
@@ -107,6 +110,8 @@ public class EmbabelWorkflowCatalogService implements ApplicationListener<Applic
 	private WorkflowCatalog scan() {
 		List<AgentWorkflow> agents = this.reconciler.reconcile(this.declaredReader.readDeclaredAgents(),
 				this.platformReader.readAgents());
+		// After reconciliation, so the flow only runs through steps the planner has.
+		agents.replaceAll(agent -> agent.toBuilder().flow(this.flowBuilder.build(agent)).build());
 		agents.sort(Comparator.comparing(AgentWorkflow::agentName, String.CASE_INSENSITIVE_ORDER));
 		return new WorkflowCatalog(List.copyOf(agents));
 	}

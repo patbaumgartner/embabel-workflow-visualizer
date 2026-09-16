@@ -358,7 +358,9 @@
         /* ── Flow container ────────────────────────────────────────────── */
         .flow {
             position: relative;
-            overflow: hidden;
+            overflow: auto;
+            width: 100%;
+            max-width: 100%;
             border-radius: 10px;
             border: 1px solid var(--line);
             background: var(--bg);
@@ -473,6 +475,8 @@
         }
 
         /* ── foreignObject node content ─────────────────────────────────── */
+        /* Keep this HTML in normal flow, without opacity/positioned layers.
+           WebKit can paint such layers outside the SVG node's transform. */
         .nfo {
             font-family: Inter, system-ui, sans-serif;
             padding: 10px 12px 10px;
@@ -480,6 +484,7 @@
             flex-direction: column;
             gap: 4px;
             box-sizing: border-box;
+            overflow-wrap: anywhere;
         }
 
         .ntype-row {
@@ -528,7 +533,9 @@
             padding: 1px 5px;
             border-radius: 3px;
             line-height: 1.5;
-            white-space: nowrap;
+            max-width: 100%;
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
 
         .nb-rerun {
@@ -607,7 +614,6 @@
             color: var(--muted);
             font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
             line-height: 1.3;
-            opacity: 0.85;
             word-break: break-all;
         }
 
@@ -644,7 +650,6 @@
             letter-spacing: 0.05em;
             font-size: 8px;
             margin-right: 4px;
-            opacity: 0.85;
         }
 
         .nrow.cpre .lbl,
@@ -704,14 +709,13 @@
             font-size: 8.5px;
             color: var(--muted);
             line-height: 1.35;
-            padding-left: 8px;
-            position: relative;
+            display: flex;
+            gap: 4px;
         }
 
         .nex::before {
             content: '\201C';
-            position: absolute;
-            left: 0;
+            flex: none;
             color: var(--brand-cyan);
         }
 
@@ -730,7 +734,9 @@
             background: rgba(110, 200, 41, 0.15);
             color: var(--brand-green);
             border: 1px solid rgba(110, 200, 41, 0.3);
-            white-space: nowrap;
+            max-width: 100%;
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
 
         /* Off-screen measuring container */
@@ -744,6 +750,319 @@
 
         .measure-host .nfo-wrap {
             display: inline-block;
+        }
+
+        /* ── View tabs (Flow / Dependencies) ───────────────────────────── */
+        .view-tabs {
+            display: inline-flex;
+            gap: 0.25rem;
+            margin-bottom: 0.85rem;
+            padding: 3px;
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            background: var(--bg);
+        }
+
+        .view-tab {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            padding: 0.28rem 0.8rem;
+            font-size: 0.76rem;
+            font-weight: 600;
+            font-family: inherit;
+            color: var(--muted);
+            cursor: pointer;
+            transition: color 0.15s, background 0.15s, border-color 0.15s;
+        }
+
+        .view-tab:hover {
+            color: var(--ink);
+        }
+
+        .view-tab[aria-selected="true"] {
+            background: var(--bg-2);
+            border-color: var(--line);
+            color: var(--action);
+        }
+
+        .view-panel[hidden] {
+            display: none;
+        }
+
+        /* Vertical drag handle below each view, so the reader can size the
+           diagram; the Flow and Dependencies panels always share a height. */
+        .view-resize {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 14px;
+            margin-top: 0.5rem;
+            cursor: ns-resize;
+            touch-action: none;
+        }
+
+        .view-resize::before {
+            content: '';
+            width: 3rem;
+            height: 3px;
+            border-radius: 3px;
+            background: var(--line);
+        }
+
+        .view-resize:focus-visible::before,
+        .view-resize:hover::before,
+        .view-resize:active::before {
+            background: var(--muted);
+        }
+
+        /* ── Flow chart shapes ─────────────────────────────────────────── */
+        .fterm {
+            fill: var(--card);
+            stroke-width: 2;
+            filter: drop-shadow(0 2px 8px var(--shadow));
+        }
+
+        .fterm.start {
+            stroke: var(--ink);
+        }
+
+        .fterm.end {
+            stroke: var(--goal);
+            filter: drop-shadow(0 2px 8px var(--shadow)) drop-shadow(0 0 10px color-mix(in oklab, var(--goal) 44%, transparent));
+        }
+
+        .fterm-lbl {
+            font-size: 12px;
+            font-weight: 800;
+            fill: var(--ink);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-family: Inter, system-ui, sans-serif;
+        }
+
+        .fterm-sub {
+            font-size: 10px;
+            fill: var(--type-col);
+            font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+        }
+
+        .fdecision {
+            fill: var(--card);
+            stroke: var(--condition);
+            stroke-width: 2;
+            filter: drop-shadow(0 2px 8px var(--shadow));
+        }
+
+        .fdecision.planner {
+            stroke: var(--brand-purple);
+        }
+
+        .fdecision.state {
+            stroke: var(--type-col);
+        }
+
+        .fdec-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            height: 100%;
+            gap: 2px;
+            overflow: hidden;
+            font-family: Inter, system-ui, sans-serif;
+        }
+
+        .fdec-kind {
+            font-size: 8px;
+            font-weight: 800;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: var(--condition);
+        }
+
+        .fdecision.planner+foreignObject .fdec-kind {
+            color: var(--brand-purple);
+        }
+
+        .fdecision.state+foreignObject .fdec-kind {
+            color: var(--type-col);
+        }
+
+        .fdec-lbl {
+            font-size: 10px;
+            color: var(--ink);
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+            font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+        }
+
+        .fbar {
+            fill: var(--action);
+            stroke: none;
+            filter: drop-shadow(0 2px 6px var(--shadow));
+        }
+
+        .fbar-lbl {
+            font-size: 8px;
+            font-weight: 800;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            fill: var(--muted);
+            font-family: Inter, system-ui, sans-serif;
+        }
+
+        .fgroup-lbl {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            fill: var(--muted);
+            font-family: Inter, system-ui, sans-serif;
+        }
+
+        .fgroup-box {
+            fill: none;
+            stroke: var(--line);
+            stroke-dasharray: 4 4;
+        }
+
+        .nb-detached {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--muted);
+        }
+
+        /* Flow chart edges: a neutral hand-over, the cheapest route in goal green,
+           branches off a decision in the condition colour, loops in orange. */
+        .edge.flow {
+            stroke: var(--muted);
+            stroke-opacity: 0.6;
+        }
+
+        .edge.branch {
+            stroke: var(--condition);
+            stroke-dasharray: 5 4;
+        }
+
+        .edge.cheapest {
+            stroke: var(--goal);
+            stroke-opacity: 1;
+            stroke-width: 2.5;
+        }
+
+        .edge.loop {
+            stroke: var(--brand-orange);
+            stroke-dasharray: 6 4;
+        }
+
+        .edge-lbl.loop {
+            fill: var(--brand-orange);
+        }
+
+        .edge-lbl.branch {
+            fill: var(--condition);
+        }
+
+        .edge-lbl.types {
+            fill: var(--type-col);
+        }
+
+        /* A route hovered in the table lights up on the drawing. */
+        .flow-svg.has-hover .edge.path-hi {
+            stroke-opacity: 1;
+            stroke-width: 2.5;
+        }
+
+        .flow-svg.has-hover .edge-lbl.path-hi {
+            opacity: 1;
+        }
+
+        /* ── Flow facts below the chart ────────────────────────────────── */
+        .flow-facts {
+            margin-top: 0.7rem;
+            font-size: 0.78rem;
+            color: var(--muted);
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .flow-facts code,
+        .paths code {
+            font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+            font-size: 0.74rem;
+            color: var(--type-col);
+        }
+
+        .flow-note {
+            font-size: 0.74rem;
+            font-style: italic;
+        }
+
+        .flow-warn {
+            color: var(--brand-orange);
+        }
+
+        .paths summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--ink);
+            font-size: 0.8rem;
+            user-select: none;
+        }
+
+        .paths table {
+            border-collapse: collapse;
+            margin-top: 0.5rem;
+            width: 100%;
+            table-layout: fixed;
+            font-size: 0.78rem;
+        }
+
+        .paths th,
+        .paths td {
+            text-align: left;
+            padding: 0.35rem 0.6rem;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+            overflow-wrap: anywhere;
+        }
+
+        .paths th {
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .paths td.num {
+            font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+            white-space: nowrap;
+        }
+
+        .paths tr.cheapest td {
+            color: var(--goal);
+        }
+
+        .paths tr.cheapest td code {
+            color: var(--goal);
+        }
+
+        .paths tbody tr:hover td,
+        .paths tbody tr:focus-within td {
+            background: color-mix(in oklab, var(--action) 10%, transparent);
+        }
+
+        .paths .goal-name {
+            color: var(--goal);
+            font-weight: 600;
+        }
+
+        .paths .arrow {
+            color: var(--muted);
+            padding: 0 0.2rem;
         }
 
         /* ── Utility ───────────────────────────────────────────────────── */
@@ -1126,9 +1445,28 @@
         }
 
         // ── Edge geometry ─────────────────────────────────────────────────
-        function edgePath(fp, fh, tp, th) {
-            var x1 = fp.x + NW, y1 = fp.y + fh / 2;
-            var x2 = tp.x, y2 = tp.y + th / 2;
+        // Nodes are boxes {x, y, w, h}. An ordinary edge leaves the right edge of
+        // its source and enters the left edge of its target; a loop edge leaves the
+        // top of its source, arcs back over everything in between, and drops onto
+        // the top of its target, so it is never mistaken for the forward edge it
+        // runs alongside. An edge with a `bow` skips a column: it sags below the
+        // nodes it passes instead of running straight through them.
+        var LOOP_LIFT = 70;
+        function loopLift(a, b) { return LOOP_LIFT + Math.abs((a.x + a.w / 2) - (b.x + b.w / 2)) * 0.08; }
+        function edgePath(a, b, e) {
+            if (e.loop) {
+                var lx1 = a.x + a.w / 2, ly1 = a.y, lx2 = b.x + b.w / 2, ly2 = b.y;
+                var lift = loopLift(a, b);
+                return 'M ' + lx1 + ' ' + ly1 +
+                    ' C ' + lx1 + ' ' + (ly1 - lift) + ', ' + lx2 + ' ' + (ly2 - lift) + ', ' + lx2 + ' ' + ly2;
+            }
+            var x1 = a.x + a.w, y1 = a.y + a.h / 2;
+            var x2 = b.x, y2 = b.y + b.h / 2;
+            if (e.bow) {
+                var third = (x2 - x1) / 3;
+                return 'M ' + x1 + ' ' + y1 +
+                    ' C ' + (x1 + third) + ' ' + (y1 + e.bow) + ', ' + (x2 - third) + ' ' + (y2 + e.bow) + ', ' + x2 + ' ' + y2;
+            }
             if (x2 <= x1 + 20) {
                 var bend = 80 + Math.abs(y1 - y2) * 0.12;
                 return 'M ' + x1 + ' ' + y1 +
@@ -1137,8 +1475,14 @@
             var cx = (x1 + x2) / 2;
             return 'M ' + x1 + ' ' + y1 + ' C ' + cx + ' ' + y1 + ', ' + cx + ' ' + y2 + ', ' + x2 + ' ' + y2;
         }
-        function edgeMidpoint(fp, fh, tp, th) {
-            return { x: (fp.x + NW + tp.x) / 2, y: (fp.y + fh / 2 + tp.y + th / 2) / 2 - 8 };
+        function edgeMidpoint(a, b, e) {
+            if (e.loop) {
+                // The midpoint of the cubic above sits three quarters of the lift
+                // above the two anchors' mean.
+                return { x: (a.x + a.w / 2 + b.x + b.w / 2) / 2, y: (a.y + b.y) / 2 - loopLift(a, b) * 0.75 - 4 };
+            }
+            var sag = e.bow ? e.bow * 0.75 : 0;
+            return { x: (a.x + a.w + b.x) / 2, y: (a.y + a.h / 2 + b.y + b.h / 2) / 2 - 8 + sag };
         }
 
         // Several edges between the same two columns land on near-identical midpoints,
@@ -1146,10 +1490,10 @@
         // lift each subsequent label clear of the one already there.
         var LBL_BUCKET_X = 90, LBL_BUCKET_Y = 14, LBL_STACK = 12;
 
-        function stackedLabelPositions(edges, positions, heights) {
+        function stackedLabelPositions(edges, nodes) {
             var taken = new Map();
             return edges.map(function (e) {
-                var m = edgeMidpoint(positions[e.from], heights[e.from], positions[e.to], heights[e.to]);
+                var m = edgeMidpoint(nodes[e.from], nodes[e.to], e);
                 var bucket = Math.round(m.x / LBL_BUCKET_X) + ':' + Math.round(m.y / LBL_BUCKET_Y);
                 var stacked = taken.get(bucket) || 0;
                 taken.set(bucket, stacked + 1);
@@ -1294,16 +1638,16 @@
             return html;
         }
 
-        // ── Measure heights for nodes (offscreen DOM) ─────────────────────
-        function measureHeights(steps) {
+        // ── Measure heights for node content (offscreen DOM) ──────────────
+        function measureHeights(htmls, width) {
             var host = document.createElement('div');
             host.className = 'measure-host';
             // Wrap inner with width-constrained div to match foreignObject width
-            var wraps = steps.map(function (s) {
+            var wraps = htmls.map(function (html) {
                 var w = document.createElement('div');
                 w.className = 'nfo-wrap';
-                w.style.width = NW + 'px';
-                w.innerHTML = buildNodeHtml(s);
+                w.style.width = width + 'px';
+                w.innerHTML = html;
                 host.appendChild(w);
                 return w;
             });
@@ -1319,70 +1663,133 @@
             return heights;
         }
 
-        // ── Draggable flow canvas ─────────────────────────────────────────
+        // ── Shared SVG node helpers ───────────────────────────────────────
+        var XNS = 'http://www.w3.org/2000/svg';
+        function svgEl(tag, attrs) {
+            var el = document.createElementNS(XNS, tag);
+            Object.keys(attrs || {}).forEach(function (k) { el.setAttribute(k, attrs[k]); });
+            return el;
+        }
+        // A card with HTML content: the same drawing for a dependency-graph step and
+        // a flow-chart action, so the two views read alike.
+        function cardRenderer(cls, html) {
+            return function (g, n) {
+                g.appendChild(svgEl('rect', { 'class': 'node-card ' + cls, width: n.w, height: n.h, rx: 11 }));
+                var fo = svgEl('foreignObject', { x: 0, y: 0, width: n.w, height: n.h });
+                fo.style.pointerEvents = 'none';
+                fo.innerHTML = html;
+                g.appendChild(fo);
+            };
+        }
+
+        // Mouse drags keep listeners only while active and stop on window blur.
+        function trackMouseDrag(start, move, finish) {
+            start.preventDefault();
+            var selection = document.body.style.userSelect;
+            document.body.style.userSelect = 'none';
+            function onMove(e) { move(e.clientX - start.clientX, e.clientY - start.clientY); }
+            function stop() {
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('mouseup', stop);
+                window.removeEventListener('blur', stop);
+                document.body.style.userSelect = selection;
+                finish();
+            }
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', stop);
+            window.addEventListener('blur', stop);
+        }
+
+        // ── Draggable, zoomable graph canvas ──────────────────────────────
+        // model.nodes: [{x, y, w, h, rx, ariaLabel, roleDesc, render(g, node)}]
+        // model.edges: [{from, to, cls, marker, label, labelCls, loop}]
+        // model.markers: {name: colour} for the arrowheads the edges reference
         var agentSeq = 0;
 
-        function makeFlowCanvas(steps) {
+        function makeGraphCanvas(model) {
             var id = agentSeq++;
-            var xns = 'http://www.w3.org/2000/svg';
-            var heights = measureHeights(steps);
-            var layout = computeLayout(steps, heights);
-            var mpos = layout.pos.map(function (p) { return { x: p.x, y: p.y }; });
-            var origPos = layout.pos.map(function (p) { return { x: p.x, y: p.y }; });
-            var edges = layout.edges;
-            var svgW = layout.svgW, svgH = layout.svgH;
+            var xns = XNS;
+            var nodes = model.nodes;
+            var origPos = nodes.map(function (n) { return { x: n.x, y: n.y }; });
+            var edges = model.edges;
+            var svgW = model.svgW, svgH = model.svgH;
 
             var svg = document.createElementNS(xns, 'svg');
             svg.setAttribute('class', 'flow-svg');
             // A group, not an image: role="img" prunes the subtree from the
             // accessibility tree, which would hide the focusable nodes inside.
             svg.setAttribute('role', 'group');
-            svg.setAttribute('aria-label',
-                'Workflow diagram with ' + steps.length + ' step' + (steps.length === 1 ? '' : 's') +
-                ': ' + steps.map(function (s) { return s.name; }).join(', '));
+            svg.setAttribute('aria-label', model.ariaLabel);
 
             // Arrow markers
             var defs = document.createElementNS(xns, 'defs');
-            var mkColors = { pre: 'var(--condition)', type: 'var(--type-col)', cost: 'var(--cost)' };
-            ['pre', 'type', 'cost'].forEach(function (k) {
+            Object.keys(model.markers).forEach(function (k) {
                 defs.insertAdjacentHTML('beforeend',
                     '<marker id="a' + id + '-' + k + '" viewBox="0 0 10 10" refX="9" refY="5"' +
                     ' markerWidth="6" markerHeight="6" orient="auto-start-reverse">' +
-                    '<path d="M0,0 L10,5 L0,10 Z" fill="' + mkColors[k] + '"/></marker>');
+                    '<path d="M0,0 L10,5 L0,10 Z" fill="' + model.markers[k] + '"/></marker>');
             });
             svg.appendChild(defs);
 
             var vp = document.createElementNS(xns, 'g');
             svg.appendChild(vp);
+            var decoG = document.createElementNS(xns, 'g');
+            vp.appendChild(decoG);
+            if (model.decorate) model.decorate(decoG);
             var edgesG = document.createElementNS(xns, 'g');
             vp.appendChild(edgesG);
             var nodesG = document.createElementNS(xns, 'g');
             vp.appendChild(nodesG);
 
             var vpS = 1, vpTx = 0, vpTy = 0;
-            // Set by every pan and zoom the reader performs, cleared by fit(). The
-            // diagram is fitted to a container whose width follows the window, so a
-            // resize leaves it clipped or adrift — but re-fitting unconditionally would
-            // throw away a view the reader had just positioned by hand.
-            var viewAdjusted = false;
             function applyVp() {
                 vp.setAttribute('transform',
                     'translate(' + vpTx.toFixed(1) + ',' + vpTy.toFixed(1) + ') scale(' + vpS.toFixed(4) + ')');
             }
             function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
+            function contentBounds() {
+                var b = vp.getBBox();
+                var left = Math.min(0, b.x - 12), top = Math.min(0, b.y - 12);
+                var right = Math.max(svgW, b.x + b.width + 12);
+                var bottom = Math.max(svgH, b.y + b.height + 12);
+                return { x: left, y: top, w: right - left, h: bottom - top };
+            }
+
+            // Expand the SVG element when zoomed content exceeds the container,
+            // so the parent's overflow:auto shows a scrollbar (both axes).  Reset on fit().
+            function syncSvgSize() {
+                var p = svg.parentElement;
+                if (!p) return;
+                var cw = p.clientWidth || 800;
+                var ch = p.clientHeight || 400;
+                var bounds = contentBounds();
+                var contentRight = vpTx + (bounds.x + bounds.w) * vpS;
+                var contentBottom = vpTy + (bounds.y + bounds.h) * vpS;
+                if (contentRight > cw + 1) {
+                    svg.style.width = Math.ceil(contentRight + 10) + 'px';
+                } else {
+                    svg.style.width = '';
+                }
+                if (contentBottom > ch + 1) {
+                    svg.style.height = Math.ceil(contentBottom + 10) + 'px';
+                } else {
+                    svg.style.height = '';
+                }
+            }
+
             // Build edge elements
             var pathEls = [], lblEls = [];
             edges.forEach(function (e) {
                 var path = document.createElementNS(xns, 'path');
-                path.setAttribute('class', 'edge ' + e.kind);
-                path.setAttribute('marker-end', 'url(#a' + id + '-' + e.kind + ')');
+                path.setAttribute('class', 'edge ' + e.cls);
+                path.setAttribute('marker-end', 'url(#a' + id + '-' + e.marker + ')');
                 edgesG.appendChild(path);
                 pathEls.push(path);
                 var lbl = null;
                 if (e.label) {
                     lbl = document.createElementNS(xns, 'text');
-                    lbl.setAttribute('class', 'edge-lbl');
+                    lbl.setAttribute('class', 'edge-lbl' + (e.labelCls ? ' ' + e.labelCls : ''));
                     lbl.setAttribute('text-anchor', 'middle');
                     lbl.textContent = e.label;
                     edgesG.appendChild(lbl);
@@ -1391,10 +1798,10 @@
             });
 
             function refreshEdges(onlyIdx) {
-                var labelPos = stackedLabelPositions(edges, mpos, heights);
+                var labelPos = stackedLabelPositions(edges, nodes);
                 edges.forEach(function (e, ei) {
                     if (onlyIdx != null && e.from !== onlyIdx && e.to !== onlyIdx) return;
-                    pathEls[ei].setAttribute('d', edgePath(mpos[e.from], heights[e.from], mpos[e.to], heights[e.to]));
+                    pathEls[ei].setAttribute('d', edgePath(nodes[e.from], nodes[e.to], e));
                     if (lblEls[ei]) {
                         lblEls[ei].setAttribute('x', labelPos[ei].x);
                         lblEls[ei].setAttribute('y', labelPos[ei].y);
@@ -1403,7 +1810,7 @@
             }
             refreshEdges(null);
 
-            var nodeAdj = steps.map(function () { return []; });
+            var nodeAdj = nodes.map(function () { return []; });
             edges.forEach(function (e, ei) {
                 nodeAdj[e.from].push({ ei: ei, peer: e.to });
                 nodeAdj[e.to].push({ ei: ei, peer: e.from });
@@ -1411,47 +1818,29 @@
 
             // Build node elements
             var nodeGs = [];
-            steps.forEach(function (step, i) {
-                var tc = (step.type || '').toLowerCase();
-                var nh = heights[i];
+            nodes.forEach(function (n, i) {
                 var g = document.createElementNS(xns, 'g');
                 g.setAttribute('class', 'node-g');
-                g.setAttribute('transform', 'translate(' + mpos[i].x + ',' + mpos[i].y + ')');
+                g.setAttribute('transform', 'translate(' + n.x + ',' + n.y + ')');
 
-                // Keyboard reachable, and named from the same step data the card
+                // Keyboard reachable, and named from the same data the drawing
                 // shows. setAttribute writes a plain string rather than markup, so
-                // the name is used raw here, as the other aria-labels in this file do.
-                var label = step.name + ', ' + (step.type || 'Step');
-                if (step.goal && step.type !== 'AchievesGoal') label += ', goal';
-                if (step.plannerGenerated) label += ', planner-generated';
-                else if (step.registered === false) label += ', not in plan';
+                // the label is used raw here, as the other aria-labels in this file do.
                 g.setAttribute('tabindex', '0');
                 // Not a button: focusing a node spotlights it and the arrow keys move
                 // it, but there is nothing to activate, so announcing "button" promised
                 // an Enter or Space that does nothing. A group carries the label and the
                 // roledescription below without offering an affordance that is not there.
                 g.setAttribute('role', 'group');
-                g.setAttribute('aria-roledescription', 'workflow step');
-                g.setAttribute('aria-label', label);
+                g.setAttribute('aria-roledescription', n.roleDesc);
+                g.setAttribute('aria-label', n.ariaLabel);
 
-                var rect = document.createElementNS(xns, 'rect');
-                rect.setAttribute('class', 'node-card ' + tc + (step.registered === false ? ' not-registered' : ''));
-                rect.setAttribute('width', NW);
-                rect.setAttribute('height', nh);
-                rect.setAttribute('rx', 11);
-                g.appendChild(rect);
-
-                var fo = document.createElementNS(xns, 'foreignObject');
-                fo.setAttribute('x', 0); fo.setAttribute('y', 0);
-                fo.setAttribute('width', NW); fo.setAttribute('height', nh);
-                fo.style.pointerEvents = 'none';
-                fo.innerHTML = buildNodeHtml(step);
-                g.appendChild(fo);
+                n.render(g, n);
 
                 // Transparent hit rect (sole target for mouse events)
                 var hit = document.createElementNS(xns, 'rect');
                 hit.setAttribute('class', 'node-hit');
-                hit.setAttribute('width', NW); hit.setAttribute('height', nh); hit.setAttribute('rx', 11);
+                hit.setAttribute('width', n.w); hit.setAttribute('height', n.h); hit.setAttribute('rx', n.rx);
                 hit.setAttribute('fill', 'transparent'); hit.setAttribute('stroke', 'none');
                 g.appendChild(hit);
 
@@ -1459,8 +1848,8 @@
                 var ring = document.createElementNS(xns, 'rect');
                 ring.setAttribute('class', 'node-focus');
                 ring.setAttribute('x', -5); ring.setAttribute('y', -5);
-                ring.setAttribute('width', NW + 10); ring.setAttribute('height', nh + 10);
-                ring.setAttribute('rx', 15);
+                ring.setAttribute('width', n.w + 10); ring.setAttribute('height', n.h + 10);
+                ring.setAttribute('rx', n.rx + 4);
                 g.appendChild(ring);
 
                 nodesG.appendChild(g);
@@ -1471,8 +1860,8 @@
             // column, then top to bottom), which is not the order the API lists the
             // steps in. Nodes never overlap in the computed layout, so re-appending
             // them changes the tab order without changing what is drawn.
-            steps.map(function (_, i) { return i; })
-                .sort(function (a, b) { return (mpos[a].x - mpos[b].x) || (mpos[a].y - mpos[b].y); })
+            nodes.map(function (_, i) { return i; })
+                .sort(function (a, b) { return (nodes[a].x - nodes[b].x) || (nodes[a].y - nodes[b].y); })
                 .forEach(function (i) { nodesG.appendChild(nodeGs[i]); });
 
             // Viewport pan + zoom.
@@ -1485,34 +1874,18 @@
                 e.preventDefault();
                 var r = svg.getBoundingClientRect();
                 var mx = e.clientX - r.left, my = e.clientY - r.top;
-                var factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-                var ns2 = clamp(vpS * factor, 0.05, 8);
-                vpTx = mx - (mx - vpTx) * (ns2 / vpS);
-                vpTy = my - (my - vpTy) * (ns2 / vpS);
-                vpS = ns2; applyVp(); viewAdjusted = true;
+                zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, mx, my);
             }, { passive: false });
 
-            var panning = false, panOX = 0, panOY = 0, panOTx = 0, panOTy = 0;
-            function isOnNode(target) {
-                var t = target;
-                while (t && t !== svg) { if (t.classList && t.classList.contains('node-g')) return true; t = t.parentNode; }
-                return false;
-            }
-            // Listeners are attached per drag rather than for the lifetime of the page:
-            // one canvas is rendered per agent, so permanent handlers would make every
-            // mouse move fan out across every diagram on screen.
-            function doPanMove(e) { if (!panning) return; vpTx = panOTx + e.clientX - panOX; vpTy = panOTy + e.clientY - panOY; applyVp(); viewAdjusted = true; }
-            function doPanUp() {
-                panning = false; svg.style.cursor = '';
-                window.removeEventListener('mousemove', doPanMove);
-                window.removeEventListener('mouseup', doPanUp);
-            }
+            function isOnNode(target) { return !!target.closest('.node-g'); }
             svg.addEventListener('mousedown', function (e) {
                 if (e.button !== 0 || isOnNode(e.target)) return;
-                panning = true; panOX = e.clientX; panOY = e.clientY; panOTx = vpTx; panOTy = vpTy;
-                svg.style.cursor = 'grabbing'; e.preventDefault();
-                window.addEventListener('mousemove', doPanMove);
-                window.addEventListener('mouseup', doPanUp);
+                var tx = vpTx, ty = vpTy;
+                svg.style.cursor = 'grabbing';
+                trackMouseDrag(e, function (dx, dy) {
+                    vpTx = tx + dx; vpTy = ty + dy;
+                    applyVp(); syncSvgSize();
+                }, function () { svg.style.cursor = ''; });
             });
             svg.addEventListener('dblclick', function (e) { if (!isOnNode(e.target)) fit(); });
 
@@ -1538,24 +1911,47 @@
                 }
                 if (!tPan) return;
                 vpTx += x - ltx; vpTy += y - lty;
-                ltx = x; lty = y; applyVp(); viewAdjusted = true;
+                ltx = x; lty = y; applyVp();
+                syncSvgSize();
                 e.preventDefault();
             }, { passive: false });
 
             function fit() {
-                var cw = svg.clientWidth || svg.parentElement.clientWidth || 800;
-                var ch = svg.clientHeight || svg.parentElement.clientHeight || 400;
-                var scale = Math.min(cw / svgW, ch / svgH, 1) * 0.92;
-                vpS = scale; vpTx = (cw - svgW * vpS) / 2; vpTy = Math.max(10, (ch - svgH * vpS) / 2);
+                var p = svg.parentElement;
+                var cw = (p && p.clientWidth) || svg.clientWidth || 800;
+                var ch = (p && p.clientHeight) || svg.clientHeight || 400;
+                var bounds = contentBounds();
+                vpS = Math.min(cw / bounds.w, ch / bounds.h, 1) * 0.92;
+                vpTx = (cw - bounds.w * vpS) / 2 - bounds.x * vpS;
+                vpTy = (ch - bounds.h * vpS) / 2 - bounds.y * vpS;
                 applyVp();
-                viewAdjusted = false;
+                svg.style.width = '';
+                svg.style.height = '';
+                if (p) { p.scrollLeft = 0; p.scrollTop = 0; }
             }
-            function zoomBy(f) {
-                var cw = svg.clientWidth, ch = svg.clientHeight;
-                var ns2 = clamp(vpS * f, 0.05, 8);
-                vpTx = cw / 2 - (cw / 2 - vpTx) * (ns2 / vpS);
-                vpTy = ch / 2 - (ch / 2 - vpTy) * (ns2 / vpS);
-                vpS = ns2; applyVp(); viewAdjusted = true;
+            // Diagrams render at natural (1:1) scale by default so nothing is
+            // shrunk away; the container scrolls to reveal oversized content.
+            function naturalView() {
+                var p = svg.parentElement;
+                if (p) { p.scrollLeft = 0; p.scrollTop = 0; }
+                vpS = 1; vpTx = 0; vpTy = 8;
+                applyVp();
+                syncSvgSize();
+            }
+            function zoomAt(factor, x, y) {
+                var scale = clamp(vpS * factor, 0.05, 8);
+                vpTx = x - (x - vpTx) * scale / vpS;
+                vpTy = y - (y - vpTy) * scale / vpS;
+                vpS = scale;
+                applyVp(); syncSvgSize();
+            }
+            function zoomBy(factor) {
+                var p = svg.parentElement;
+                zoomAt(factor, p.scrollLeft + p.clientWidth / 2, p.scrollTop + p.clientHeight / 2);
+            }
+
+            function positionNode(i) {
+                nodeGs[i].setAttribute('transform', 'translate(' + nodes[i].x + ',' + nodes[i].y + ')');
             }
 
             // Per-node drag
@@ -1563,28 +1959,29 @@
                 var hit = g.querySelector('.node-hit');
                 hit.addEventListener('mousedown', function (e) {
                     if (e.button !== 0) return;
-                    e.stopPropagation(); e.preventDefault();
-                    var sx = e.clientX, sy = e.clientY, ox = mpos[i].x, oy = mpos[i].y;
-                    g.classList.add('dragging'); document.body.style.userSelect = 'none';
-                    function onM(e) {
-                        mpos[i].x = ox + (e.clientX - sx) / vpS; mpos[i].y = oy + (e.clientY - sy) / vpS;
-                        g.setAttribute('transform', 'translate(' + mpos[i].x.toFixed(1) + ',' + mpos[i].y.toFixed(1) + ')');
-                        refreshEdges(i);
-                    }
-                    function onU() {
-                        g.classList.remove('dragging'); document.body.style.userSelect = '';
-                        window.removeEventListener('mousemove', onM); window.removeEventListener('mouseup', onU);
-                    }
-                    window.addEventListener('mousemove', onM); window.addEventListener('mouseup', onU);
+                    e.stopPropagation();
+                    var ox = nodes[i].x, oy = nodes[i].y;
+                    g.classList.add('dragging');
+                    trackMouseDrag(e, function (dx, dy) {
+                        nodes[i].x = ox + dx / vpS; nodes[i].y = oy + dy / vpS;
+                        positionNode(i);
+                        refreshEdges(i); syncSvgSize();
+                    }, function () { g.classList.remove('dragging'); });
                 });
             });
 
             // Spotlight: one code path, shared by hover and keyboard focus.
             var focusedIdx = -1;
+            var focusedEdges = null;
+            function restoreHighlight() {
+                if (focusedIdx >= 0) spotlightOn(focusedIdx);
+                else if (focusedEdges) spotlightEdges(focusedEdges);
+                else spotlightOff();
+            }
             function clearSpotlight() {
                 nodeGs.forEach(function (ng) { ng.classList.remove('node-hi'); });
-                pathEls.forEach(function (p) { p.classList.remove('edge-hi'); });
-                lblEls.forEach(function (l) { if (l) l.classList.remove('edge-hi'); });
+                pathEls.forEach(function (p) { p.classList.remove('edge-hi'); p.classList.remove('path-hi'); });
+                lblEls.forEach(function (l) { if (l) { l.classList.remove('edge-hi'); l.classList.remove('path-hi'); } });
             }
             function spotlightOn(i) {
                 svg.classList.add('has-hover');
@@ -1600,6 +1997,17 @@
                 svg.classList.remove('has-hover');
                 clearSpotlight();
             }
+            // Light up a whole route: the given edges, and every node they touch.
+            function spotlightEdges(edgeIdxs) {
+                svg.classList.add('has-hover');
+                clearSpotlight();
+                edgeIdxs.forEach(function (ei) {
+                    pathEls[ei].classList.add('path-hi');
+                    if (lblEls[ei]) lblEls[ei].classList.add('path-hi');
+                    nodeGs[edges[ei].from].classList.add('node-hi');
+                    nodeGs[edges[ei].to].classList.add('node-hi');
+                });
+            }
 
             // Hover spotlight. The node drag handler calls preventDefault() on
             // mousedown, so a mouse never focuses a node and focusedIdx stays -1
@@ -1607,18 +2015,20 @@
             nodeGs.forEach(function (g, i) {
                 g.addEventListener('mouseenter', function () { spotlightOn(i); });
                 g.addEventListener('mouseleave', function () {
-                    if (focusedIdx >= 0) spotlightOn(focusedIdx); else spotlightOff();
+                    restoreHighlight();
                 });
             });
 
             // Keep the focused node on screen: a focus ring nobody can see is not
             // a focus indicator. Only the keyboard paths below call this.
             function ensureVisible(i) {
-                var cw = svg.clientWidth, ch = svg.clientHeight;
+                var p = svg.parentElement;
+                var cw = p && p.clientWidth, ch = p && p.clientHeight;
                 if (!cw || !ch) return;
                 var m = 16;
-                var x = mpos[i].x * vpS + vpTx, y = mpos[i].y * vpS + vpTy;
-                var w = NW * vpS, h = heights[i] * vpS;
+                var x = nodes[i].x * vpS + vpTx - p.scrollLeft;
+                var y = nodes[i].y * vpS + vpTy - p.scrollTop;
+                var w = nodes[i].w * vpS, h = nodes[i].h * vpS;
                 if (x < m) vpTx += m - x;
                 else if (x + w > cw - m) vpTx -= Math.min(x + w - (cw - m), x - m);
                 if (y < m) vpTy += m - y;
@@ -1629,15 +2039,15 @@
             // Keyboard: focus spotlights a node, arrow keys move it and re-route
             // its edges exactly like dragging does.
             function moveNode(i, dx, dy) {
-                mpos[i].x += dx; mpos[i].y += dy;
-                nodeGs[i].setAttribute('transform',
-                    'translate(' + mpos[i].x.toFixed(1) + ',' + mpos[i].y.toFixed(1) + ')');
+                nodes[i].x += dx; nodes[i].y += dy;
+                positionNode(i);
                 refreshEdges(i);
                 ensureVisible(i);
+                syncSvgSize();
             }
             nodeGs.forEach(function (g, i) {
-                g.addEventListener('focus', function () { focusedIdx = i; spotlightOn(i); ensureVisible(i); });
-                g.addEventListener('blur', function () { focusedIdx = -1; spotlightOff(); });
+                g.addEventListener('focus', function () { focusedIdx = i; spotlightOn(i); ensureVisible(i); syncSvgSize(); });
+                g.addEventListener('blur', function () { focusedIdx = -1; restoreHighlight(); });
                 g.addEventListener('keydown', function (e) {
                     if (e.altKey || e.ctrlKey || e.metaKey) return;
                     var d = e.shiftKey ? KSTEP_BIG : KSTEP;
@@ -1654,35 +2064,469 @@
                 });
             });
 
-            requestAnimationFrame(fit);
-
-            // A ResizeObserver rather than a window listener: it fires for a panel the
-            // filter has just shown, which has no size until then, and it reports only
-            // the canvases that actually changed.
-            if (typeof ResizeObserver === 'function') {
-                var refitPending = 0;
-                new ResizeObserver(function () {
-                    if (viewAdjusted || !svg.clientWidth) return;
-                    cancelAnimationFrame(refitPending);
-                    refitPending = requestAnimationFrame(fit);
-                }).observe(svg);
-            }
+            requestAnimationFrame(function () {
+                naturalView();
+                // Observe the viewport rather than the SVG that syncSvgSize changes.
+                // This also catches resizing while the SVG has explicit pixel dimensions.
+                if (typeof ResizeObserver === 'function' && svg.parentElement) {
+                    var observer = new ResizeObserver(function () {
+                        if (!svg.isConnected) { observer.disconnect(); return; }
+                        if (svg.parentElement.clientWidth) syncSvgSize();
+                    });
+                    observer.observe(svg.parentElement);
+                }
+            });
 
             return {
-                svgEl: svg, fit: fit,
+                svgEl: svg, fit: fit, naturalHeight: svgH + 24,
                 zoomIn: function () { zoomBy(1.25); },
                 zoomOut: function () { zoomBy(1 / 1.25); },
                 reset: function () {
-                    mpos.forEach(function (p, i) { p.x = origPos[i].x; p.y = origPos[i].y; });
-                    nodeGs.forEach(function (g, i) {
-                        g.setAttribute('transform', 'translate(' + mpos[i].x + ',' + mpos[i].y + ')');
-                    });
-                    refreshEdges(null); requestAnimationFrame(fit);
-                }
+                    nodes.forEach(function (n, i) { n.x = origPos[i].x; n.y = origPos[i].y; });
+                    nodes.forEach(function (_, i) { positionNode(i); });
+                    refreshEdges(null); requestAnimationFrame(naturalView);
+                },
+                highlightEdges: spotlightEdges,
+                focusEdges: function (indices) { focusedEdges = indices; restoreHighlight(); },
+                clearHighlight: restoreHighlight
             };
         }
 
+        // ── Dependency graph: one card per declared step ──────────────────
+        function makeDependencyCanvas(steps) {
+            var heights = measureHeights(steps.map(buildNodeHtml), NW);
+            var layout = computeLayout(steps, heights);
+            var nodes = steps.map(function (step, i) {
+                var label = step.name + ', ' + (step.type || 'Step');
+                if (step.goal && step.type !== 'AchievesGoal') label += ', goal';
+                if (step.plannerGenerated) label += ', planner-generated';
+                else if (step.registered === false) label += ', not in plan';
+                var cls = (step.type || '').toLowerCase() + (step.registered === false ? ' not-registered' : '');
+                return {
+                    x: layout.pos[i].x, y: layout.pos[i].y, w: NW, h: heights[i], rx: 11,
+                    ariaLabel: label, roleDesc: 'workflow step', render: cardRenderer(cls, buildNodeHtml(step))
+                };
+            });
+            var edges = layout.edges.map(function (e) {
+                return { from: e.from, to: e.to, cls: e.kind, marker: e.kind, label: e.label, loop: false };
+            });
+            return makeGraphCanvas({
+                nodes: nodes, edges: edges, svgW: layout.svgW, svgH: layout.svgH,
+                markers: { pre: 'var(--condition)', type: 'var(--type-col)', cost: 'var(--cost)' },
+                ariaLabel: 'Dependency graph with ' + steps.length + ' step' + (steps.length === 1 ? '' : 's') +
+                    ': ' + steps.map(function (s) { return s.name; }).join(', ')
+            });
+        }
+
+        // ── Flow chart: Start → actions → End, as the backend derived it ──
+        var FW = 240;      // flow action card width
+        var FCG = 140;     // flow column gap, wide enough for a "Type · if condition" label
+        var FRG = 34;      // flow row gap
+        var BOW = 130;     // how far a column-skipping edge sags below the column it skips (clears a card)
+        var DETACHED_GAP = 64;
+        var SPEL = 'spel:';
+
+        function stripSpel(c) { return typeof c === 'string' && c.indexOf(SPEL) === 0 ? c.substring(SPEL.length) : c; }
+
+        // The compact card: what the step is, what it hands over, what it costs.
+        // Everything else lives on the Dependencies tab and in the title tooltip.
+        function buildFlowCardHtml(step, node) {
+            var tc = esc((step.type || 'Action').toLowerCase());
+            var badges = '';
+            if (step.goal && step.type !== 'AchievesGoal') badges += '<span class="nb nb-goal">\u2605 GOAL</span>';
+            if (step.canRerun) badges += '<span class="nb nb-rerun">\u21ba canRerun</span>';
+            if (step.readOnly) badges += '<span class="nb nb-readonly">\u26d4 readOnly</span>';
+            if (step.clearBlackboard) badges += '<span class="nb nb-clearbb">\u2715 clears BB</span>';
+            if (step.plannerGenerated) badges += '<span class="nb nb-planner">\u2699 planner</span>';
+            if (node.kind === 'DETACHED') badges += '<span class="nb nb-detached">\u26a0 ' + esc(node.label) + '</span>';
+
+            var tip = (step.type || 'Action') + ' ' + step.name;
+            if (step.description) tip += '\n' + step.description;
+            tip += '\n' + ((step.inputs || []).join(', ') || '\u2014') + ' \u2192 ' + (step.output || 'void');
+            if ((step.pre || []).length) tip += '\npre: ' + step.pre.join(', ');
+            if ((step.post || []).length) tip += '\npost: ' + step.post.join(', ');
+
+            var html = '<div xmlns="http://www.w3.org/1999/xhtml" class="nfo" title="' + esc(tip) + '">';
+            html += '<div class="ntype-row"><span class="ntype ' + tc + '">' + esc(step.type || 'Action') + '</span>' + badges + '</div>';
+            html += '<div class="nname">' + esc(step.name) + '</div>';
+            var optional = new Set(step.optionalInputs || []);
+            var ins = (step.inputs || []).map(function (t) { return esc(t) + (optional.has(t) ? '?' : ''); });
+            html += '<div class="nio">' + (ins.length ? ins.join(', ') : '\u2014') + ' \u2192 ' + esc(step.output || 'void') + '</div>';
+            if (step.costMethod)
+                html += '<div class="nrow ccost"><span class="lbl">cost</span><span class="val">\u00a7 ' + esc(step.costMethod) + '()</span></div>';
+            else if (step.cost != null)
+                html += '<div class="nrow ccost"><span class="lbl">cost</span><span class="val">' + esc(step.cost) + '</span></div>';
+            html += '</div>';
+            return html;
+        }
+
+        function terminalRenderer(kind, title, sub) {
+            return function (g, n) {
+                g.appendChild(svgEl('rect', { 'class': 'fterm ' + kind, width: n.w, height: n.h, rx: n.h / 2 }));
+                var t = svgEl('text', { 'class': 'fterm-lbl', x: n.w / 2, y: sub ? n.h / 2 - 3 : n.h / 2 + 4, 'text-anchor': 'middle' });
+                t.textContent = title;
+                g.appendChild(t);
+                if (sub) {
+                    var s = svgEl('text', { 'class': 'fterm-sub', x: n.w / 2, y: n.h / 2 + 12, 'text-anchor': 'middle' });
+                    s.textContent = sub;
+                    g.appendChild(s);
+                }
+            };
+        }
+        function decisionRenderer(node) {
+            var detail = (node.detail || 'CONDITION').toLowerCase();
+            var kindLabel = detail === 'spel' ? 'SpEL' : detail === 'state' ? 'state' : detail === 'planner' ? 'planner choice' : 'condition';
+            return function (g, n) {
+                var pts = (n.w / 2) + ',0 ' + n.w + ',' + (n.h / 2) + ' ' + (n.w / 2) + ',' + n.h + ' 0,' + (n.h / 2);
+                g.appendChild(svgEl('polygon', { 'class': 'fdecision ' + detail, points: pts }));
+                var fo = svgEl('foreignObject', { x: n.w * 0.17, y: n.h * 0.18, width: n.w * 0.66, height: n.h * 0.64 });
+                fo.style.pointerEvents = 'none';
+                fo.innerHTML = '<div xmlns="http://www.w3.org/1999/xhtml" class="fdec-body" title="' + esc(node.label || '') + '">' +
+                    '<span class="fdec-kind">' + esc(kindLabel) + '</span>' +
+                    (node.label && node.label !== kindLabel ? '<span class="fdec-lbl">' + esc(node.label) + '</span>' : '') + '</div>';
+                g.appendChild(fo);
+            };
+        }
+        function barRenderer(kind) {
+            return function (g, n) {
+                g.appendChild(svgEl('rect', { 'class': 'fbar', width: n.w, height: n.h, rx: 3 }));
+                var t = svgEl('text', { 'class': 'fbar-lbl', x: n.w / 2, y: n.h + 12, 'text-anchor': 'middle' });
+                t.textContent = kind;
+                g.appendChild(t);
+            };
+        }
+
+        function computeFlowLayout(flow, nodes, edges) {
+            var idx = new Map();
+            flow.nodes.forEach(function (n, i) { idx.set(n.id, i); });
+            var main = [], detached = [];
+            flow.nodes.forEach(function (n, i) { (n.kind === 'DETACHED' ? detached : main).push(i); });
+            var isMain = new Set(main);
+
+            // Forward edges only: a loop points upstream by definition and would
+            // otherwise push its target one column past its source forever.
+            var preds = nodes.map(function () { return []; });
+            flow.edges.forEach(function (e) {
+                var a = idx.get(e.from), b = idx.get(e.to);
+                if (a == null || b == null || e.loop || !isMain.has(a) || !isMain.has(b)) return;
+                preds[b].push(a);
+            });
+
+            // Longest path from Start, iterative and cycle-safe like computeLayout.
+            var maxCol = Math.max(0, main.length - 1);
+            var col = nodes.map(function () { return 0; });
+            for (var pass = 0; pass < main.length + 6; pass++) {
+                var changed = false;
+                main.forEach(function (i) {
+                    var c = 0;
+                    preds[i].forEach(function (p) { c = Math.max(c, col[p] + 1); });
+                    if (c > maxCol) c = maxCol;
+                    if (col[i] !== c) { col[i] = c; changed = true; }
+                });
+                if (!changed) break;
+            }
+            // Every End sits in the last column, whatever the length of its route.
+            var lastCol = 0;
+            main.forEach(function (i) { if (flow.nodes[i].kind !== 'END') lastCol = Math.max(lastCol, col[i]); });
+            main.forEach(function (i) { if (flow.nodes[i].kind === 'END') col[i] = lastCol + 1; });
+
+            var usedCols = Array.from(new Set(main.map(function (i) { return col[i]; }))).sort(function (a, b) { return a - b; });
+            var dense = {};
+            usedCols.forEach(function (c, i) { dense[c] = i; });
+            var cols = usedCols.map(function () { return []; });
+            main.forEach(function (i) { col[i] = dense[col[i]]; cols[col[i]].push(i); });
+
+            // Order each column by the mean row of its predecessors so branches fan
+            // out from their decision instead of crossing back over it.
+            var row = nodes.map(function () { return 0; });
+            cols.forEach(function (members, c) {
+                if (c > 0) {
+                    members.sort(function (a, b) {
+                        function mean(i) {
+                            var ps = preds[i];
+                            if (!ps.length) return row[i];
+                            return ps.reduce(function (s, p) { return s + row[p]; }, 0) / ps.length;
+                        }
+                        return mean(a) - mean(b) || a - b;
+                    });
+                }
+                members.forEach(function (i, r) { row[i] = r; });
+            });
+
+            var colW = cols.map(function (members) {
+                return members.reduce(function (m, i) { return Math.max(m, nodes[i].w); }, 0);
+            });
+            var colH = cols.map(function (members) {
+                return members.reduce(function (s, i, k) { return s + nodes[i].h + (k ? FRG : 0); }, 0);
+            });
+            var mainH = Math.max.apply(null, colH.concat([0]));
+            // Loop edges arc above the chart, so leave them room at the top.
+            var hasLoop = flow.edges.some(function (e) { return e.loop; });
+            var top = PAD + (hasLoop ? LOOP_LIFT + 20 : 0);
+            var x = PAD;
+            cols.forEach(function (members, c) {
+                var y = top + (mainH - colH[c]) / 2;
+                members.forEach(function (i) {
+                    nodes[i].x = x + (colW[c] - nodes[i].w) / 2;
+                    nodes[i].y = y;
+                    y += nodes[i].h + FRG;
+                });
+                x += colW[c] + FCG;
+            });
+            var mainW = cols.length ? x - FCG + PAD : PAD * 2;
+
+            // An edge that skips a column would run straight through whatever sits
+            // in it, so it sags below instead; two such edges alternate their depth
+            // so they stay apart, and the chart grows to make room for the deepest.
+            var bowed = 0, deepest = 0;
+            edges.forEach(function (e) {
+                if (e.loop || !isMain.has(e.from) || !isMain.has(e.to)) return;
+                if (col[e.to] - col[e.from] >= 2) {
+                    e.bow = BOW * (1 + (bowed++ % 2) * 0.6);
+                    deepest = Math.max(deepest, e.bow * 0.75);
+                }
+            });
+            mainH += deepest;
+
+            // Steps outside every route sit in their own strip below the chart.
+            var box = null;
+            if (detached.length) {
+                var dy = top + mainH + DETACHED_GAP;
+                var dx = PAD + 14;
+                var dh = 0;
+                detached.forEach(function (i) {
+                    nodes[i].x = dx; nodes[i].y = dy + 14;
+                    dx += nodes[i].w + 24;
+                    dh = Math.max(dh, nodes[i].h);
+                });
+                box = { x: PAD, y: dy - 14, w: dx - 24 + 14 - PAD, h: dh + 28 + 14 };
+                mainW = Math.max(mainW, box.x + box.w + PAD);
+            }
+            var svgH = (box ? box.y + box.h : top + mainH) + PAD;
+            return { svgW: mainW, svgH: svgH, detachedBox: box };
+        }
+
+        function makeFlowChartCanvas(agent) {
+            var flow = agent.flow;
+            var byName = new Map();
+            (agent.steps || []).forEach(function (s) { byName.set(s.name, s); });
+            var idx = new Map();
+            flow.nodes.forEach(function (n, i) { idx.set(n.id, i); });
+
+            var cardHtml = flow.nodes.map(function (n) {
+                if (n.kind !== 'ACTION' && n.kind !== 'DETACHED') return null;
+                var step = byName.get(n.step) || { name: n.step, type: 'Action' };
+                return buildFlowCardHtml(step, n);
+            });
+            var heights = measureHeights(cardHtml.map(function (h) { return h || '<div></div>'; }), FW)
+                .map(function (h, i) { return cardHtml[i] ? h : 0; });
+
+            var nodes = flow.nodes.map(function (n, i) {
+                switch (n.kind) {
+                    case 'START':
+                        return { x: 0, y: 0, w: 96, h: 40, rx: 20, ariaLabel: 'Start', roleDesc: 'flow start', render: terminalRenderer('start', 'Start') };
+                    case 'END':
+                        return {
+                            x: 0, y: 0, w: Math.max(120, 30 + (n.label || '').length * 6.5), h: 52, rx: 26,
+                            ariaLabel: 'End, goal ' + n.step + (n.label ? ', produces ' + n.label : ''), roleDesc: 'flow end',
+                            render: terminalRenderer('end', 'End', n.label)
+                        };
+                    case 'DECISION':
+                        return {
+                            x: 0, y: 0, w: 200, h: 96, rx: 8, ariaLabel: 'Decision, ' + (n.label || 'condition'), roleDesc: 'decision',
+                            render: decisionRenderer(n)
+                        };
+                    case 'FORK':
+                    case 'JOIN':
+                        return { x: 0, y: 0, w: 8, h: 64, rx: 3, ariaLabel: n.kind === 'FORK' ? 'Fork, steps run in parallel' : 'Join, waits for all branches', roleDesc: n.kind.toLowerCase(), render: barRenderer(n.kind.toLowerCase()) };
+                    default: {
+                        var step = byName.get(n.step) || { name: n.step, type: 'Action' };
+                        var cls = (step.type || 'action').toLowerCase() + (n.kind === 'DETACHED' ? ' not-registered' : '');
+                        var label = n.step + ', ' + (step.type || 'Action') + (n.kind === 'DETACHED' ? ', ' + n.label : '');
+                        return { x: 0, y: 0, w: FW, h: heights[i], rx: 11, ariaLabel: label, roleDesc: 'workflow step', render: cardRenderer(cls, cardHtml[i]), kind: n.kind };
+                    }
+                }
+            });
+
+            var cheapest = new Set();
+            flow.paths.forEach(function (p, i) { if (p.cheapest) cheapest.add(i); });
+            var edges = [];
+            flow.edges.forEach(function (e) {
+                var a = idx.get(e.from), b = idx.get(e.to);
+                if (a == null || b == null) return;
+                var conds = (e.conditions || []).map(stripSpel);
+                var types = e.types || [];
+                var label = types.join(', ');
+                if (conds.length) label = (label ? label + ' \u00b7 ' : '') + 'if ' + conds.join(' & ');
+                if (e.loop) label = '\u21ba loop' + (label ? ' \u00b7 ' + label : '');
+                var onCheapest = (e.paths || []).some(function (p) { return cheapest.has(p); });
+                var cls = e.loop ? 'loop' : conds.length ? 'branch' : 'flow';
+                if (onCheapest && !e.loop) cls += ' cheapest';
+                edges.push({
+                    from: a, to: b, loop: !!e.loop, label: label, paths: e.paths || [],
+                    cls: cls, marker: e.loop ? 'loop' : onCheapest ? 'cheapest' : conds.length ? 'branch' : 'flow',
+                    labelCls: e.loop ? 'loop' : conds.length ? 'branch' : 'types'
+                });
+            });
+
+            var layout = computeFlowLayout(flow, nodes, edges);
+            var canvas = makeGraphCanvas({
+                nodes: nodes, edges: edges, svgW: layout.svgW, svgH: layout.svgH,
+                markers: { flow: 'var(--muted)', cheapest: 'var(--goal)', branch: 'var(--condition)', loop: 'var(--brand-orange)' },
+                ariaLabel: 'Flow chart from Start to ' + flow.paths.length + ' route' + (flow.paths.length === 1 ? '' : 's') +
+                    ' ending in a goal' + (agent.plannerType ? ', ' + agent.plannerType + ' planner' : ''),
+                decorate: function (g) {
+                    if (!layout.detachedBox) return;
+                    var b = layout.detachedBox;
+                    g.appendChild(svgEl('rect', { 'class': 'fgroup-box', x: b.x, y: b.y, width: b.w, height: b.h, rx: 12 }));
+                    var t = svgEl('text', { 'class': 'fgroup-lbl', x: b.x + 14, y: b.y - 6 });
+                    t.textContent = 'Not on any route to a goal';
+                    g.appendChild(t);
+                }
+            });
+            // Route k is the set of edges tagged with k. Loops carry no path index,
+            // so they stay dim while a route is lit.
+            canvas.edgesOfPath = function (k) {
+                var out = [];
+                edges.forEach(function (e, ei) { if (e.paths.indexOf(k) !== -1) out.push(ei); });
+                return out;
+            };
+            return canvas;
+        }
+
+        // Zoom controls, one strip per drawing
+        function controlsFor(canvas, what, agentName) {
+            var ctrl = document.createElement('div');
+            ctrl.className = 'flow-controls';
+            ctrl.setAttribute('role', 'group');
+            ctrl.setAttribute('aria-label', what + ' controls for ' + agentName);
+            function flowButton(label, action) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'flow-btn';
+                b.textContent = label;
+                b.setAttribute('aria-label', label.replace(/^\S+\s/, '') + ' \u2014 ' + agentName + ' ' + what);
+                b.onclick = action;
+                return b;
+            }
+            var fhint = document.createElement('span'); fhint.className = 'flow-hint';
+            fhint.textContent = 'Drag\u00a0nodes \u00b7 Ctrl/\u2318+scroll\u00a0to\u00a0zoom \u00b7 Drag\u00a0background\u00a0to\u00a0pan \u00b7 Dbl-click\u00a0to\u00a0fit'
+                + ' \u00b7 Tab\u00a0to\u00a0a\u00a0node, arrows\u00a0move\u00a0it';
+            ctrl.append(
+                flowButton('\u22a1 Fit', canvas.fit),
+                flowButton('+ Zoom In', canvas.zoomIn),
+                flowButton('\u2212 Zoom Out', canvas.zoomOut),
+                flowButton('\u21ba Reset Layout', canvas.reset),
+                fhint);
+            return ctrl;
+        }
+        function canvasBox(canvas) {
+            var flow = document.createElement('div');
+            flow.className = 'flow';
+            flow.dataset.naturalHeight = String(canvas.naturalHeight);
+            flow.appendChild(canvas.svgEl);
+            return flow;
+        }
+
+        function sizeDiagrams(viewPanels) {
+            // Size the diagram viewport, not the panel containing its legend and
+            // route details. Both views use the larger graph's natural height;
+            // initially cap tall graphs to the window and let the reader expand.
+            var boxes = viewPanels.map(function (view) { return view.querySelector('div.flow'); });
+            var grips = [];
+            var diagramHeight = Math.max(240, Math.min(
+                Math.max.apply(null, boxes.map(function (box) { return Number(box.dataset.naturalHeight); })),
+                Math.min(window.innerHeight * 0.72, 660)));
+            function applyDiagramHeight(h) {
+                diagramHeight = Math.max(240, Math.round(h));
+                boxes.forEach(function (box) { box.style.height = diagramHeight + 'px'; });
+                grips.forEach(function (grip) { grip.setAttribute('aria-valuenow', String(diagramHeight)); });
+            }
+            function addResizer(box) {
+                var grip = document.createElement('div');
+                grip.className = 'view-resize';
+                grip.tabIndex = 0;
+                grip.setAttribute('role', 'separator');
+                grip.setAttribute('aria-label', 'Diagram height');
+                grip.setAttribute('aria-orientation', 'horizontal');
+                grip.setAttribute('aria-valuemin', '240');
+                box.after(grip);
+                grips.push(grip);
+                grip.addEventListener('keydown', function (e) {
+                    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown' && e.key !== 'Home') return;
+                    e.preventDefault();
+                    applyDiagramHeight(e.key === 'Home' ? 240 : diagramHeight +
+                        (e.key === 'ArrowDown' ? 1 : -1) * (e.shiftKey ? 100 : 20));
+                });
+                grip.addEventListener('pointerdown', function (e) {
+                    if (e.pointerType === 'mouse' && e.button !== 0) return;
+                    e.preventDefault();
+                    grip.setPointerCapture(e.pointerId);
+                    var startY = e.clientY, startH = diagramHeight;
+                    function move(ev) {
+                        applyDiagramHeight(startH + ev.clientY - startY);
+                    }
+                    function up() {
+                        grip.removeEventListener('pointermove', move);
+                        grip.removeEventListener('pointerup', up);
+                        grip.removeEventListener('pointercancel', up);
+                        grip.removeEventListener('lostpointercapture', up);
+                    }
+                    grip.addEventListener('pointermove', move);
+                    grip.addEventListener('pointerup', up);
+                    grip.addEventListener('pointercancel', up);
+                    grip.addEventListener('lostpointercapture', up);
+                });
+            }
+            boxes.forEach(addResizer);
+            applyDiagramHeight(diagramHeight);
+        }
+
+        function viewTabs(agentName, views) {
+            // Each agent owns its tabs; filtering preserves its selection and layout.
+            var tabs = document.createElement('div');
+            tabs.className = 'view-tabs';
+            tabs.setAttribute('role', 'tablist');
+            tabs.setAttribute('aria-label', 'Views of ' + agentName);
+            var seq = String(panelSeq++);
+            var tabEls = views.map(function (v, i) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'view-tab';
+                b.id = 'tab-' + seq + '-' + v.key;
+                b.setAttribute('role', 'tab');
+                b.textContent = v.label;
+                v.panel.id = 'view-' + seq + '-' + v.key;
+                v.panel.setAttribute('role', 'tabpanel');
+                v.panel.setAttribute('aria-labelledby', b.id);
+                b.setAttribute('aria-controls', v.panel.id);
+                b.addEventListener('click', function () { selectView(v.key); });
+                b.addEventListener('keydown', function (e) {
+                    var next = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? views.length - 1 : null;
+                    if (next === null) return;
+                    e.preventDefault();
+                    next = (next + views.length) % views.length;
+                    selectView(views[next].key);
+                    tabEls[next].focus();
+                });
+                tabs.appendChild(b);
+                return b;
+            });
+            function selectView(key) {
+                views.forEach(function (v, i) {
+                    var on = v.key === key;
+                    tabEls[i].setAttribute('aria-selected', String(on));
+                    tabEls[i].tabIndex = on ? 0 : -1;
+                    v.panel.hidden = !on;
+                });
+            }
+            selectView(views[0].key);
+
+            return tabs;
+        }
+
         // ── Render one agent panel ────────────────────────────────────────
+        var panelSeq = 0;
         function plannerCls(pt) {
             if (!pt) return '';
             switch (pt.toUpperCase()) {
@@ -1782,43 +2626,127 @@
                 (steps.some(function (s) { return s.plannerGenerated || s.registered === false; })
                     ? '<span class="leg-item">\u2699 planner-generated \u00b7 \u26a0 declared but not in the plan</span>'
                     : '');
-            panel.appendChild(leg);
 
-            // Zoom controls
-            var ctrl = document.createElement('div');
-            ctrl.className = 'flow-controls';
-            ctrl.setAttribute('role', 'group');
-            ctrl.setAttribute('aria-label', 'Diagram controls for ' + agent.agentName);
-            function flowButton(label) {
-                var b = document.createElement('button');
-                b.type = 'button';
-                b.className = 'flow-btn';
-                b.textContent = label;
-                b.setAttribute('aria-label', label.replace(/^\S+\s/, '') + ' \u2014 ' + agent.agentName);
-                return b;
+            // Dependencies view: the declared graph, one card per step.
+            var depPanel = document.createElement('div');
+            depPanel.className = 'view-panel';
+            var depCanvas = makeDependencyCanvas(steps);
+            depPanel.append(leg, controlsFor(depCanvas, 'dependency graph', agent.agentName), canvasBox(depCanvas));
+
+            // Flow view: only when the backend derived one.
+            var flowPanel = null;
+            if (agent.flow && Array.isArray(agent.flow.nodes)) {
+                flowPanel = document.createElement('div');
+                flowPanel.className = 'view-panel';
+                renderFlowView(agent, flowPanel);
             }
-            var btnFit = flowButton('\u22a1 Fit');
-            var btnIn = flowButton('+ Zoom In');
-            var btnOut = flowButton('\u2212 Zoom Out');
-            var btnReset = flowButton('\u21ba Reset Layout');
-            var fhint = document.createElement('span'); fhint.className = 'flow-hint';
-            fhint.textContent = 'Drag\u00a0nodes \u00b7 Ctrl/\u2318+scroll\u00a0to\u00a0zoom \u00b7 Drag\u00a0background\u00a0to\u00a0pan \u00b7 Dbl-click\u00a0to\u00a0fit'
-                + ' \u00b7 Tab\u00a0to\u00a0a\u00a0node, arrows\u00a0move\u00a0it';
-            ctrl.append(btnFit, btnIn, btnOut, btnReset, fhint);
-            panel.appendChild(ctrl);
 
-            var flow = document.createElement('div');
-            flow.className = 'flow';
-            var canvas = makeFlowCanvas(steps);
-            flow.appendChild(canvas.svgEl);
-            panel.appendChild(flow);
+            if (!flowPanel) {
+                panel.appendChild(depPanel);
+                sizeDiagrams([depPanel]);
+                return panel;
+            }
 
-            btnFit.onclick = function () { canvas.fit(); };
-            btnIn.onclick = function () { canvas.zoomIn(); };
-            btnOut.onclick = function () { canvas.zoomOut(); };
-            btnReset.onclick = function () { canvas.reset(); };
+            var tabs = viewTabs(agent.agentName, [
+                { key: 'flow', label: 'Flow', panel: flowPanel },
+                { key: 'deps', label: 'Dependencies', panel: depPanel }
+            ]);
+            panel.append(tabs, flowPanel, depPanel);
+
+            sizeDiagrams([flowPanel, depPanel]);
 
             return panel;
+        }
+
+        // ── Flow view: chart, entry types, routes table ───────────────────
+        function renderFlowView(agent, host) {
+            var flow = agent.flow;
+            var hasRoute = flow.paths.length > 0;
+
+            var leg = document.createElement('div');
+            leg.className = 'legend';
+            leg.innerHTML =
+                '<span class="leg-item"><span class="swatch" style="background:var(--ink)"></span>Start</span>' +
+                '<span class="leg-item"><span class="swatch" style="background:var(--goal)"></span>End (goal) / cheapest route</span>' +
+                '<span class="leg-item"><span class="swatch" style="background:var(--action)"></span>Action / fork &amp; join</span>' +
+                '<span class="leg-item"><span class="swatch" style="background:var(--condition)"></span>Decision / branch</span>' +
+                '<span class="leg-item"><span class="swatch" style="background:var(--brand-orange)"></span>\u21ba Loop</span>' +
+                '<span class="leg-item"><span class="swatch" style="background:var(--type-col)"></span>Type handed over</span>' +
+                (flow.nodes.some(function (n) { return n.kind === 'DETACHED'; })
+                    ? '<span class="leg-item">\u26a0 outside every route</span>' : '');
+            host.appendChild(leg);
+
+            var canvas = makeFlowChartCanvas(agent);
+            host.append(controlsFor(canvas, 'flow chart', agent.agentName), canvasBox(canvas));
+
+            var facts = document.createElement('div');
+            facts.className = 'flow-facts';
+
+            var entry = document.createElement('div');
+            entry.innerHTML = 'Starts from ' + (flow.entryTypes.length
+                ? flow.entryTypes.map(function (t) { return '<code>' + esc(t) + '</code>'; }).join(', ')
+                : '<em>nothing on the blackboard</em>');
+            facts.appendChild(entry);
+
+            var isComponent = (agent.plannerType || '').toUpperCase() === 'COMPONENT';
+            if (!hasRoute) {
+                var none = document.createElement('div');
+                none.className = 'flow-warn';
+                none.textContent = isComponent
+                    ? 'An @EmbabelComponent lends its steps to the agents that use them; their routes are drawn on those agents.'
+                    : 'No route from Start reaches a goal: nothing this agent declares produces the output of an @AchievesGoal action from the inputs it starts with.';
+                facts.appendChild(none);
+            }
+            if (flow.truncated) {
+                var trunc = document.createElement('div');
+                trunc.className = 'flow-warn';
+                trunc.textContent = 'Only the first ' + flow.paths.length + ' routes were enumerated; this agent has more.';
+                facts.appendChild(trunc);
+            }
+
+            if (hasRoute) {
+                var det = document.createElement('details');
+                det.className = 'paths';
+                det.open = flow.paths.length <= 6;
+                var sum = document.createElement('summary');
+                sum.textContent = flow.paths.length + ' route' + (flow.paths.length === 1 ? '' : 's') + ' to a goal';
+                det.appendChild(sum);
+                var table = document.createElement('table');
+                table.innerHTML = '<thead><tr><th scope="col">#</th><th scope="col">Goal</th><th scope="col">Steps</th><th scope="col">Cost</th></tr></thead>';
+                var tbody = document.createElement('tbody');
+                flow.paths.forEach(function (p, k) {
+                    var tr = document.createElement('tr');
+                    if (p.cheapest) tr.className = 'cheapest';
+                    tr.tabIndex = 0;
+                    var cost = p.totalCost == null ? '\u2014' : String(p.totalCost);
+                    if (p.dynamicCost) cost += ' + dynamic';
+                    if (p.cheapest) cost += ' \u2605';
+                    tr.innerHTML = '<td class="num">' + (k + 1) + '</td>' +
+                        '<td><span class="goal-name">' + esc(p.goal) + '</span></td>' +
+                        '<td>' + p.steps.map(function (s) { return '<code>' + esc(s) + '</code>'; }).join('<span class="arrow">\u2192</span>') + '</td>' +
+                        '<td class="num">' + esc(cost) + '</td>';
+                    tr.setAttribute('aria-label', 'Route ' + (k + 1) + ' to ' + p.goal + ': ' + p.steps.join(', ') + ', cost ' + cost);
+                    function lit() { canvas.highlightEdges(canvas.edgesOfPath(k)); }
+                    tr.addEventListener('mouseenter', lit);
+                    tr.addEventListener('focus', function () { canvas.focusEdges(canvas.edgesOfPath(k)); });
+                    tr.addEventListener('mouseleave', canvas.clearHighlight);
+                    tr.addEventListener('blur', function () { canvas.focusEdges(null); });
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                det.appendChild(table);
+                facts.appendChild(det);
+            }
+
+            var note = document.createElement('div');
+            note.className = 'flow-note';
+            note.textContent = 'Derived from declared inputs, outputs and conditions. Which route runs, and the order of independent steps, is decided by the '
+                + (isComponent ? 'planner of the agent that uses these steps' : (agent.plannerType || 'agent\u2019s') + ' planner')
+                + ' at run time' + (flow.paths.some(function (p) { return p.dynamicCost; })
+                    ? '; a @Cost method adds to the static cost shown.' : '.');
+            facts.appendChild(note);
+
+            host.appendChild(facts);
         }
 
         // ── Filter ────────────────────────────────────────────────────────

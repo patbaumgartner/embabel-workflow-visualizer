@@ -10,6 +10,7 @@ import com.patbaumgartner.embabel.research.ResearchModels.MarketData;
 import com.patbaumgartner.embabel.research.ResearchModels.ResearchReport;
 import com.patbaumgartner.embabel.research.ResearchModels.ResearchRequest;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,12 +98,17 @@ public class ProductResearchAgent {
 	 * analysis.
 	 *
 	 * <p>
-	 * The {@link CompetitorAnalysis} parameter is
-	 * {@code @org.jetbrains.annotations.Nullable} — when the SpEL precondition on
-	 * {@link #analyzeCompetitors} was not met (low confidence data), no competitor
-	 * analysis will be on the blackboard. The planner can still achieve the goal by
-	 * calling this action with {@code null} for that parameter, and the report will
-	 * clearly note the omission.
+	 * The {@link CompetitorAnalysis} parameter is {@code @Nullable} — when the SpEL
+	 * precondition on {@link #analyzeCompetitors} was not met (low confidence data), no
+	 * competitor analysis will be on the blackboard. The planner can still achieve the
+	 * goal by calling this action with {@code null} for that parameter, and the report
+	 * will clearly note the omission.
+	 *
+	 * <p>
+	 * JSpecify's {@code @Nullable} is used deliberately: it is retained at runtime, so
+	 * both Embabel's argument binding and the workflow visualizer can see it through
+	 * reflection. JetBrains' {@code org.jetbrains.annotations.Nullable} has {@code CLASS}
+	 * retention and is invisible once the code runs.
 	 */
 	@AchievesGoal(
 			description = "Produce a complete product research report covering market size, growth, and competitive landscape.",
@@ -110,7 +116,7 @@ public class ProductResearchAgent {
 			examples = { "Research the electric vehicle market in the US", "Analyze the smartwatch market in APAC" })
 	@Action(description = "Generate the final consolidated research report from available market and competitive data.")
 	public ResearchReport generateReport(ResearchRequest request, MarketData marketData,
-			@org.jetbrains.annotations.Nullable CompetitorAnalysis competitorAnalysis, OperationContext context) {
+			@Nullable CompetitorAnalysis competitorAnalysis, OperationContext context) {
 		log.info("Generating research report for requestId='{}'", request.requestId());
 
 		var competitiveSection = competitorAnalysis != null

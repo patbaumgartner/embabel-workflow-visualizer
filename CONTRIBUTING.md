@@ -78,6 +78,12 @@ Also worth knowing:
 - Scanning must never instantiate application beans. Resolve types via
   `getType(name, false)`; anything that calls `getBean` turns a read-only
   diagnostic into a side effect.
+- The flow chart (`WorkflowFlowBuilder`) is a derivation, not a simulation: it
+  follows the planner's own rules — a goal is reached when its output type is on
+  the blackboard, an action is runnable when its inputs are present and its
+  preconditions hold — and nothing else. If Embabel's semantics change (say, how
+  `Optional` or `@Nullable` inputs bind), the builder changes with them; do not
+  add heuristics the planner does not have.
 - The catalog JSON is a public contract consumed by the UI and by third-party
   tooling. `WorkflowModelsTests` pins the property names — a change there should
   be deliberate.
@@ -91,14 +97,36 @@ show the expected shape:
 
 - `EmbabelWorkflowCatalogServiceTests` — discovery, against real annotated
   fixtures in a real application context rather than mocks
+- `WorkflowFlowBuilderTests` — route derivation: branches, forks and joins,
+  loops, `@State` fan-out, entry types, costs and the route cap
 - `AnnotationAttributesTests` — attribute reading, including absent and
   wrongly-shaped attributes
 - `StarterPackagingTests` — what the published jar may and may not contain
 - `EmbabelWorkflowVisualizerAutoConfigurationTests` — conditions and wiring
 
-The UI has no automated test. If you change its JavaScript, verify it in a
-browser and say so in the pull request. The pure layout functions are
-straightforward to exercise from Node if you want to add coverage there.
+If you change the UI's JavaScript, run the browser functional suite and review
+its screenshots. The suite is separate from Maven and uses local catalog
+fixtures, so no application server or model credentials are needed.
+
+```shell
+# Install the browser tools outside the application modules.
+npm install --prefix /tmp/visualizer-browser-tools playwright@1.61.1
+/tmp/visualizer-browser-tools/node_modules/.bin/playwright install --with-deps chromium firefox webkit
+NODE_PATH=/tmp/visualizer-browser-tools/node_modules node embabel-workflow-visualizer-starter/src/test/browser/functional.cjs
+```
+
+See [the functional test plan](tests/plans/ui-functional.md) for individual
+scenarios, environment overrides, and expected outcomes. The default run covers
+Chromium, Firefox and WebKit; missing browsers fail explicitly. Results and
+screenshots are written to `/tmp/visualizer-functional` by default. Native touch
+gestures use Chromium's device protocol; touch-handler checks run in all engines.
+An optional `UI_TEST` regular expression selects case IDs for diagnosis; final
+verification must run without that filter.
+
+The smaller `src/test/browser/visualizer.cjs` script in the starter accepts a
+captured catalog JSON file for a quick check against a running application's
+data. The checked-in `catalog.json` is a snapshot of the 12 sample agents, not a
+replacement for the Maven catalog/controller integration tests.
 
 ## Commits and pull requests
 

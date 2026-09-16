@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-09-17T11:44:10.986Z",
+  "sourceSha256": "0a0e156d7c680d840c1e3e8becf61f26f60b65fb4fec3c2d00019c0aeee41af4",
+  "node": "v24.19.0",
+  "playwright": "1.61.1",
+  "versions": {
+    "chromium": "149.0.7827.55"
+  },
+  "results": [
+    {
+      "engine": "chromium",
+      "id": "D11",
+      "name": "Long labels and metadata fit their cards",
+      "result": "FAIL",
+      "ms": 1142,
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ [\n+   '⚡ MCP: VeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExportVeryLongExport',\n+   'tagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtag'\n+ ]\n- []\n",
+      "errors": []
+    }
+  ]
+}

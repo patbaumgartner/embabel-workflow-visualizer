@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-09-17T07:39:14.241Z",
+  "sourceSha256": "cac2be755b341555d37b04d4b38fadb0a6ec3448c275ddf2e05975cfd7fa889d",
+  "node": "v24.19.0",
+  "playwright": "1.61.1",
+  "versions": {
+    "chromium": "149.0.7827.55"
+  },
+  "results": [
+    {
+      "engine": "chromium",
+      "id": "D04",
+      "name": "Legacy dependency-only catalog keeps all controls usable",
+      "result": "FAIL",
+      "ms": 710,
+      "error": "legacy canvas has no resizer\n\n0 !== 1\n",
+      "errors": []
+    },
+    {
+      "engine": "chromium",
+      "id": "I10",
+      "name": "Keyboard node moves stay visible beyond original canvas bounds",
+      "result": "FAIL",
+      "ms": 613,
+      "error": "keyboard-moved node is clipped outside viewport",
+      "errors": []
+    },
+    {
+      "engine": "chromium",
+      "id": "I14",
+      "name": "Focused route keeps its highlight when mouse leaves",
+      "result": "FAIL",
+      "ms": 564,
+      "error": "route focus lost its highlight on mouseleave",
+      "errors": []
+    },
+    {
+      "engine": "chromium",
+      "id": "I19",
+      "name": "Window blur ends node dragging and panning",
+      "result": "FAIL",
+      "ms": 731,
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  [\n+   'translate(135.0,270.0)',\n-   'translate(66.8,166.0)',\n    'translate(264,100)',\n    'translate(644,107)',\n    'translate(984,28)',\n    'translate(984,172)',\n    'translate(1364,100)',\n",
+      "errors": []
+    }
+  ]
+}

@@ -1,0 +1,4694 @@
+{
+  "agents": [
+    {
+      "agentName": "ComplianceReviewAgent",
+      "description": "Reviews a contract document for regulatory compliance risk and issues a verdict.",
+      "version": "1.0.0",
+      "plannerType": "HYBRID",
+      "opaque": false,
+      "className": "com.patbaumgartner.embabel.compliance.ComplianceReviewAgent",
+      "steps": [
+        {
+          "name": "assessClean",
+          "type": "Action",
+          "description": "Record a nil risk assessment for documents with no flagged clauses.",
+          "method": "assessClean",
+          "pre": [
+            "isClean"
+          ],
+          "post": [],
+          "inputs": [
+            "ClauseScreening"
+          ],
+          "output": "RiskAssessment",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": 0.05,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "assessRisk",
+          "type": "Action",
+          "description": "Score the regulatory risk implied by the flagged clauses.",
+          "method": "assessRisk",
+          "pre": [
+            "hasFlaggedClauses"
+          ],
+          "post": [],
+          "inputs": [
+            "ClauseScreening"
+          ],
+          "output": "RiskAssessment",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": "FIRE_ONCE",
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "hasFlaggedClauses",
+          "type": "Condition",
+          "description": "",
+          "method": "hasFlaggedClauses",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "ClauseScreening"
+          ],
+          "output": "boolean",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": 0.05,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "isClean",
+          "type": "Condition",
+          "description": "",
+          "method": "isClean",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "ClauseScreening"
+          ],
+          "output": "boolean",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": 0.05,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "issueVerdict",
+          "type": "AchievesGoal",
+          "description": "Issue the final compliance verdict from the risk assessment.",
+          "method": "issueVerdict",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "RiskAssessment"
+          ],
+          "output": "ComplianceVerdict",
+          "goal": true,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": 0.95,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [
+            "compliance",
+            "risk",
+            "legal"
+          ],
+          "examples": [
+            "Review this vendor contract for EU compliance risk"
+          ],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": true,
+          "exportName": "complianceVerdict",
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [
+            "ReviewRequest"
+          ],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "retentionPeriodLookup",
+          "type": "LlmTool",
+          "description": "Look up the retention period in years mandated for a given jurisdiction.",
+          "method": "retentionPeriodYears",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "String"
+          ],
+          "output": "int",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": true,
+          "llmToolDescription": "Look up the retention period in years mandated for a given jurisdiction.",
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": "compliance",
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": "retentionPeriodLookup",
+          "llmToolMetadata": [
+            {
+              "key": "owner",
+              "value": "legal-ops"
+            },
+            {
+              "key": "stability",
+              "value": "stable"
+            }
+          ],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": null,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "screenClauses",
+          "type": "Action",
+          "description": "Extract and flag clauses containing high-risk contractual terms.",
+          "method": "screenClauses",
+          "pre": [],
+          "post": [
+            "hasFlaggedClauses",
+            "isClean"
+          ],
+          "inputs": [
+            "ReviewRequest"
+          ],
+          "output": "ClauseScreening",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": 0.1,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": true,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        }
+      ],
+      "provider": null,
+      "beanName": "complianceReviewer",
+      "scan": true,
+      "retryPolicy": null,
+      "retryPolicyExpression": "compliance-review",
+      "registered": true,
+      "flow": {
+        "entryTypes": [
+          "ReviewRequest"
+        ],
+        "nodes": [
+          {
+            "id": "start",
+            "kind": "START",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:assessClean",
+            "kind": "ACTION",
+            "step": "assessClean",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:assessRisk",
+            "kind": "ACTION",
+            "step": "assessRisk",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:issueVerdict",
+            "kind": "ACTION",
+            "step": "issueVerdict",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:screenClauses",
+            "kind": "ACTION",
+            "step": "screenClauses",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "decision:screenClauses",
+            "kind": "DECISION",
+            "step": null,
+            "label": "condition",
+            "detail": "CONDITION"
+          },
+          {
+            "id": "end:issueVerdict",
+            "kind": "END",
+            "step": "issueVerdict",
+            "label": "ComplianceVerdict",
+            "detail": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "start",
+            "to": "step:screenClauses",
+            "types": [
+              "ReviewRequest"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1
+            ]
+          },
+          {
+            "from": "step:screenClauses",
+            "to": "decision:screenClauses",
+            "types": [
+              "ClauseScreening"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1
+            ]
+          },
+          {
+            "from": "decision:screenClauses",
+            "to": "step:assessRisk",
+            "types": [],
+            "conditions": [
+              "hasFlaggedClauses"
+            ],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:assessRisk",
+            "to": "step:issueVerdict",
+            "types": [
+              "RiskAssessment"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:issueVerdict",
+            "to": "end:issueVerdict",
+            "types": [
+              "ComplianceVerdict"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1
+            ]
+          },
+          {
+            "from": "decision:screenClauses",
+            "to": "step:assessClean",
+            "types": [],
+            "conditions": [
+              "isClean"
+            ],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          },
+          {
+            "from": "step:assessClean",
+            "to": "step:issueVerdict",
+            "types": [
+              "RiskAssessment"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          }
+        ],
+        "paths": [
+          {
+            "goal": "issueVerdict",
+            "steps": [
+              "screenClauses",
+              "assessRisk",
+              "issueVerdict"
+            ],
+            "totalCost": 0.1,
+            "dynamicCost": false,
+            "cheapest": true
+          },
+          {
+            "goal": "issueVerdict",
+            "steps": [
+              "screenClauses",
+              "assessClean",
+              "issueVerdict"
+            ],
+            "totalCost": 0.15,
+            "dynamicCost": false,
+            "cheapest": false
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "agentName": "ContentModerationAgent",
+      "description": "Evaluates user-generated content against platform policies and issues a moderation decision.",
+      "version": "1.0.0",
+      "plannerType": "GOAP",
+      "opaque": false,
+      "className": "com.patbaumgartner.embabel.moderation.ContentModerationAgent",
+      "steps": [
+        {
+          "name": "analyzeContent",
+          "type": "Action",
+          "description": "Analyse user-generated content for toxicity and policy violations.",
+          "method": "analyzeContent",
+          "pre": [],
+          "post": [
+            "isClear",
+            "isFlagged"
+          ],
+          "inputs": [
+            "ContentRequest"
+          ],
+          "output": "ContentAnalysis",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "autoTag",
+          "type": "Action",
+          "description": "Automatically tag content that is clearly clean or clearly violating policy.",
+          "method": "autoTag",
+          "pre": [
+            "isClear"
+          ],
+          "post": [],
+          "inputs": [
+            "ContentAnalysis"
+          ],
+          "output": "TaggedContent",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "deepReview",
+          "type": "Action",
+          "description": "Perform a deeper contextual review of ambiguous or borderline content.",
+          "method": "deepReview",
+          "pre": [
+            "isFlagged"
+          ],
+          "post": [],
+          "inputs": [
+            "ContentAnalysis"
+          ],
+          "output": "TaggedContent",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "isClear",
+          "type": "Condition",
+          "description": "",
+          "method": "isClear",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "ContentAnalysis"
+          ],
+          "output": "boolean",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "isFlagged",
+          "type": "Condition",
+          "description": "",
+          "method": "isFlagged",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "ContentAnalysis"
+          ],
+          "output": "boolean",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "recordDecision",
+          "type": "AchievesGoal",
+          "description": "Record the final moderation decision based on the tagged content.",
+          "method": "recordDecision",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "TaggedContent"
+          ],
+          "output": "ModerationDecision",
+          "goal": true,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        }
+      ],
+      "provider": null,
+      "beanName": null,
+      "scan": true,
+      "retryPolicy": null,
+      "retryPolicyExpression": null,
+      "registered": true,
+      "flow": {
+        "entryTypes": [
+          "ContentRequest"
+        ],
+        "nodes": [
+          {
+            "id": "start",
+            "kind": "START",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:analyzeContent",
+            "kind": "ACTION",
+            "step": "analyzeContent",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:autoTag",
+            "kind": "ACTION",
+            "step": "autoTag",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:deepReview",
+            "kind": "ACTION",
+            "step": "deepReview",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:recordDecision",
+            "kind": "ACTION",
+            "step": "recordDecision",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "decision:analyzeContent",
+            "kind": "DECISION",
+            "step": null,
+            "label": "condition",
+            "detail": "CONDITION"
+          },
+          {
+            "id": "end:recordDecision",
+            "kind": "END",
+            "step": "recordDecision",
+            "label": "ModerationDecision",
+            "detail": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "start",
+            "to": "step:analyzeContent",
+            "types": [
+              "ContentRequest"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1
+            ]
+          },
+          {
+            "from": "step:analyzeContent",
+            "to": "decision:analyzeContent",
+            "types": [
+              "ContentAnalysis"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1
+            ]
+          },
+          {
+            "from": "decision:analyzeContent",
+            "to": "step:autoTag",
+            "types": [],
+            "conditions": [
+              "isClear"
+            ],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:autoTag",
+            "to": "step:recordDecision",
+            "types": [
+              "TaggedContent"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:recordDecision",
+            "to": "end:recordDecision",
+            "types": [
+              "ModerationDecision"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1
+            ]
+          },
+          {
+            "from": "decision:analyzeContent",
+            "to": "step:deepReview",
+            "types": [],
+            "conditions": [
+              "isFlagged"
+            ],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          },
+          {
+            "from": "step:deepReview",
+            "to": "step:recordDecision",
+            "types": [
+              "TaggedContent"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          }
+        ],
+        "paths": [
+          {
+            "goal": "recordDecision",
+            "steps": [
+              "analyzeContent",
+              "autoTag",
+              "recordDecision"
+            ],
+            "totalCost": null,
+            "dynamicCost": false,
+            "cheapest": false
+          },
+          {
+            "goal": "recordDecision",
+            "steps": [
+              "analyzeContent",
+              "deepReview",
+              "recordDecision"
+            ],
+            "totalCost": null,
+            "dynamicCost": false,
+            "cheapest": false
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "agentName": "DocumentProcessingAgent",
+      "description": "Preprocesses, analyses, and summarises a document. Demonstrates default-producer action for optional inputs, Ai injection, value, canRerun, and full @AchievesGoal options.",
+      "version": "1.0.0",
+      "plannerType": "GOAP",
+      "opaque": false,
+      "className": "com.patbaumgartner.embabel.document.DocumentProcessingAgent",
+      "steps": [
+        {
+          "name": "analyzeContent",
+          "type": "Action",
+          "description": "Deep content analysis: tone, themes, structure, quality score.",
+          "method": "analyzeContent",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "CleanDocument",
+            "DocumentMetadata"
+          ],
+          "output": "ContentAnalysis",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": true,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "extractMetadata",
+          "type": "Action",
+          "description": "Extract metadata (topics, keywords, reading time) from the cleaned document. Guided by MetadataHints.",
+          "method": "extractMetadata",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "CleanDocument",
+            "MetadataHints"
+          ],
+          "output": "DocumentMetadata",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": 0.3,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "preprocessDocument",
+          "type": "Action",
+          "description": "Normalise and clean the raw document content.",
+          "method": "preprocessDocument",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "DocumentRequest"
+          ],
+          "output": "CleanDocument",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "provideDefaultMetadataHints",
+          "type": "Action",
+          "description": "Provide default metadata extraction hints when the caller did not supply any.",
+          "method": "provideDefaultMetadataHints",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "DocumentRequest"
+          ],
+          "output": "MetadataHints",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "summarizeDocument",
+          "type": "AchievesGoal",
+          "description": "Generate the final document summary with key points and recommended action.",
+          "method": "summarizeDocument",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "CleanDocument",
+            "DocumentMetadata",
+            "ContentAnalysis"
+          ],
+          "output": "DocumentSummary",
+          "goal": true,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": 0.9,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [
+            "document",
+            "summarization",
+            "nlp"
+          ],
+          "examples": [
+            "Summarise my quarterly report",
+            "Process and analyse this technical document",
+            "Extract key points from the attached whitepaper"
+          ],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": true,
+          "exportName": "summarizeDocument",
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [
+            "DocumentRequest"
+          ],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        }
+      ],
+      "provider": null,
+      "beanName": null,
+      "scan": true,
+      "retryPolicy": null,
+      "retryPolicyExpression": null,
+      "registered": true,
+      "flow": {
+        "entryTypes": [
+          "DocumentRequest"
+        ],
+        "nodes": [
+          {
+            "id": "start",
+            "kind": "START",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:analyzeContent",
+            "kind": "ACTION",
+            "step": "analyzeContent",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:extractMetadata",
+            "kind": "ACTION",
+            "step": "extractMetadata",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:preprocessDocument",
+            "kind": "ACTION",
+            "step": "preprocessDocument",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:provideDefaultMetadataHints",
+            "kind": "ACTION",
+            "step": "provideDefaultMetadataHints",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:summarizeDocument",
+            "kind": "ACTION",
+            "step": "summarizeDocument",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "fork:start",
+            "kind": "FORK",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "join:extractMetadata",
+            "kind": "JOIN",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "end:summarizeDocument",
+            "kind": "END",
+            "step": "summarizeDocument",
+            "label": "DocumentSummary",
+            "detail": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "start",
+            "to": "fork:start",
+            "types": [
+              "DocumentRequest"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "fork:start",
+            "to": "step:preprocessDocument",
+            "types": [],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "fork:start",
+            "to": "step:provideDefaultMetadataHints",
+            "types": [],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:preprocessDocument",
+            "to": "join:extractMetadata",
+            "types": [
+              "CleanDocument"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:provideDefaultMetadataHints",
+            "to": "join:extractMetadata",
+            "types": [
+              "MetadataHints"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:extractMetadata",
+            "to": "step:analyzeContent",
+            "types": [
+              "DocumentMetadata"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:analyzeContent",
+            "to": "step:summarizeDocument",
+            "types": [
+              "ContentAnalysis"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:summarizeDocument",
+            "to": "end:summarizeDocument",
+            "types": [
+              "DocumentSummary"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "join:extractMetadata",
+            "to": "step:extractMetadata",
+            "types": [],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          }
+        ],
+        "paths": [
+          {
+            "goal": "summarizeDocument",
+            "steps": [
+              "preprocessDocument",
+              "provideDefaultMetadataHints",
+              "extractMetadata",
+              "analyzeContent",
+              "summarizeDocument"
+            ],
+            "totalCost": null,
+            "dynamicCost": false,
+            "cheapest": false
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "agentName": "FraudDetectionAgent",
+      "description": "Screens financial transactions for fraud and produces an approve/block/review decision.",
+      "version": "1.0.0",
+      "plannerType": "GOAP",
+      "opaque": false,
+      "className": "com.patbaumgartner.embabel.fraud.FraudDetectionAgent",
+      "steps": [
+        {
+          "name": "decideFraud",
+          "type": "AchievesGoal",
+          "description": "Issue a final fraud decision based on the pattern screening result.",
+          "method": "decideFraud",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "PatternScreening"
+          ],
+          "output": "FraudDecision",
+          "goal": true,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "enrichContext",
+          "type": "Action",
+          "description": "Enrich the transaction with derived risk signals (high-value, cross-border, unusual hour).",
+          "method": "enrichContext",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "TransactionRequest"
+          ],
+          "output": "TransactionContext",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": true,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "screenForPatterns",
+          "type": "Action",
+          "description": "Screen the enriched transaction for known fraud patterns using LLM analysis.",
+          "method": "screenForPatterns",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "TransactionContext"
+          ],
+          "output": "PatternScreening",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        }
+      ],
+      "provider": null,
+      "beanName": null,
+      "scan": true,
+      "retryPolicy": null,
+      "retryPolicyExpression": null,
+      "registered": true,
+      "flow": {
+        "entryTypes": [
+          "TransactionRequest"
+        ],
+        "nodes": [
+          {
+            "id": "start",
+            "kind": "START",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:decideFraud",
+            "kind": "ACTION",
+            "step": "decideFraud",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:enrichContext",
+            "kind": "ACTION",
+            "step": "enrichContext",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:screenForPatterns",
+            "kind": "ACTION",
+            "step": "screenForPatterns",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "end:decideFraud",
+            "kind": "END",
+            "step": "decideFraud",
+            "label": "FraudDecision",
+            "detail": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "start",
+            "to": "step:enrichContext",
+            "types": [
+              "TransactionRequest"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:enrichContext",
+            "to": "step:screenForPatterns",
+            "types": [
+              "TransactionContext"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:screenForPatterns",
+            "to": "step:decideFraud",
+            "types": [
+              "PatternScreening"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:decideFraud",
+            "to": "end:decideFraud",
+            "types": [
+              "FraudDecision"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          }
+        ],
+        "paths": [
+          {
+            "goal": "decideFraud",
+            "steps": [
+              "enrichContext",
+              "screenForPatterns",
+              "decideFraud"
+            ],
+            "totalCost": null,
+            "dynamicCost": false,
+            "cheapest": false
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "agentName": "KycVerificationAgent",
+      "description": "Screens a customer against risk indicators and produces a risk assessment.",
+      "version": "1.0.0",
+      "plannerType": "GOAP",
+      "opaque": false,
+      "className": "com.patbaumgartner.embabel.kyc.KycVerificationAgent",
+      "steps": [
+        {
+          "name": "assessDirectRisk",
+          "type": "AchievesGoal",
+          "description": "Assess overall KYC risk for direct cases and produce a recommendation.",
+          "method": "assessDirectRisk",
+          "pre": [
+            "canAssessDirectly"
+          ],
+          "post": [],
+          "inputs": [
+            "KycScreening"
+          ],
+          "output": "KycAssessment",
+          "goal": true,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "assessRiskWithEnhancedDueDiligence",
+          "type": "AchievesGoal",
+          "description": "Assess overall KYC risk after enhanced due diligence.",
+          "method": "assessRiskWithEnhancedDueDiligence",
+          "pre": [
+            "requiresEnhancedDueDiligence"
+          ],
+          "post": [],
+          "inputs": [
+            "KycScreening",
+            "EnhancedDueDiligenceReview"
+          ],
+          "output": "KycAssessment",
+          "goal": true,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "canAssessDirectly",
+          "type": "Condition",
+          "description": "",
+          "method": "canAssessDirectly",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "KycScreening"
+          ],
+          "output": "boolean",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "collectEnhancedDueDiligence",
+          "type": "Action",
+          "description": "Collect enhanced due diligence notes for PEP or adverse-media cases.",
+          "method": "collectEnhancedDueDiligence",
+          "pre": [
+            "requiresEnhancedDueDiligence"
+          ],
+          "post": [],
+          "inputs": [
+            "KycScreening"
+          ],
+          "output": "EnhancedDueDiligenceReview",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "requiresEnhancedDueDiligence",
+          "type": "Condition",
+          "description": "",
+          "method": "requiresEnhancedDueDiligence",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "KycScreening"
+          ],
+          "output": "boolean",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "screenCustomer",
+          "type": "Action",
+          "description": "Screen customer data against PEP lists, sanctions databases, and adverse media.",
+          "method": "screenCustomer",
+          "pre": [],
+          "post": [
+            "requiresEnhancedDueDiligence",
+            "canAssessDirectly"
+          ],
+          "inputs": [
+            "KycRequest"
+          ],
+          "output": "KycScreening",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        }
+      ],
+      "provider": null,
+      "beanName": null,
+      "scan": true,
+      "retryPolicy": null,
+      "retryPolicyExpression": null,
+      "registered": true,
+      "flow": {
+        "entryTypes": [
+          "KycRequest"
+        ],
+        "nodes": [
+          {
+            "id": "start",
+            "kind": "START",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:assessDirectRisk",
+            "kind": "ACTION",
+            "step": "assessDirectRisk",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:assessRiskWithEnhancedDueDiligence",
+            "kind": "ACTION",
+            "step": "assessRiskWithEnhancedDueDiligence",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:collectEnhancedDueDiligence",
+            "kind": "ACTION",
+            "step": "collectEnhancedDueDiligence",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:screenCustomer",
+            "kind": "ACTION",
+            "step": "screenCustomer",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "decision:screenCustomer",
+            "kind": "DECISION",
+            "step": null,
+            "label": "condition",
+            "detail": "CONDITION"
+          },
+          {
+            "id": "end:assessDirectRisk",
+            "kind": "END",
+            "step": "assessDirectRisk",
+            "label": "KycAssessment",
+            "detail": null
+          },
+          {
+            "id": "end:assessRiskWithEnhancedDueDiligence",
+            "kind": "END",
+            "step": "assessRiskWithEnhancedDueDiligence",
+            "label": "KycAssessment",
+            "detail": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "start",
+            "to": "step:screenCustomer",
+            "types": [
+              "KycRequest"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1
+            ]
+          },
+          {
+            "from": "step:screenCustomer",
+            "to": "decision:screenCustomer",
+            "types": [
+              "KycScreening"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1
+            ]
+          },
+          {
+            "from": "decision:screenCustomer",
+            "to": "step:assessDirectRisk",
+            "types": [],
+            "conditions": [
+              "canAssessDirectly"
+            ],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:assessDirectRisk",
+            "to": "end:assessDirectRisk",
+            "types": [
+              "KycAssessment"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "decision:screenCustomer",
+            "to": "step:collectEnhancedDueDiligence",
+            "types": [],
+            "conditions": [
+              "requiresEnhancedDueDiligence"
+            ],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          },
+          {
+            "from": "step:collectEnhancedDueDiligence",
+            "to": "step:assessRiskWithEnhancedDueDiligence",
+            "types": [
+              "EnhancedDueDiligenceReview"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          },
+          {
+            "from": "step:assessRiskWithEnhancedDueDiligence",
+            "to": "end:assessRiskWithEnhancedDueDiligence",
+            "types": [
+              "KycAssessment"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          }
+        ],
+        "paths": [
+          {
+            "goal": "assessDirectRisk",
+            "steps": [
+              "screenCustomer",
+              "assessDirectRisk"
+            ],
+            "totalCost": null,
+            "dynamicCost": false,
+            "cheapest": true
+          },
+          {
+            "goal": "assessRiskWithEnhancedDueDiligence",
+            "steps": [
+              "screenCustomer",
+              "collectEnhancedDueDiligence",
+              "assessRiskWithEnhancedDueDiligence"
+            ],
+            "totalCost": null,
+            "dynamicCost": false,
+            "cheapest": false
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "agentName": "LoanApplicationAgent",
+      "description": "Assesses the credit risk of a loan application and produces an approve, reject or refer decision.",
+      "version": "1.0.0",
+      "plannerType": "GOAP",
+      "opaque": false,
+      "className": "com.patbaumgartner.embabel.loan.LoanApplicationAgent",
+      "steps": [
+        {
+          "name": "analyzeCreditProfile",
+          "type": "Action",
+          "description": "Analyse the applicant's credit profile, compute a debt-to-income ratio and affordability score.",
+          "method": "analyzeCreditProfile",
+          "pre": [],
+          "post": [
+            "canAutoDecide",
+            "requiresUnderwriting"
+          ],
+          "inputs": [
+            "LoanRequest"
+          ],
+          "output": "CreditAnalysis",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": 2.0,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "canAutoDecide",
+          "type": "Condition",
+          "description": "",
+          "method": "canAutoDecide",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "CreditAnalysis"
+          ],
+          "output": "boolean",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "conductUnderwriting",
+          "type": "Action",
+          "description": "Conduct a manual underwriting assessment for borderline loan applications.",
+          "method": "conductUnderwriting",
+          "pre": [
+            "requiresUnderwriting"
+          ],
+          "post": [],
+          "inputs": [
+            "CreditAnalysis"
+          ],
+          "output": "UnderwritingAssessment",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": 5.0,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "makeAutoDecision",
+          "type": "AchievesGoal",
+          "description": "Make an automatic lending decision for clearly creditworthy or clearly unqualified applicants.",
+          "method": "makeAutoDecision",
+          "pre": [
+            "canAutoDecide"
+          ],
+          "post": [],
+          "inputs": [
+            "CreditAnalysis",
+            "LoanRequest"
+          ],
+          "output": "LoanDecision",
+          "goal": true,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": 1.0,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "makeUnderwrittenDecision",
+          "type": "AchievesGoal",
+          "description": "Make a lending decision for a borderline application after a full underwriting assessment.",
+          "method": "makeUnderwrittenDecision",
+          "pre": [
+            "requiresUnderwriting"
+          ],
+          "post": [],
+          "inputs": [
+            "CreditAnalysis",
+            "UnderwritingAssessment",
+            "LoanRequest"
+          ],
+          "output": "LoanDecision",
+          "goal": true,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": 2.0,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "requiresUnderwriting",
+          "type": "Condition",
+          "description": "",
+          "method": "requiresUnderwriting",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "CreditAnalysis"
+          ],
+          "output": "boolean",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        }
+      ],
+      "provider": null,
+      "beanName": null,
+      "scan": true,
+      "retryPolicy": null,
+      "retryPolicyExpression": null,
+      "registered": true,
+      "flow": {
+        "entryTypes": [
+          "LoanRequest"
+        ],
+        "nodes": [
+          {
+            "id": "start",
+            "kind": "START",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:analyzeCreditProfile",
+            "kind": "ACTION",
+            "step": "analyzeCreditProfile",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:conductUnderwriting",
+            "kind": "ACTION",
+            "step": "conductUnderwriting",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:makeAutoDecision",
+            "kind": "ACTION",
+            "step": "makeAutoDecision",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:makeUnderwrittenDecision",
+            "kind": "ACTION",
+            "step": "makeUnderwrittenDecision",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "decision:analyzeCreditProfile",
+            "kind": "DECISION",
+            "step": null,
+            "label": "condition",
+            "detail": "CONDITION"
+          },
+          {
+            "id": "end:makeAutoDecision",
+            "kind": "END",
+            "step": "makeAutoDecision",
+            "label": "LoanDecision",
+            "detail": null
+          },
+          {
+            "id": "end:makeUnderwrittenDecision",
+            "kind": "END",
+            "step": "makeUnderwrittenDecision",
+            "label": "LoanDecision",
+            "detail": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "start",
+            "to": "step:analyzeCreditProfile",
+            "types": [
+              "LoanRequest"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1
+            ]
+          },
+          {
+            "from": "step:analyzeCreditProfile",
+            "to": "decision:analyzeCreditProfile",
+            "types": [
+              "CreditAnalysis"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1
+            ]
+          },
+          {
+            "from": "decision:analyzeCreditProfile",
+            "to": "step:makeAutoDecision",
+            "types": [],
+            "conditions": [
+              "canAutoDecide"
+            ],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:makeAutoDecision",
+            "to": "end:makeAutoDecision",
+            "types": [
+              "LoanDecision"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "decision:analyzeCreditProfile",
+            "to": "step:conductUnderwriting",
+            "types": [],
+            "conditions": [
+              "requiresUnderwriting"
+            ],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          },
+          {
+            "from": "step:conductUnderwriting",
+            "to": "step:makeUnderwrittenDecision",
+            "types": [
+              "UnderwritingAssessment"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          },
+          {
+            "from": "step:makeUnderwrittenDecision",
+            "to": "end:makeUnderwrittenDecision",
+            "types": [
+              "LoanDecision"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          }
+        ],
+        "paths": [
+          {
+            "goal": "makeAutoDecision",
+            "steps": [
+              "analyzeCreditProfile",
+              "makeAutoDecision"
+            ],
+            "totalCost": 3.0,
+            "dynamicCost": false,
+            "cheapest": true
+          },
+          {
+            "goal": "makeUnderwrittenDecision",
+            "steps": [
+              "analyzeCreditProfile",
+              "conductUnderwriting",
+              "makeUnderwrittenDecision"
+            ],
+            "totalCost": 9.0,
+            "dynamicCost": false,
+            "cheapest": false
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "agentName": "ProductResearchAgent",
+      "description": "Researches a product category using market data and competitive analysis, guided by an LLM supervisor.",
+      "version": "1.0.0",
+      "plannerType": "SUPERVISOR",
+      "opaque": false,
+      "className": "com.patbaumgartner.embabel.research.ProductResearchAgent",
+      "steps": [
+        {
+          "name": "analyzeCompetitors",
+          "type": "Action",
+          "description": "Analyze the competitive landscape for the product category \u2014 only runs when market data confidence is sufficient.",
+          "method": "analyzeCompetitors",
+          "pre": [
+            "spel:marketData.confidenceScore > 0.6"
+          ],
+          "post": [],
+          "inputs": [
+            "ResearchRequest",
+            "MarketData"
+          ],
+          "output": "CompetitorAnalysis",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": false,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "generateReport",
+          "type": "AchievesGoal",
+          "description": "Generate the final consolidated research report from available market and competitive data.",
+          "method": "generateReport",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "ResearchRequest",
+            "MarketData",
+            "CompetitorAnalysis"
+          ],
+          "output": "ResearchReport",
+          "goal": true,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [
+            "research",
+            "market",
+            "strategy"
+          ],
+          "examples": [
+            "Research the electric vehicle market in the US",
+            "Analyze the smartwatch market in APAC"
+          ],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": [
+            "CompetitorAnalysis"
+          ]
+        },
+        {
+          "name": "supervisor",
+          "type": "Action",
+          "description": "Supervisor action that orchestrates tools to achieve the goal",
+          "method": "supervisor",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "ResearchRequest",
+            "MarketData"
+          ],
+          "output": "ResearchReport",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": true,
+          "optionalInputs": []
+        }
+      ],
+      "provider": null,
+      "beanName": null,
+      "scan": true,
+      "retryPolicy": null,
+      "retryPolicyExpression": null,
+      "registered": true,
+      "flow": {
+        "entryTypes": [
+          "MarketData",
+          "ResearchRequest"
+        ],
+        "nodes": [
+          {
+            "id": "start",
+            "kind": "START",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:generateReport",
+            "kind": "ACTION",
+            "step": "generateReport",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:supervisor",
+            "kind": "ACTION",
+            "step": "supervisor",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "decision:start",
+            "kind": "DECISION",
+            "step": null,
+            "label": "planner choice",
+            "detail": "PLANNER"
+          },
+          {
+            "id": "end:generateReport",
+            "kind": "END",
+            "step": "generateReport",
+            "label": "ResearchReport",
+            "detail": null
+          },
+          {
+            "id": "step:analyzeCompetitors",
+            "kind": "DETACHED",
+            "step": "analyzeCompetitors",
+            "label": "not in plan",
+            "detail": "NOT_IN_PLAN"
+          }
+        ],
+        "edges": [
+          {
+            "from": "start",
+            "to": "decision:start",
+            "types": [
+              "ResearchRequest",
+              "MarketData"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1
+            ]
+          },
+          {
+            "from": "decision:start",
+            "to": "step:generateReport",
+            "types": [],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:generateReport",
+            "to": "end:generateReport",
+            "types": [
+              "ResearchReport"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "decision:start",
+            "to": "step:supervisor",
+            "types": [],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          },
+          {
+            "from": "step:supervisor",
+            "to": "end:generateReport",
+            "types": [
+              "ResearchReport"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          }
+        ],
+        "paths": [
+          {
+            "goal": "generateReport",
+            "steps": [
+              "generateReport"
+            ],
+            "totalCost": null,
+            "dynamicCost": false,
+            "cheapest": false
+          },
+          {
+            "goal": "generateReport",
+            "steps": [
+              "supervisor"
+            ],
+            "totalCost": null,
+            "dynamicCost": false,
+            "cheapest": false
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "agentName": "ResearchUtils",
+      "description": "",
+      "version": null,
+      "plannerType": "COMPONENT",
+      "opaque": false,
+      "className": "com.patbaumgartner.embabel.research.ResearchUtils",
+      "steps": [
+        {
+          "name": "gatherMarketData",
+          "type": "Action",
+          "description": "Gather high-level market size, growth rate, and trend data for the requested product category.",
+          "method": "gatherMarketData",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "ResearchRequest"
+          ],
+          "output": "MarketData",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": "marketData",
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        }
+      ],
+      "provider": null,
+      "beanName": null,
+      "scan": true,
+      "retryPolicy": null,
+      "retryPolicyExpression": null,
+      "registered": true,
+      "flow": {
+        "entryTypes": [
+          "ResearchRequest"
+        ],
+        "nodes": [
+          {
+            "id": "start",
+            "kind": "START",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:gatherMarketData",
+            "kind": "DETACHED",
+            "step": "gatherMarketData",
+            "label": "no goal path",
+            "detail": "NO_GOAL_PATH"
+          }
+        ],
+        "edges": [],
+        "paths": [],
+        "truncated": false
+      }
+    },
+    {
+      "agentName": "ResumeScreeningAgent",
+      "description": "Screens candidate resumes against a job position and produces a hiring recommendation.",
+      "version": "1.0.0",
+      "plannerType": "GOAP",
+      "opaque": false,
+      "className": "com.patbaumgartner.embabel.recruitment.ResumeScreeningAgent",
+      "steps": [
+        {
+          "name": "analyzeResume",
+          "type": "Action",
+          "description": "Analyse the candidate's resume for technical skills, years of experience and relevance to the role.",
+          "method": "analyzeResume",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "CandidateRequest"
+          ],
+          "output": "ResumeAnalysis",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "assessCultureFit",
+          "type": "Action",
+          "description": "Assess the candidate's culture fit and values alignment from the cover letter.",
+          "method": "assessCultureFit",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "CandidateRequest"
+          ],
+          "output": "CultureFitScore",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "makeHiringDecision",
+          "type": "AchievesGoal",
+          "description": "Combine the resume analysis and culture-fit score to produce a final hiring recommendation.",
+          "method": "makeHiringDecision",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "ResumeAnalysis",
+            "CultureFitScore",
+            "CandidateRequest"
+          ],
+          "output": "HiringDecision",
+          "goal": true,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        }
+      ],
+      "provider": null,
+      "beanName": null,
+      "scan": true,
+      "retryPolicy": null,
+      "retryPolicyExpression": null,
+      "registered": true,
+      "flow": {
+        "entryTypes": [
+          "CandidateRequest"
+        ],
+        "nodes": [
+          {
+            "id": "start",
+            "kind": "START",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:analyzeResume",
+            "kind": "ACTION",
+            "step": "analyzeResume",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:assessCultureFit",
+            "kind": "ACTION",
+            "step": "assessCultureFit",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:makeHiringDecision",
+            "kind": "ACTION",
+            "step": "makeHiringDecision",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "fork:start",
+            "kind": "FORK",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "join:makeHiringDecision",
+            "kind": "JOIN",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "end:makeHiringDecision",
+            "kind": "END",
+            "step": "makeHiringDecision",
+            "label": "HiringDecision",
+            "detail": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "start",
+            "to": "fork:start",
+            "types": [
+              "CandidateRequest"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "fork:start",
+            "to": "step:analyzeResume",
+            "types": [],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "fork:start",
+            "to": "step:assessCultureFit",
+            "types": [],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:analyzeResume",
+            "to": "join:makeHiringDecision",
+            "types": [
+              "ResumeAnalysis"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:assessCultureFit",
+            "to": "join:makeHiringDecision",
+            "types": [
+              "CultureFitScore"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:makeHiringDecision",
+            "to": "end:makeHiringDecision",
+            "types": [
+              "HiringDecision"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "join:makeHiringDecision",
+            "to": "step:makeHiringDecision",
+            "types": [],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          }
+        ],
+        "paths": [
+          {
+            "goal": "makeHiringDecision",
+            "steps": [
+              "analyzeResume",
+              "assessCultureFit",
+              "makeHiringDecision"
+            ],
+            "totalCost": null,
+            "dynamicCost": false,
+            "cheapest": false
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "agentName": "SentimentAnalysisAgent",
+      "description": "Analyses customer feedback sentiment and routes it to an auto-response or an escalation path.",
+      "version": "1.0.0",
+      "plannerType": "GOAP",
+      "opaque": false,
+      "className": "com.patbaumgartner.embabel.sentiment.SentimentAnalysisAgent",
+      "steps": [
+        {
+          "name": "deepAnalysisCost",
+          "type": "Cost",
+          "description": "",
+          "method": "computeDeepAnalysisCost",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "SentimentClassification"
+          ],
+          "output": "double",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": null,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "deepAnalyze",
+          "type": "Action",
+          "description": "Perform a deep analysis of the feedback to identify root causes, emotional tone, and actionable insights.",
+          "method": "deepAnalyze",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "SentimentClassification",
+            "FeedbackRequest"
+          ],
+          "output": "SentimentInsight",
+          "goal": false,
+          "costMethod": "deepAnalysisCost",
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "quickClassify",
+          "type": "Action",
+          "description": "Quickly classify the sentiment of the customer feedback (POSITIVE/NEGATIVE/NEUTRAL/MIXED).",
+          "method": "quickClassify",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "FeedbackRequest"
+          ],
+          "output": "SentimentClassification",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": 1.0,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "respondToCustomer",
+          "type": "AchievesGoal",
+          "description": "Generate a customer-facing response and recommended support action based on the full analysis.",
+          "method": "respondToCustomer",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "SentimentInsight",
+            "SentimentClassification",
+            "FeedbackRequest"
+          ],
+          "output": "FeedbackResponse",
+          "goal": true,
+          "costMethod": "responseCost",
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "responseCost",
+          "type": "Cost",
+          "description": "",
+          "method": "computeResponseCost",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "SentimentInsight"
+          ],
+          "output": "double",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": null,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        }
+      ],
+      "provider": null,
+      "beanName": null,
+      "scan": true,
+      "retryPolicy": null,
+      "retryPolicyExpression": null,
+      "registered": true,
+      "flow": {
+        "entryTypes": [
+          "FeedbackRequest"
+        ],
+        "nodes": [
+          {
+            "id": "start",
+            "kind": "START",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:deepAnalyze",
+            "kind": "ACTION",
+            "step": "deepAnalyze",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:quickClassify",
+            "kind": "ACTION",
+            "step": "quickClassify",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:respondToCustomer",
+            "kind": "ACTION",
+            "step": "respondToCustomer",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "end:respondToCustomer",
+            "kind": "END",
+            "step": "respondToCustomer",
+            "label": "FeedbackResponse",
+            "detail": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "start",
+            "to": "step:quickClassify",
+            "types": [
+              "FeedbackRequest"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:quickClassify",
+            "to": "step:deepAnalyze",
+            "types": [
+              "SentimentClassification"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:deepAnalyze",
+            "to": "step:respondToCustomer",
+            "types": [
+              "SentimentInsight"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:respondToCustomer",
+            "to": "end:respondToCustomer",
+            "types": [
+              "FeedbackResponse"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          }
+        ],
+        "paths": [
+          {
+            "goal": "respondToCustomer",
+            "steps": [
+              "quickClassify",
+              "deepAnalyze",
+              "respondToCustomer"
+            ],
+            "totalCost": 1.0,
+            "dynamicCost": true,
+            "cheapest": false
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "agentName": "StoryWriterAgent",
+      "description": "Iteratively drafts, reviews, and revises short stories until editorial quality is achieved.",
+      "version": "1.0.0",
+      "plannerType": "GOAP",
+      "opaque": false,
+      "className": "com.patbaumgartner.embabel.story.StoryWriterAgent",
+      "steps": [
+        {
+          "name": "draftStatus",
+          "type": "LlmTool",
+          "description": "Returns a one-line status summary for the given draft, including title, word count, and revision number.",
+          "method": "draftStatus",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "String",
+            "int",
+            "int"
+          ],
+          "output": "String",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": true,
+          "llmToolDescription": "Returns a one-line status summary for the given draft, including title, word count, and revision number.",
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": null,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "draftStory",
+          "type": "Action",
+          "description": "Write the first draft of the story according to the request parameters.",
+          "method": "draftStory",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "StoryRequest"
+          ],
+          "output": "Draft",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "finalizeStory",
+          "type": "AchievesGoal",
+          "description": "Assemble the final approved story from the accepted draft and review.",
+          "method": "finalizeStory",
+          "pre": [
+            "StoryReview"
+          ],
+          "post": [],
+          "inputs": [
+            "StoryRequest",
+            "Draft",
+            "StoryReview"
+          ],
+          "output": "FinalStory",
+          "goal": true,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [
+            "story",
+            "creative",
+            "writing"
+          ],
+          "examples": [
+            "Write a mystery story about redemption",
+            "Write a 500-word sci-fi story on the theme of loneliness"
+          ],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "reviewDraft",
+          "type": "Action",
+          "description": "Critically review the current draft and decide if it is ready to finalize or needs revision.",
+          "method": "reviewDraft",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "StoryRequest",
+            "Draft"
+          ],
+          "output": "StoryReview",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "reviseDraft",
+          "type": "Action",
+          "description": "Revise the story draft according to the editorial review feedback.",
+          "method": "reviseDraft",
+          "pre": [
+            "StoryReview"
+          ],
+          "post": [],
+          "inputs": [
+            "StoryRequest",
+            "Draft",
+            "StoryReview"
+          ],
+          "output": "Draft",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": true,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        }
+      ],
+      "provider": null,
+      "beanName": null,
+      "scan": true,
+      "retryPolicy": null,
+      "retryPolicyExpression": null,
+      "registered": true,
+      "flow": {
+        "entryTypes": [
+          "StoryRequest"
+        ],
+        "nodes": [
+          {
+            "id": "start",
+            "kind": "START",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:draftStory",
+            "kind": "ACTION",
+            "step": "draftStory",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:finalizeStory",
+            "kind": "ACTION",
+            "step": "finalizeStory",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:reviewDraft",
+            "kind": "ACTION",
+            "step": "reviewDraft",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:reviseDraft",
+            "kind": "ACTION",
+            "step": "reviseDraft",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "decision:reviewDraft",
+            "kind": "DECISION",
+            "step": null,
+            "label": "planner choice",
+            "detail": "PLANNER"
+          },
+          {
+            "id": "end:finalizeStory",
+            "kind": "END",
+            "step": "finalizeStory",
+            "label": "FinalStory",
+            "detail": null
+          }
+        ],
+        "edges": [
+          {
+            "from": "start",
+            "to": "step:draftStory",
+            "types": [
+              "StoryRequest"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1
+            ]
+          },
+          {
+            "from": "step:draftStory",
+            "to": "step:reviewDraft",
+            "types": [
+              "Draft"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1
+            ]
+          },
+          {
+            "from": "step:reviewDraft",
+            "to": "decision:reviewDraft",
+            "types": [
+              "StoryReview"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1
+            ]
+          },
+          {
+            "from": "decision:reviewDraft",
+            "to": "step:finalizeStory",
+            "types": [],
+            "conditions": [
+              "StoryReview"
+            ],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:finalizeStory",
+            "to": "end:finalizeStory",
+            "types": [
+              "FinalStory"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1
+            ]
+          },
+          {
+            "from": "decision:reviewDraft",
+            "to": "step:reviseDraft",
+            "types": [],
+            "conditions": [
+              "StoryReview"
+            ],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          },
+          {
+            "from": "step:reviseDraft",
+            "to": "step:finalizeStory",
+            "types": [
+              "Draft"
+            ],
+            "conditions": [
+              "StoryReview"
+            ],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          },
+          {
+            "from": "step:reviseDraft",
+            "to": "step:reviewDraft",
+            "types": [
+              "Draft"
+            ],
+            "conditions": [],
+            "loop": true,
+            "paths": []
+          }
+        ],
+        "paths": [
+          {
+            "goal": "finalizeStory",
+            "steps": [
+              "draftStory",
+              "reviewDraft",
+              "finalizeStory"
+            ],
+            "totalCost": null,
+            "dynamicCost": false,
+            "cheapest": true
+          },
+          {
+            "goal": "finalizeStory",
+            "steps": [
+              "draftStory",
+              "reviewDraft",
+              "reviseDraft",
+              "finalizeStory"
+            ],
+            "totalCost": null,
+            "dynamicCost": false,
+            "cheapest": false
+          }
+        ],
+        "truncated": false
+      }
+    },
+    {
+      "agentName": "TicketRoutingAgent",
+      "description": "Routes and resolves customer support tickets by category using Utility AI planning and state-based handlers.",
+      "version": "1.0.0",
+      "plannerType": "UTILITY",
+      "opaque": false,
+      "className": "com.patbaumgartner.embabel.ticketing.TicketRoutingAgent",
+      "steps": [
+        {
+          "name": "classificationValue",
+          "type": "Cost",
+          "description": "",
+          "method": "classificationValue",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "SupportTicket"
+          ],
+          "output": "double",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": null,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "classifyTicket",
+          "type": "Action",
+          "description": "Classify the support ticket into billing, technical, or general category with an urgency score.",
+          "method": "classifyTicket",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "SupportTicket"
+          ],
+          "output": "TicketClassification",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": "classificationValue",
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "handleBilling",
+          "type": "AchievesGoal",
+          "description": "Handle the billing ticket: generate response template and escalation guidance.",
+          "method": "handleBilling",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "BillingState"
+          ],
+          "output": "TicketResolution",
+          "goal": true,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [
+            "billing",
+            "finance"
+          ],
+          "examples": [
+            "I was charged twice",
+            "My invoice is incorrect",
+            "Update my payment method"
+          ],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "handleGeneral",
+          "type": "AchievesGoal",
+          "description": "Handle the general enquiry: generate an informative response template.",
+          "method": "handleGeneral",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "GeneralState"
+          ],
+          "output": "TicketResolution",
+          "goal": true,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [
+            "general",
+            "enquiry"
+          ],
+          "examples": [
+            "How do I update my profile?",
+            "What are your business hours?",
+            "Where can I find your pricing?"
+          ],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "handleTechnical",
+          "type": "AchievesGoal",
+          "description": "Handle the technical ticket: generate debugging steps and escalation guidance.",
+          "method": "handleTechnical",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "TechnicalState"
+          ],
+          "output": "TicketResolution",
+          "goal": true,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [
+            "technical",
+            "engineering"
+          ],
+          "examples": [
+            "My login is broken",
+            "The app crashes on startup",
+            "Feature X is not working"
+          ],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "Nirvana",
+          "type": "AchievesGoal",
+          "description": "Nirvana: Nothing more to do",
+          "method": "Nirvana",
+          "pre": [],
+          "post": [],
+          "inputs": [],
+          "output": "void",
+          "goal": true,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": true,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": true,
+          "optionalInputs": []
+        },
+        {
+          "name": "routeToCategory",
+          "type": "Action",
+          "description": "Route the classified ticket to the appropriate category-specific state handler.",
+          "method": "routeToCategory",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "SupportTicket",
+            "TicketClassification"
+          ],
+          "output": "TicketCategory",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": "routingValue",
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": [
+            "BillingState",
+            "TechnicalState",
+            "GeneralState"
+          ],
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": true,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        },
+        {
+          "name": "routingValue",
+          "type": "Cost",
+          "description": "",
+          "method": "routingValue",
+          "pre": [],
+          "post": [],
+          "inputs": [
+            "TicketClassification"
+          ],
+          "output": "double",
+          "goal": false,
+          "costMethod": null,
+          "valueMethod": null,
+          "cost": null,
+          "value": null,
+          "goalValue": null,
+          "possibleOutputs": null,
+          "canRerun": false,
+          "readOnly": false,
+          "outputBinding": null,
+          "clearBlackboard": false,
+          "tags": [],
+          "examples": [],
+          "llmTool": false,
+          "llmToolDescription": null,
+          "exportedRemote": false,
+          "exportName": null,
+          "trigger": null,
+          "retryPolicy": null,
+          "llmToolReturnDirect": false,
+          "llmToolCategory": null,
+          "actionRetryPolicy": null,
+          "conditionCost": null,
+          "exportedLocal": false,
+          "exportStartingInputTypes": [],
+          "llmToolName": null,
+          "llmToolMetadata": [],
+          "providedInputs": [],
+          "nameMatchInputs": [],
+          "registered": null,
+          "plannerGenerated": false,
+          "optionalInputs": []
+        }
+      ],
+      "provider": null,
+      "beanName": null,
+      "scan": true,
+      "retryPolicy": null,
+      "retryPolicyExpression": null,
+      "registered": true,
+      "flow": {
+        "entryTypes": [
+          "SupportTicket"
+        ],
+        "nodes": [
+          {
+            "id": "start",
+            "kind": "START",
+            "step": null,
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:classifyTicket",
+            "kind": "ACTION",
+            "step": "classifyTicket",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:handleBilling",
+            "kind": "ACTION",
+            "step": "handleBilling",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:handleGeneral",
+            "kind": "ACTION",
+            "step": "handleGeneral",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:handleTechnical",
+            "kind": "ACTION",
+            "step": "handleTechnical",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "step:routeToCategory",
+            "kind": "ACTION",
+            "step": "routeToCategory",
+            "label": null,
+            "detail": null
+          },
+          {
+            "id": "decision:routeToCategory",
+            "kind": "DECISION",
+            "step": null,
+            "label": "state",
+            "detail": "STATE"
+          },
+          {
+            "id": "end:handleBilling",
+            "kind": "END",
+            "step": "handleBilling",
+            "label": "TicketResolution",
+            "detail": null
+          },
+          {
+            "id": "end:handleGeneral",
+            "kind": "END",
+            "step": "handleGeneral",
+            "label": "TicketResolution",
+            "detail": null
+          },
+          {
+            "id": "end:handleTechnical",
+            "kind": "END",
+            "step": "handleTechnical",
+            "label": "TicketResolution",
+            "detail": null
+          },
+          {
+            "id": "step:Nirvana",
+            "kind": "DETACHED",
+            "step": "Nirvana",
+            "label": "no goal path",
+            "detail": "NO_GOAL_PATH"
+          }
+        ],
+        "edges": [
+          {
+            "from": "start",
+            "to": "step:classifyTicket",
+            "types": [
+              "SupportTicket"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1,
+              2
+            ]
+          },
+          {
+            "from": "step:classifyTicket",
+            "to": "step:routeToCategory",
+            "types": [
+              "TicketClassification"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1,
+              2
+            ]
+          },
+          {
+            "from": "step:routeToCategory",
+            "to": "decision:routeToCategory",
+            "types": [
+              "TicketCategory"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0,
+              1,
+              2
+            ]
+          },
+          {
+            "from": "decision:routeToCategory",
+            "to": "step:handleBilling",
+            "types": [
+              "BillingState"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "step:handleBilling",
+            "to": "end:handleBilling",
+            "types": [
+              "TicketResolution"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              0
+            ]
+          },
+          {
+            "from": "decision:routeToCategory",
+            "to": "step:handleGeneral",
+            "types": [
+              "GeneralState"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          },
+          {
+            "from": "step:handleGeneral",
+            "to": "end:handleGeneral",
+            "types": [
+              "TicketResolution"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              1
+            ]
+          },
+          {
+            "from": "decision:routeToCategory",
+            "to": "step:handleTechnical",
+            "types": [
+              "TechnicalState"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              2
+            ]
+          },
+          {
+            "from": "step:handleTechnical",
+            "to": "end:handleTechnical",
+            "types": [
+              "TicketResolution"
+            ],
+            "conditions": [],
+            "loop": false,
+            "paths": [
+              2
+            ]
+          }
+        ],
+        "paths": [
+          {
+            "goal": "handleBilling",
+            "steps": [
+              "classifyTicket",
+              "routeToCategory",
+              "handleBilling"
+            ],
+            "totalCost": null,
+            "dynamicCost": false,
+            "cheapest": false
+          },
+          {
+            "goal": "handleGeneral",
+            "steps": [
+              "classifyTicket",
+              "routeToCategory",
+              "handleGeneral"
+            ],
+            "totalCost": null,
+            "dynamicCost": false,
+            "cheapest": false
+          },
+          {
+            "goal": "handleTechnical",
+            "steps": [
+              "classifyTicket",
+              "routeToCategory",
+              "handleTechnical"
+            ],
+            "totalCost": null,
+            "dynamicCost": false,
+            "cheapest": false
+          }
+        ],
+        "truncated": false
+      }
+    }
+  ]
+}

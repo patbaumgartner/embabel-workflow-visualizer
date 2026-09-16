@@ -1,6 +1,10 @@
 package com.patbaumgartner.embabel.workflow.visualizer;
 
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.AgentWorkflow;
+import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.FlowEdge;
+import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.FlowNode;
+import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.FlowPath;
+import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowFlow;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowStep;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
@@ -30,14 +34,26 @@ class WorkflowModelsTests {
 				"tags", "examples", "llmTool", "llmToolDescription", "exportedRemote", "exportName", "trigger",
 				"retryPolicy", "llmToolReturnDirect", "llmToolCategory", "actionRetryPolicy", "conditionCost",
 				"exportedLocal", "exportStartingInputTypes", "llmToolName", "llmToolMetadata", "providedInputs",
-				"nameMatchInputs", "registered", "plannerGenerated");
+				"nameMatchInputs", "registered", "plannerGenerated", "optionalInputs");
 	}
 
 	@Test
 	void agentJsonContractIsStable() {
 		assertThat(propertiesOf(AgentWorkflow.builder("a", "C").build())).containsOnlyKeys("agentName", "description",
 				"version", "plannerType", "opaque", "className", "steps", "provider", "beanName", "scan", "retryPolicy",
-				"retryPolicyExpression", "registered");
+				"retryPolicyExpression", "registered", "flow");
+	}
+
+	@Test
+	void flowJsonContractIsStable() {
+		assertThat(propertiesOf(fullyPopulatedFlow())).containsOnlyKeys("entryTypes", "nodes", "edges", "paths",
+				"truncated");
+		assertThat(propertiesOf(fullyPopulatedFlow().nodes().get(0))).containsOnlyKeys("id", "kind", "step", "label",
+				"detail");
+		assertThat(propertiesOf(fullyPopulatedFlow().edges().get(0))).containsOnlyKeys("from", "to", "types",
+				"conditions", "loop", "paths");
+		assertThat(propertiesOf(fullyPopulatedFlow().paths().get(0))).containsOnlyKeys("goal", "steps", "totalCost",
+				"dynamicCost", "cheapest");
 	}
 
 	/**
@@ -110,6 +126,48 @@ class WorkflowModelsTests {
 		assertThat(step.nameMatchInputs()).isEmpty();
 		assertThat(step.registered()).isNull();
 		assertThat(step.plannerGenerated()).isFalse();
+		assertThat(step.optionalInputs()).isEmpty();
+	}
+
+	/**
+	 * The 1.1.x constructors are the previous release's canonical ones and are kept for
+	 * the same reason as the 1.0.x ones. Building the same step through the builder is
+	 * what proves every one of the thirty-nine arguments still lands on its own
+	 * component.
+	 */
+	@Test
+	@SuppressWarnings("removal")
+	void theOneOneStepConstructorStillLandsEveryArgumentWhereItBelongs() {
+		WorkflowStep expected = fullyPopulatedStep().toBuilder().optionalInputs(List.of()).build();
+
+		WorkflowStep step = new WorkflowStep(expected.name(), expected.type(), expected.description(),
+				expected.method(), expected.pre(), expected.post(), expected.inputs(), expected.output(),
+				expected.goal(), expected.costMethod(), expected.valueMethod(), expected.cost(), expected.value(),
+				expected.goalValue(), expected.possibleOutputs(), expected.canRerun(), expected.readOnly(),
+				expected.outputBinding(), expected.clearBlackboard(), expected.tags(), expected.examples(),
+				expected.llmTool(), expected.llmToolDescription(), expected.exportedRemote(), expected.exportName(),
+				expected.trigger(), expected.retryPolicy(), expected.llmToolReturnDirect(), expected.llmToolCategory(),
+				expected.actionRetryPolicy(), expected.conditionCost(), expected.exportedLocal(),
+				expected.exportStartingInputTypes(), expected.llmToolName(), expected.llmToolMetadata(),
+				expected.providedInputs(), expected.nameMatchInputs(), expected.registered(),
+				expected.plannerGenerated());
+
+		assertThat(step).isEqualTo(expected);
+		assertThat(step.optionalInputs()).isEmpty();
+	}
+
+	@Test
+	@SuppressWarnings("removal")
+	void theOneOneAgentConstructorStillLandsEveryArgumentWhereItBelongs() {
+		AgentWorkflow expected = fullyPopulatedAgent().toBuilder().flow(null).build();
+
+		AgentWorkflow agent = new AgentWorkflow(expected.agentName(), expected.description(), expected.version(),
+				expected.plannerType(), expected.opaque(), expected.className(), expected.steps(), expected.provider(),
+				expected.beanName(), expected.scan(), expected.retryPolicy(), expected.retryPolicyExpression(),
+				expected.registered());
+
+		assertThat(agent).isEqualTo(expected);
+		assertThat(agent.flow()).isNull();
 	}
 
 	@Test
@@ -132,6 +190,7 @@ class WorkflowModelsTests {
 		assertThat(agent.retryPolicy()).isNull();
 		assertThat(agent.retryPolicyExpression()).isNull();
 		assertThat(agent.registered()).isNull();
+		assertThat(agent.flow()).isNull();
 	}
 
 	@Test
@@ -167,6 +226,8 @@ class WorkflowModelsTests {
 		// @Agent(scan) defaults to true in Embabel
 		assertThat(agent.scan()).isTrue();
 		assertThat(agent.registered()).isNull();
+		// the catalog service derives it; a hand-built agent has none until then
+		assertThat(agent.flow()).isNull();
 	}
 
 	@Test
@@ -177,6 +238,25 @@ class WorkflowModelsTests {
 		mutableTags.add("added-after-build");
 
 		assertThat(step.tags()).containsExactly("initial");
+	}
+
+	@Test
+	void flowCollectionsAreDefensivelyCopiedAndNeverNull() {
+		List<String> mutableTypes = new ArrayList<>(List.of("Request"));
+		WorkflowFlow flow = new WorkflowFlow(mutableTypes, null, null, null, false);
+		FlowEdge edge = new FlowEdge("a", "b", null, null, false, null);
+		FlowPath path = new FlowPath("goal", null, null, false, false);
+
+		mutableTypes.add("added-after-build");
+
+		assertThat(flow.entryTypes()).containsExactly("Request");
+		assertThat(flow.nodes()).isEmpty();
+		assertThat(flow.edges()).isEmpty();
+		assertThat(flow.paths()).isEmpty();
+		assertThat(edge.types()).isEmpty();
+		assertThat(edge.conditions()).isEmpty();
+		assertThat(edge.paths()).isEmpty();
+		assertThat(path.steps()).isEmpty();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -263,7 +343,18 @@ class WorkflowModelsTests {
 			.nameMatchInputs(List.of("Named:bound"))
 			.registered(true)
 			.plannerGenerated(true)
+			.optionalInputs(List.of("Optional"))
 			.build();
+	}
+
+	private static WorkflowFlow fullyPopulatedFlow() {
+		return new WorkflowFlow(List.of("Request"),
+				List.of(new FlowNode("start", "START", null, null, null),
+						new FlowNode("step:stepName", "ACTION", "stepName", null, null),
+						new FlowNode("end:stepName", "END", "stepName", "Output", null)),
+				List.of(new FlowEdge("start", "step:stepName", List.of("Request"), List.of("ready"), false, List.of(0)),
+						new FlowEdge("step:stepName", "end:stepName", List.of("Output"), List.of(), false, List.of(0))),
+				List.of(new FlowPath("stepName", List.of("stepName"), 1.5, true, true)), true);
 	}
 
 	private static AgentWorkflow fullyPopulatedAgent() {
@@ -279,6 +370,7 @@ class WorkflowModelsTests {
 			.retryPolicy("FIRE_ONCE")
 			.retryPolicyExpression("expression")
 			.registered(true)
+			.flow(fullyPopulatedFlow())
 			.build();
 	}
 

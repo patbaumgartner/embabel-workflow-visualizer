@@ -410,6 +410,80 @@ class EmbabelWorkflowCatalogServiceTests {
 		assertThat(step.nameMatchInputs()).containsExactly("String:editorNotes");
 	}
 
+	/**
+	 * Any {@code @Nullable} counts — the fixture's own, from a package Embabel has never
+	 * seen, and JSpecify's, which sits on the type rather than the parameter — as does
+	 * {@code Optional<T>}. A framework parameter is never an input, optional or not.
+	 */
+	@Test
+	void nullableAndOptionalParametersAreReportedAsOptionalInputs() {
+		Map<String, WorkflowStep> byMethod = catalogWith(OptionalInputSampleAgent.class).agents()
+			.get(0)
+			.steps()
+			.stream()
+			.collect(Collectors.toMap(WorkflowStep::method, step -> step));
+
+		assertThat(byMethod.get("summarize").inputs()).containsExactly("Draft", "Notes", "Optional", "Review");
+		assertThat(byMethod.get("summarize").optionalInputs()).containsExactly("Notes", "Optional", "Review");
+		assertThat(byMethod.get("draft").optionalInputs()).isEmpty();
+		assertThat(byMethod.get("review").optionalInputs()).isEmpty();
+	}
+
+	// -------------------------------------------------------------------------
+	// Derived flow
+	// -------------------------------------------------------------------------
+
+	@Test
+	void everyAgentCarriesAFlowDerivedFromItsSteps() {
+		AgentWorkflow agent = catalogWith(MultiGoalSampleAgent.class).agents().get(0);
+
+		assertThat(agent.flow()).isNotNull();
+		assertThat(agent.flow().entryTypes()).containsExactly("Request");
+		assertThat(agent.flow().paths()).extracting(WorkflowModels.FlowPath::steps)
+			.containsExactly(List.of("inspect", "completeFast"), List.of("inspect", "completeSlow"));
+		assertThat(agent.flow().nodes()).filteredOn(node -> "DECISION".equals(node.kind()))
+			.singleElement()
+			.extracting(WorkflowModels.FlowNode::detail)
+			.isEqualTo("CONDITION");
+	}
+
+	/**
+	 * An optional input is a choice, not a prerequisite: the goal can run with the review
+	 * or without it, and a {@code @Provided} parameter is the platform's to supply, so
+	 * neither is an entry type.
+	 */
+	@Test
+	void theFlowTreatsOptionalInputsAsAChoiceAndProvidedOnesAsGiven() {
+		WorkflowModels.WorkflowFlow flow = catalogWith(OptionalInputSampleAgent.class).agents().get(0).flow();
+
+		assertThat(flow.entryTypes()).containsExactly("Request");
+		assertThat(flow.paths()).extracting(WorkflowModels.FlowPath::steps)
+			.containsExactly(List.of("draft", "summarize"), List.of("draft", "review", "summarize"));
+	}
+
+	/**
+	 * The flow is derived after reconciliation, so a step the planner rejected is outside
+	 * it.
+	 */
+	@Test
+	void theFlowLeavesOutStepsThePlannerDoesNotRun() {
+		FakeAgentPlatform.Platform platform = new FakeAgentPlatform.Platform(
+				List.of(FakeAgentPlatform.Agent.named("MultiGoalAgent",
+						List.of(FakeAgentPlatform.Action.named("MultiGoalSampleAgent.inspect"),
+								FakeAgentPlatform.Action.named("MultiGoalSampleAgent.completeFast")),
+						Set.of(FakeAgentPlatform.Goal.named("MultiGoalSampleAgent.completeFast")))));
+
+		WorkflowModels.WorkflowFlow flow = catalogWithPlatform(platform, MultiGoalSampleAgent.class).agents()
+			.get(0)
+			.flow();
+
+		assertThat(flow.paths()).extracting(WorkflowModels.FlowPath::steps)
+			.containsExactly(List.of("inspect", "completeFast"));
+		assertThat(flow.nodes()).filteredOn(node -> "DETACHED".equals(node.kind()))
+			.extracting(WorkflowModels.FlowNode::step, WorkflowModels.FlowNode::detail)
+			.containsExactly(tuple("completeSlow", "NOT_IN_PLAN"));
+	}
+
 	// -------------------------------------------------------------------------
 	// Inherited steps
 	// -------------------------------------------------------------------------

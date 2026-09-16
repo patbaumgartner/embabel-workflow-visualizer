@@ -1,7 +1,11 @@
 package com.patbaumgartner.embabel.workflow.visualizer;
 
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.AgentWorkflow;
+import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.FlowEdge;
+import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.FlowNode;
+import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.FlowPath;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowCatalog;
+import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowFlow;
 import com.patbaumgartner.embabel.workflow.visualizer.WorkflowModels.WorkflowStep;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * Verifies the runtime view against a real Embabel {@code AgentPlatform}.
@@ -91,6 +96,106 @@ class EmbabelWorkflowCatalogRuntimeIntegrationTests {
 
 		assertThat(fraud.steps()).noneMatch(WorkflowStep::plannerGenerated);
 		assertThat(fraud.steps()).extracting(WorkflowStep::registered).containsOnly(true);
+	}
+
+	// -------------------------------------------------------------------------
+	// Derived flow, against the steps the live platform really registers
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Two conditions split the flow; each branch ends in its own goal, and GOAP prefers
+	 * the cheaper.
+	 */
+	@Test
+	void aBranchingAgentHasOneRoutePerGoalWithItsCostsSummed() {
+		WorkflowFlow flow = agent("LoanApplicationAgent").flow();
+
+		assertThat(flow.entryTypes()).containsExactly("LoanRequest");
+		assertThat(flow.paths()).extracting(FlowPath::goal, FlowPath::steps, FlowPath::totalCost, FlowPath::cheapest)
+			.containsExactly(tuple("makeAutoDecision", List.of("analyzeCreditProfile", "makeAutoDecision"), 3.0, true),
+					tuple("makeUnderwrittenDecision",
+							List.of("analyzeCreditProfile", "conductUnderwriting", "makeUnderwrittenDecision"), 9.0,
+							false));
+		assertThat(node(flow, "decision:analyzeCreditProfile").detail()).isEqualTo("CONDITION");
+		assertThat(edge(flow, "decision:analyzeCreditProfile", "step:makeAutoDecision").conditions())
+			.containsExactly("canAutoDecide");
+	}
+
+	/**
+	 * The synthetic supervisor produces the goal's type and so reaches the goal; the
+	 * declared action the planner turned into a tool stays beside the chart.
+	 */
+	@Test
+	void aSupervisorAgentReachesItsGoalThroughTheSyntheticAction() {
+		WorkflowFlow flow = agent("ProductResearchAgent").flow();
+
+		assertThat(flow.entryTypes()).containsExactly("MarketData", "ResearchRequest");
+		assertThat(flow.paths()).extracting(FlowPath::goal, FlowPath::steps)
+			.containsExactly(tuple("generateReport", List.of("generateReport")),
+					tuple("generateReport", List.of("supervisor")));
+		assertThat(flow.nodes()).filteredOn(node -> "DETACHED".equals(node.kind()))
+			.extracting(FlowNode::step, FlowNode::detail)
+			.containsExactly(tuple("analyzeCompetitors", "NOT_IN_PLAN"));
+	}
+
+	/**
+	 * The routing action's {@code @State} alternatives are the branches; the UTILITY goal
+	 * leads nowhere.
+	 */
+	@Test
+	void aStateRoutingAgentBranchesOnTheStateAndLeavesNirvanaOutside() {
+		WorkflowFlow flow = agent("TicketRoutingAgent").flow();
+
+		assertThat(node(flow, "decision:routeToCategory").detail()).isEqualTo("STATE");
+		assertThat(edge(flow, "decision:routeToCategory", "step:handleBilling").types())
+			.containsExactly("BillingState");
+		assertThat(flow.paths()).extracting(FlowPath::goal)
+			.containsExactly("handleBilling", "handleGeneral", "handleTechnical");
+		assertThat(flow.nodes()).filteredOn(node -> "DETACHED".equals(node.kind()))
+			.extracting(FlowNode::step, FlowNode::detail)
+			.containsExactly(tuple("Nirvana", "NO_GOAL_PATH"));
+	}
+
+	@Test
+	void aRevisionLoopIsDrawnAsALoopBackToTheReview() {
+		WorkflowFlow flow = agent("StoryWriterAgent").flow();
+
+		FlowEdge loop = edge(flow, "step:reviseDraft", "step:reviewDraft");
+		assertThat(loop.loop()).isTrue();
+		assertThat(loop.types()).containsExactly("Draft");
+		assertThat(node(flow, "decision:reviewDraft").detail()).isEqualTo("PLANNER");
+		assertThat(flow.paths()).extracting(FlowPath::steps)
+			.containsExactly(List.of("draftStory", "reviewDraft", "finalizeStory"),
+					List.of("draftStory", "reviewDraft", "reviseDraft", "finalizeStory"));
+	}
+
+	/** Two independent analyses fork from the start and join before the decision. */
+	@Test
+	void independentAnalysesForkAndJoin() {
+		WorkflowFlow flow = agent("ResumeScreeningAgent").flow();
+
+		assertThat(flow.nodes()).extracting(FlowNode::id).contains("fork:start", "join:makeHiringDecision");
+		assertThat(flow.paths()).singleElement()
+			.extracting(FlowPath::steps)
+			.isEqualTo(List.of("analyzeResume", "assessCultureFit", "makeHiringDecision"));
+	}
+
+	private static FlowNode node(WorkflowFlow flow, String id) {
+		return flow.nodes()
+			.stream()
+			.filter(node -> id.equals(node.id()))
+			.findFirst()
+			.orElseThrow(() -> new AssertionError(
+					"no node " + id + " in " + flow.nodes().stream().map(FlowNode::id).toList()));
+	}
+
+	private static FlowEdge edge(WorkflowFlow flow, String from, String to) {
+		return flow.edges()
+			.stream()
+			.filter(edge -> from.equals(edge.from()) && to.equals(edge.to()))
+			.findFirst()
+			.orElseThrow(() -> new AssertionError("no edge " + from + " -> " + to + " in "
+					+ flow.edges().stream().map(edge -> edge.from() + " -> " + edge.to()).toList()));
 	}
 
 	private AgentWorkflow agent(String name) {

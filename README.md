@@ -189,13 +189,53 @@ reflectively by name. `embabel-agent-api` is a test-scoped dependency, so you
 can upgrade Embabel without waiting for a visualizer release, and an attribute
 your Embabel version does not declare simply reads as "not set".
 
+## Flow chart
+
+The dependency graph shows what each step *needs*; the **Flow** tab shows what
+can *happen*: every route from Start to a goal, in execution order.
+
+![Flow tab for the loan and story agents](assets/embabel-workflow-visualizer-flow.png)
+
+The chart is derived from the same annotations, with no model call and nothing
+executed. Embabel's planner treats a goal as reached once the goal action's
+output type is on the blackboard, and an action as runnable once its inputs are
+there and its preconditions hold — so the visualizer chains backwards from each
+`@AchievesGoal`, through the actions that produce each input and post each
+condition, down to the **entry types**: the inputs no action produces
+(`@Export(startingInputTypes=)` overrides them). Each distinct chain is a route.
+
+| Shape | Meaning |
+|---|---|
+| **Start** / **End** | The entry types, and one End per goal action, labelled with the goal type |
+| **Card** | An action, with its inputs → output, cost and badges; hover for the full details |
+| **Diamond** | A branch: `@Condition`s become `if …` edge labels, a `spel:` precondition shows its expression, a `@State` return type fans out one edge per state, and two actions that could both run next are a *planner choice* |
+| **Fork / join bars** | Independent steps that all run, in whatever order the planner picks |
+| **↺ dashed arc** | A loop — a `canRerun` action feeding a type back to an earlier consumer |
+| **Dashed strip** | Steps outside every route: declared but not in the plan (see above), or in the plan but unable to reach a goal |
+
+Edges carry the blackboard type handed over. The table under the chart lists the
+routes with their summed static `cost=`; the cheapest one is drawn bold and
+starred, with a *+ dynamic* note when a `costMethod=` adds a run-time amount.
+Hovering a row lights up that route in the chart. Which route actually runs,
+and the order of independent steps, is the planner's call at run time.
+
+Inputs marked `Optional<T>` or `@Nullable` are skipped when chaining, so a
+step that merely *prefers* an input does not drag its producer into the route.
+Only annotations retained at run time count — that is what Embabel itself
+binds against — so JSpecify, Jakarta and Spring `@Nullable` work, while
+JetBrains' (class retention) is invisible to both.
+
+In the JSON, each agent gains a `flow` object (`entryTypes`, `nodes`, `edges`,
+`paths`, `truncated`) and each step an `optionalInputs` list. Routes are capped
+at 100 per agent; `truncated` says when the cap was hit.
+
 ## Visualization UI
 
-The UI (`GET /embabel-workflows`) renders each discovered `@Agent` as an interactive flow diagram:
+The UI (`GET /embabel-workflows`) renders each discovered `@Agent` as an interactive flow diagram, with a **Flow** tab (routes to each goal, see [Flow chart](#flow-chart)) and a **Dependencies** tab (every declared step and what it needs); the choice is remembered:
 
 - **Drag individual nodes** to rearrange the layout · **Drag the background** to pan · **Ctrl/⌘ + scroll** to zoom · **Double-click** background to auto-fit
-- Hover over any node to spotlight its connected edges and neighbours
-- Per-agent controls: Fit, Zoom In, Zoom Out, Reset Layout
+- Hover over any node to spotlight its connected edges and neighbours; hover a route in the Flow tab's table to light it up in the chart
+- Per-agent controls: Fit, Zoom In, Zoom Out, Reset Layout; tabs, nodes and routes are keyboard-operable
 - Node types color-coded with the 42talents brand palette (cyan, yellow, green, pink, orange)
 - Animated flowing arrows on pre-condition edges; AchievesGoal nodes glow green
 - Node badges surface `canRerun`, `readOnly`, `clearBlackboard`, `@LlmTool`, event-triggered actions (`@Action(trigger=)`), `returnDirect` tools, MCP-exported goals (`@Export(remote = true)`), and goals withheld from local callers (`@Export(local = false)`)

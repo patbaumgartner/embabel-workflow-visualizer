@@ -539,6 +539,7 @@ class DeclaredWorkflowReader {
 
 		List<String> providedInputs = readParameterAnnotatedTypes(method, PROVIDED_ANNOTATION_FQN);
 		List<String> nameMatchInputs = readRequireNameMatchInputs(method);
+		List<String> optionalInputs = readOptionalInputs(method);
 
 		return WorkflowStep.builder(name, type, method.getName())
 			.description(description)
@@ -575,6 +576,7 @@ class DeclaredWorkflowReader {
 			.llmToolMetadata(llmToolMetadata)
 			.providedInputs(providedInputs)
 			.nameMatchInputs(nameMatchInputs)
+			.optionalInputs(optionalInputs)
 			.build();
 	}
 
@@ -636,6 +638,43 @@ class DeclaredWorkflowReader {
 			.filter(parameter -> AnnotationAttributes.isPresent(parameter, annotationTypeName))
 			.map(parameter -> parameter.getType().getSimpleName())
 			.toList();
+	}
+
+	/**
+	 * Returns the simple type names of parameters the planner may leave unfilled: those
+	 * annotated {@code @Nullable} or declared as {@code Optional<T>}.
+	 *
+	 * <p>
+	 * Embabel binds a nullable parameter to {@code null} when nothing on the blackboard
+	 * matches, so such an input is a choice for the planner rather than a prerequisite.
+	 * Which {@code @Nullable} is irrelevant — JSpecify, Jakarta and Spring all spell it
+	 * the same way — so the annotation is matched by simple name, and on the parameter as
+	 * well as on its type, because JSpecify's is a type-use annotation. Only annotations
+	 * retained at runtime can be seen, though: JetBrains'
+	 * {@code org.jetbrains.annotations.Nullable} has {@code CLASS} retention and is
+	 * therefore invisible here, exactly as it is to Embabel's own argument binding.
+	 */
+	private List<String> readOptionalInputs(Method method) {
+		List<String> optional = new ArrayList<>();
+		for (Parameter parameter : method.getParameters()) {
+			if (FRAMEWORK_PARAMETER_TYPES.contains(parameter.getType().getName())) {
+				continue;
+			}
+			if (parameter.getType() == Optional.class || isNullable(parameter.getAnnotations())
+					|| isNullable(parameter.getAnnotatedType().getAnnotations())) {
+				optional.add(parameter.getType().getSimpleName());
+			}
+		}
+		return List.copyOf(optional);
+	}
+
+	private boolean isNullable(Annotation[] annotations) {
+		for (Annotation annotation : annotations) {
+			if ("Nullable".equals(annotation.annotationType().getSimpleName())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

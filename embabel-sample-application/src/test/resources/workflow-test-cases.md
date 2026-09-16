@@ -776,7 +776,8 @@ SpEL expressions are evaluated at runtime, not via condition-named producers.
 6. **Branch B — low-confidence path** (SpEL false, e.g. niche "edible insect protein")
    - `analyzeCompetitors` is **skipped** by the planner.
    - `generateReport` runs with `competitorAnalysis = null` (parameter is
-     `@org.jetbrains.annotations.Nullable`). The prompt branches on null to write
+     `@org.jspecify.annotations.Nullable` — runtime-retained, so both Embabel and the
+     visualizer can see it). The prompt branches on null to write
      "Competitive analysis was not performed" in the `competitiveLandscape` field.
 7. **Goal achieved** — `ResearchReport` lands on the blackboard. Note the `confidenceScore`
    propagates from the gathered `MarketData`.
@@ -916,6 +917,59 @@ SpEL expressions are evaluated at runtime, not via condition-named producers.
 | STORY-003 | Mystery — overdue library book note | full pipeline | `FinalStory` |
 | STORY-VAL-1 | Empty `storyId` | validation | `ActionException.Permanent` |
 | STORY-VAL-2 | `maxWords = 9999` | validation | `ActionException.Permanent` (bean validation `@Max(2000)`) |
+
+---
+
+## Expected Flow Charts (Flow tab)
+
+The **Flow** tab draws, per agent, every route from Start to a goal in execution order.
+It is derived from the same declarations as the dependency graph (`AgentWorkflow.flow`
+in the JSON) and is pinned by `EmbabelWorkflowCatalogRuntimeIntegrationTests`. The
+tables below are the ground truth for a visual check against the running sample app.
+
+Reading the tables:
+- **Route** — the actions on one path to a goal, in the order they can run; the goal is
+  the last one. Fork/join branches list the independent steps in declaration order.
+- **Cost** — the sum of the static `cost=` declarations on the route, `—` when no action
+  on it declares one, `+ dynamic` when a `costMethod=` adds a run-time amount.
+- **★** — the cheapest route; ties are broken by the shorter route, and left unmarked
+  when routes tie on both counts.
+- **Decision** — what the diamond represents: `condition` (`@Condition` edges labelled
+  `if …`), `state` (`@State` return type, one edge per state), `SpEL` (expression shown),
+  or `planner choice` (two actions could both run next).
+
+### Route table
+
+| Agent | Planner | Starts from | Routes (goal: steps) | Cost | Decisions / shapes | Outside every route |
+|---|---|---|---|---|---|---|
+| `FraudDetectionAgent` | GOAP | `TransactionRequest` | `decideFraud`: enrichContext → screenForPatterns → decideFraud | — | none (linear) | — |
+| `KycVerificationAgent` | GOAP | `KycRequest` | ★ `assessDirectRisk`: screenCustomer → assessDirectRisk<br>`assessRiskWithEnhancedDueDiligence`: screenCustomer → collectEnhancedDueDiligence → assessRiskWithEnhancedDueDiligence | —<br>— | `condition`: `if canAssessDirectly` / `if requiresEnhancedDueDiligence`; two End nodes, both `KycAssessment` | — |
+| `SentimentAnalysisAgent` | GOAP | `FeedbackRequest` | `respondToCustomer`: quickClassify → deepAnalyze → respondToCustomer | 1 + dynamic | none (linear) | — |
+| `DocumentProcessingAgent` | GOAP | `DocumentRequest` | `summarizeDocument`: preprocessDocument ∥ provideDefaultMetadataHints → extractMetadata → analyzeContent → summarizeDocument | — | Fork after Start into `preprocessDocument` (`CleanDocument`) and `provideDefaultMetadataHints` (`MetadataHints`); Join before `extractMetadata` | — |
+| `LoanApplicationAgent` | GOAP | `LoanRequest` | ★ `makeAutoDecision`: analyzeCreditProfile → makeAutoDecision<br>`makeUnderwrittenDecision`: analyzeCreditProfile → conductUnderwriting → makeUnderwrittenDecision | 3<br>9 | `condition`: `if canAutoDecide` / `if requiresUnderwriting`; two End nodes, both `LoanDecision` | — |
+| `ContentModerationAgent` | GOAP | `ContentRequest` | `recordDecision`: analyzeContent → autoTag → recordDecision<br>`recordDecision`: analyzeContent → deepReview → recordDecision | —<br>— | `condition`: `if isClear` / `if isFlagged`; both branches hand `TaggedContent` to `recordDecision` (one End) | — |
+| `ResumeScreeningAgent` | GOAP | `CandidateRequest` | `makeHiringDecision`: analyzeResume ∥ assessCultureFit → makeHiringDecision | — | Fork after Start, Join before `makeHiringDecision` (`ResumeAnalysis`, `CultureFitScore`) | — |
+| `TicketRoutingAgent` | UTILITY | `SupportTicket` | `handleBilling`: classifyTicket → routeToCategory → handleBilling<br>`handleGeneral`: … → handleGeneral<br>`handleTechnical`: … → handleTechnical | —<br>—<br>— | `state` after `routeToCategory`: edges `BillingState` / `GeneralState` / `TechnicalState`; three End nodes, all `TicketResolution` | `Nirvana` — *no goal path* (synthetic `void` goal) |
+| `ProductResearchAgent` | SUPERVISOR | `MarketData`, `ResearchRequest` | `generateReport`: generateReport<br>`generateReport`: supervisor | —<br>— | `planner choice` right after Start between the declared `generateReport` and the synthetic `supervisor`; both reach the single `ResearchReport` End | `analyzeCompetitors` — *not in plan* (`generateReport` takes `CompetitorAnalysis` as `@Nullable`, so it is not required) |
+| `StoryWriterAgent` | GOAP | `StoryRequest` | ★ `finalizeStory`: draftStory → reviewDraft → finalizeStory<br>`finalizeStory`: draftStory → reviewDraft → reviseDraft → finalizeStory | —<br>— | `planner choice` after `reviewDraft` (`if StoryReview` on both edges); **↺ loop** `reviseDraft → reviewDraft` (`Draft`), `canRerun` badge on `reviseDraft` | — |
+| `ComplianceReviewAgent` | HYBRID | `ReviewRequest` | ★ `issueVerdict`: screenClauses → assessRisk → issueVerdict<br>`issueVerdict`: screenClauses → assessClean → issueVerdict | 0.1<br>0.15 | `condition`: `if hasFlaggedClauses` / `if isClean`; one End (`ComplianceVerdict`) | — |
+| `ResearchUtils` | COMPONENT | `ResearchRequest` | *none* — an `@EmbabelComponent` lends its steps to the agents that use them | | | `gatherMarketData` — *no goal path* |
+
+### Notes
+
+- **Entry types** are the input types no in-plan action produces. `ProductResearchAgent`
+  starts from `MarketData` as well as `ResearchRequest` because its producer
+  (`ResearchUtils.gatherMarketData`) belongs to the component, not the agent.
+- **`optionalInputs`** — only `ProductResearchAgent.generateReport` has one
+  (`CompetitorAnalysis`). The parameter is `@org.jspecify.annotations.Nullable`, which is
+  retained at run time; a JetBrains `@Nullable` (class retention) would be invisible to
+  the visualizer *and* to Embabel's own argument binding.
+- **`@Cost` methods** (`SentimentAnalysisAgent`'s `deepAnalysisCost` / `responseCost`,
+  `TicketRoutingAgent`'s `classificationValue` / `routingValue`) and **`@LlmTool` methods**
+  are never flow nodes; a `costMethod=` shows up as `+ dynamic` on the route cost.
+- **`truncated`** is `false` for every sample agent — none comes near the 100-route cap.
+- Where two routes tie on cost and length (`ContentModerationAgent`, `TicketRoutingAgent`,
+  `ProductResearchAgent`) no route is starred.
 
 ---
 

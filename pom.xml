@@ -40,7 +40,7 @@
       dependency of the starter and the runtime of the sample application; one
       property keeps the two in step and gives Dependabot a single line to bump.
     -->
-    <embabel-agent.version>1.5.1</embabel-agent.version>
+    <embabel-agent.version>1.5.2</embabel-agent.version>
     <flatten-maven-plugin.version>1.8.0</flatten-maven-plugin.version>
     <jacoco.version>0.8.15</jacoco.version>
     <java.version>21</java.version>

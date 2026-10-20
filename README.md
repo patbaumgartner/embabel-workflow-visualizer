@@ -39,15 +39,23 @@ test calls a model, so a placeholder is enough. See
 
 ## Usage
 
-Compatibility note: this project is built against [Spring Boot](https://spring.io/projects/spring-boot) 4.1 and validated against [Embabel](https://github.com/embabel/embabel-agent) 1.5.1 (the latest release, available on Maven Central). Embabel 1.5 requires Spring Boot 4.x / Spring AI 2.x, so this line of the starter is **Spring Boot 4 only**.
+Compatibility note: this project is built against [Spring Boot](https://spring.io/projects/spring-boot) 4.1 and validated against [Embabel](https://github.com/embabel/embabel-agent) 1.5.3 (the latest release, available on Maven Central). Embabel 1.5 requires Spring Boot 4.x / Spring AI 2.x, so this line of the starter is **Spring Boot 4 only**.
 
 | Visualizer | Spring Boot | Embabel | Java |
 |---|---|---|---|
+| `1.5.x` | 4.1.x | 1.5.x | 21+ |
 | `1.1.x` | 4.1.x | 1.5.x | 21+ |
 | `1.0.x` | 4.1.x | 1.5.x | 21+ |
 | `0.3.x` | 3.5.x | 1.0.x | 21+ |
 
 A single artifact cannot support both Spring Boot 3 and 4 (Spring Framework 7 baseline), so consumers still on Spring Boot 3.5 should stay on the `0.3.x` line.
+
+### Upgrading from 1.1.x
+
+Nothing to change — the starter drops in as a version bump. 1.5.0 adds the
+**Flow** tab (every route from Start to each goal, with costs and loops) on top
+of the 1.1.x dependency view, plus a batch of scan and rendering fixes; see the
+[release notes](https://github.com/patbaumgartner/embabel-workflow-visualizer/releases/tag/v1.5.0).
 
 ### Upgrading from 1.0.x
 
@@ -68,16 +76,16 @@ The library is published to [Maven Central](https://central.sonatype.com/artifac
 <dependency>
     <groupId>com.patbaumgartner.embabel</groupId>
     <artifactId>embabel-workflow-visualizer-starter</artifactId>
-    <version>1.1.0</version>
+    <version>1.5.0</version>
 </dependency>
 ```
 
-`1.1.0` is the current release; check
+`1.5.0` is the current release; check
 [Maven Central](https://central.sonatype.com/artifact/com.patbaumgartner.embabel/embabel-workflow-visualizer-starter)
 for the latest version. The *Since* column in the configuration table below
 says which release introduced each property.
 
-Embabel 1.5.1 and the visualizer starter are both published to Maven Central, so no extra repository configuration is needed. Only if your project uses Embabel *snapshot* dependencies, add the Embabel snapshot repository:
+Embabel 1.5.3 and the visualizer starter are both published to Maven Central, so no extra repository configuration is needed. Only if your project uses Embabel *snapshot* dependencies, add the Embabel snapshot repository:
 
 ```xml
 <repositories>
@@ -249,7 +257,7 @@ The UI (`GET /embabel-workflows`) renders each discovered `@Agent` as an interac
 
 ## Sample agents
 
-The `embabel-sample-application` module ships eleven demo agents covering common enterprise use cases.
+The `embabel-sample-application` module ships twelve demo agents covering common enterprise use cases.
 Each agent intentionally demonstrates a **different workflow pattern** so you can see how the Embabel
 planner handles linear flows, fan-in, branching, converging branches, dynamic cost methods, static
 cost declarations, Utility AI planning, Hybrid planning, @State routing, LLM-supervised planning, and
@@ -269,7 +277,7 @@ revision loops.
 | `StoryWriterAgent` | Revision loop (`canRerun`) + `@LlmTool` + persona | Draft → review → revise loop until editorial approval; `PersonaSpec` prompt contributor, per-action `LlmOptions` temperatures, `ActionException.Transient`/`Permanent`, and an `@LlmTool` method. | `POST /api/story/write` |
 | `ComplianceReviewAgent` | `HYBRID` planner + retry policies + restricted export | Pure-Java branching review; agent-level `beanName` and `actionRetryPolicyExpression` (a QoS key under `embabel.agent.platform.action-qos.*`), `@Action(actionRetryPolicy = FIRE_ONCE)`, `@Condition(cost=)`, `@Export(startingInputTypes=)`, and an `@LlmTool` with `name` and `metadata`. | `POST /api/compliance/review` |
 
-Ready-to-run HTTP request examples for all eleven agents are in [`embabel-sample-application/requests/`](embabel-sample-application/requests/).
+Ready-to-run HTTP request examples for all twelve agents are in [`embabel-sample-application/requests/`](embabel-sample-application/requests/).
 
 ## Contributing
 

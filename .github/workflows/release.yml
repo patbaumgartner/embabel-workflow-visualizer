@@ -1,6 +1,6 @@
 name: Release
 
-# Triggered by pushing a semver tag: v1.2.3
+# Triggered by pushing a semver tag: v1.5.3
 #
 # Steps:
 #   1. Validate the tag matches the POM version and that the build timestamp was
@@ -11,12 +11,12 @@ name: Release
 #      Sonatype Central Portal, and creates a GitHub Release with changelog.
 #
 # Release workflow for maintainers:
-#   mvn versions:set -DnewVersion=1.0.0 -DgenerateBackupPoms=false
+#   mvn versions:set -DnewVersion=1.5.0 -DgenerateBackupPoms=false
 #   mvn versions:set-property -Dproperty=project.build.outputTimestamp \
 #       -DnewVersion="$(date -u +%Y-%m-%dT%H:%M:%SZ)" -DgenerateBackupPoms=false
-#   git commit -am "Release 1.0.0" && git tag v1.0.0 && git push --tags
-#   mvn versions:set -DnewVersion=1.1.0-SNAPSHOT -DgenerateBackupPoms=false
-#   git commit -am "Prepare 1.1.0-SNAPSHOT" && git push
+#   git commit -am "Release 1.5.0" && git tag v1.5.0 && git push --tags
+#   mvn versions:set -DnewVersion=1.6.0-SNAPSHOT -DgenerateBackupPoms=false
+#   git commit -am "Prepare 1.6.0-SNAPSHOT" && git push
 #
 # Required repository secrets:
 #   GPG_SECRET_KEY      — armored GPG private key (-----BEGIN PGP PRIVATE KEY BLOCK-----)

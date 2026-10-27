@@ -21,6 +21,10 @@ This is a multi-module Maven project:
 | `embabel-workflow-visualizer-starter` | Spring Boot auto-configuration, REST API, actuator endpoint, and visualization UI |
 | `embabel-sample-application` | Runnable sample Embabel application that uses the starter |
 
+The sample uses Spring Boot's parent directly and consumes the visualizer as a
+normal dependency; it does not inherit from the visualizer's parent POM. Maven
+aggregation keeps both projects in the root build without coupling their parents.
+
 ## Build and test
 
 Java 21+ is the only prerequisite — the Maven wrapper supplies Maven.

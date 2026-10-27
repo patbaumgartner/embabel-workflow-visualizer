@@ -64,6 +64,23 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+      - name: Verify the sample outside the reactor
+        run: |
+          ./mvnw -B --no-transfer-progress -pl embabel-workflow-visualizer-starter -am \
+            -DskipTests -Djacoco.skip=true install
+          sample_dir=$(mktemp -d "${RUNNER_TEMP}/standalone-sample.XXXXXX")
+          cp embabel-sample-application/pom.xml "$sample_dir/"
+          cp -R embabel-sample-application/src "$sample_dir/"
+          parent=$(./mvnw -q --no-transfer-progress -f "$sample_dir/pom.xml" \
+            help:evaluate -Dexpression=project.parent.artifactId -DforceStdout)
+          if [ "$parent" != "spring-boot-starter-parent" ]; then
+            echo "::error::The sample must inherit directly from Spring Boot, not the visualizer."
+            exit 1
+          fi
+          ./mvnw -B --no-transfer-progress -f "$sample_dir/pom.xml" verify
+        env:
+          OPENAI_API_KEY: dummy
+
   # The POM pins project.build.outputTimestamp so that anyone can rebuild a tag
   # and compare the result against Maven Central. That promise is only worth
   # making if something checks it, so the starter is built twice here and the

@@ -1449,11 +1449,30 @@
         // its source and enters the left edge of its target; a loop edge leaves the
         // top of its source, arcs back over everything in between, and drops onto
         // the top of its target, so it is never mistaken for the forward edge it
-        // runs alongside. An edge with a `bow` skips a column: it sags below the
-        // nodes it passes instead of running straight through them.
+        // runs alongside. An edge with a `bow` skips a column and uses a clear
+        // lane above or below the intervening cards.
         var LOOP_LIFT = 70;
         function loopLift(a, b) { return LOOP_LIFT + Math.abs((a.x + a.w / 2) - (b.x + b.w / 2)) * 0.08; }
-        function edgePath(a, b, e) {
+        function skippedEdgeLane(a, b, e, nodes) {
+            if (!e.bow || e.loop) return null;
+            var x1 = a.x + a.w, x2 = b.x;
+            if (x2 <= x1) return null;
+            var obstacles = nodes.filter(function (n) {
+                return n !== a && n !== b && n.x < x2 && n.x + n.w > x1;
+            });
+            if (!obstacles.length) return null;
+            var clearance = e.bow;
+            var above = Math.min.apply(null, obstacles.map(function (n) { return n.y; })) - clearance;
+            var below = Math.max.apply(null, obstacles.map(function (n) { return n.y + n.h; })) + clearance;
+            var y1 = a.y + a.h / 2, y2 = b.y + b.h / 2;
+            var y = Math.abs(y1 - above) + Math.abs(y2 - above) <= Math.abs(y1 - below) + Math.abs(y2 - below) ? above : below;
+            return {
+                exit: (x1 + Math.max(x1, Math.min.apply(null, obstacles.map(function (n) { return n.x; })))) / 2,
+                entry: (x2 + Math.min(x2, Math.max.apply(null, obstacles.map(function (n) { return n.x + n.w; })))) / 2,
+                y: y
+            };
+        }
+        function edgePath(a, b, e, nodes) {
             if (e.loop) {
                 var lx1 = a.x + a.w / 2, ly1 = a.y, lx2 = b.x + b.w / 2, ly2 = b.y;
                 var lift = loopLift(a, b);
@@ -1462,10 +1481,12 @@
             }
             var x1 = a.x + a.w, y1 = a.y + a.h / 2;
             var x2 = b.x, y2 = b.y + b.h / 2;
-            if (e.bow) {
-                var third = (x2 - x1) / 3;
+            var lane = skippedEdgeLane(a, b, e, nodes);
+            if (lane) {
                 return 'M ' + x1 + ' ' + y1 +
-                    ' C ' + (x1 + third) + ' ' + (y1 + e.bow) + ', ' + (x2 - third) + ' ' + (y2 + e.bow) + ', ' + x2 + ' ' + y2;
+                    ' C ' + lane.exit + ' ' + y1 + ', ' + lane.exit + ' ' + lane.y + ', ' + lane.exit + ' ' + lane.y +
+                    ' L ' + lane.entry + ' ' + lane.y +
+                    ' C ' + lane.entry + ' ' + lane.y + ', ' + lane.entry + ' ' + y2 + ', ' + x2 + ' ' + y2;
             }
             if (x2 <= x1 + 20) {
                 var bend = 80 + Math.abs(y1 - y2) * 0.12;
@@ -1475,14 +1496,15 @@
             var cx = (x1 + x2) / 2;
             return 'M ' + x1 + ' ' + y1 + ' C ' + cx + ' ' + y1 + ', ' + cx + ' ' + y2 + ', ' + x2 + ' ' + y2;
         }
-        function edgeMidpoint(a, b, e) {
+        function edgeMidpoint(a, b, e, nodes) {
             if (e.loop) {
                 // The midpoint of the cubic above sits three quarters of the lift
                 // above the two anchors' mean.
                 return { x: (a.x + a.w / 2 + b.x + b.w / 2) / 2, y: (a.y + b.y) / 2 - loopLift(a, b) * 0.75 - 4 };
             }
-            var sag = e.bow ? e.bow * 0.75 : 0;
-            return { x: (a.x + a.w + b.x) / 2, y: (a.y + a.h / 2 + b.y + b.h / 2) / 2 - 8 + sag };
+            var lane = skippedEdgeLane(a, b, e, nodes);
+            if (lane) return { x: (lane.exit + lane.entry) / 2, y: lane.y - 8 };
+            return { x: (a.x + a.w + b.x) / 2, y: (a.y + a.h / 2 + b.y + b.h / 2) / 2 - 8 };
         }
 
         // Several edges between the same two columns land on near-identical midpoints,
@@ -1493,7 +1515,7 @@
         function stackedLabelPositions(edges, nodes) {
             var taken = new Map();
             return edges.map(function (e) {
-                var m = edgeMidpoint(nodes[e.from], nodes[e.to], e);
+                var m = edgeMidpoint(nodes[e.from], nodes[e.to], e, nodes);
                 var bucket = Math.round(m.x / LBL_BUCKET_X) + ':' + Math.round(m.y / LBL_BUCKET_Y);
                 var stacked = taken.get(bucket) || 0;
                 taken.set(bucket, stacked + 1);
@@ -1800,8 +1822,9 @@
             function refreshEdges(onlyIdx) {
                 var labelPos = stackedLabelPositions(edges, nodes);
                 edges.forEach(function (e, ei) {
-                    if (onlyIdx != null && e.from !== onlyIdx && e.to !== onlyIdx) return;
-                    pathEls[ei].setAttribute('d', edgePath(nodes[e.from], nodes[e.to], e));
+                    // A moved card can obstruct an edge it is not connected to.
+                    if (onlyIdx != null && e.from !== onlyIdx && e.to !== onlyIdx && !e.bow) return;
+                    pathEls[ei].setAttribute('d', edgePath(nodes[e.from], nodes[e.to], e, nodes));
                     if (lblEls[ei]) {
                         lblEls[ei].setAttribute('x', labelPos[ei].x);
                         lblEls[ei].setAttribute('y', labelPos[ei].y);
@@ -2122,7 +2145,7 @@
         var FW = 240;      // flow action card width
         var FCG = 140;     // flow column gap, wide enough for a "Type · if condition" label
         var FRG = 34;      // flow row gap
-        var BOW = 130;     // how far a column-skipping edge sags below the column it skips (clears a card)
+        var BOW = 24;     // clearance between a column-skipping edge and intervening cards
         var DETACHED_GAP = 64;
         var SPEL = 'spel:';
 
@@ -2275,15 +2298,16 @@
             });
             var mainW = cols.length ? x - FCG + PAD : PAD * 2;
 
-            // An edge that skips a column would run straight through whatever sits
-            // in it, so it sags below instead; two such edges alternate their depth
-            // so they stay apart, and the chart grows to make room for the deepest.
+            // Skipped columns need a clear lane, not a fixed-depth curve that can
+            // still cut through a tall card. Alternate clearance to separate lanes.
             var bowed = 0, deepest = 0;
+            var mainNodes = main.map(function (i) { return nodes[i]; });
             edges.forEach(function (e) {
                 if (e.loop || !isMain.has(e.from) || !isMain.has(e.to)) return;
                 if (col[e.to] - col[e.from] >= 2) {
                     e.bow = BOW * (1 + (bowed++ % 2) * 0.6);
-                    deepest = Math.max(deepest, e.bow * 0.75);
+                    var lane = skippedEdgeLane(nodes[e.from], nodes[e.to], e, mainNodes);
+                    if (lane) deepest = Math.max(deepest, lane.y + BOW - top - mainH);
                 }
             });
             mainH += deepest;

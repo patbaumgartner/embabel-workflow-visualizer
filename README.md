@@ -246,6 +246,7 @@ at 100 per agent; `truncated` says when the cap was hit.
 The UI (`GET /embabel-workflows`) renders each discovered `@Agent` as an interactive flow diagram, with a **Flow** tab (routes to each goal, see [Flow chart](#flow-chart)) and a **Dependencies** tab (every declared step and what it needs); the choice is remembered:
 
 - **Drag individual nodes** to rearrange the layout · **Drag the background** to pan · **Ctrl/⌘ + scroll** to zoom · **Double-click** background to auto-fit
+- Flow arrows that skip columns route above or below intervening cards and recalculate when cards move.
 - Hover over any node to spotlight its connected edges and neighbours; hover a route in the Flow tab's table to light it up in the chart
 - Per-agent controls: Fit, Zoom In, Zoom Out, Reset Layout; tabs, nodes and routes are keyboard-operable
 - Node types color-coded with the 42talents brand palette (cyan, yellow, green, pink, orange)

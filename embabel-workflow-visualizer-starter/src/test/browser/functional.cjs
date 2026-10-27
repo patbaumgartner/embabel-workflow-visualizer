@@ -76,6 +76,36 @@ test('D01','All sample agents, nodes, edges, costs and finite layouts',async p=>
     await noOverflow(p);
 });
 test('D02','Empty catalog shows an empty state',async p=>{assert.match(await p.locator('#canvas').textContent(),/No Embabel/);assert.equal(await p.locator('#no-match').isVisible(),false)}, {data:{agents:[]}});
+test('D18','KYC direct-goal arrow avoids intervening cards, including after dragging',async p=>{
+    const a=catalog.agents.find(a=>a.agentName.includes('Kyc'));
+    const edgeIndex=a.flow.edges.findIndex(e=>e.from==='step:assessDirectRisk'&&e.to==='end:assessDirectRisk');
+    const nodeIndex=a.flow.nodes.findIndex(n=>n.id==='step:assessRiskWithEnhancedDueDiligence');
+    async function check() {
+        const collisions=await active(p).evaluate((panel,edgeIndex)=>{
+            const edge=panel.querySelectorAll('path.edge')[edgeIndex];
+            const nodes=[...panel.querySelectorAll('.node-g')].map(n=>{
+                const b=n.querySelector('.node-hit').getBBox(),m=n.transform.baseVal.consolidate().matrix;
+                return {name:n.getAttribute('aria-label'),x:m.e+b.x,y:m.f+b.y,w:b.width,h:b.height};
+            });
+            const endpoints=[edge.getPointAtLength(0),edge.getPointAtLength(edge.getTotalLength())];
+            const obstacles=nodes.filter(n=>!endpoints.some(p=>p.x>=n.x-1&&p.x<=n.x+n.w+1&&p.y>=n.y-1&&p.y<=n.y+n.h+1));
+            const hits=new Set();
+            for(let d=0;d<=edge.getTotalLength();d+=1) {
+                const p=edge.getPointAtLength(d);
+                for(const n of obstacles) if(p.x>n.x-2&&p.x<n.x+n.w+2&&p.y>n.y-2&&p.y<n.y+n.h+2)hits.add(n.name);
+            }
+            return [...hits];
+        },edgeIndex);
+        assert.deepEqual(collisions,[],'direct-goal arrow crosses an unrelated node');
+    }
+    await check();
+    const obstacle=active(p).locator('.node-g').nth(nodeIndex);
+    await obstacle.focus();
+    for(let i=0;i<5;i++)await p.keyboard.press('Shift+ArrowUp');
+    await check();
+    await button(p,'Reset Layout').click();await frame(p);await check();
+    await fit(p);await allInside(p,'.node-g, .edge-lbl');await shot(p,'kyc-direct-goal-arrow');
+}, {data:()=>one(copy(catalog.agents.find(a=>a.agentName.includes('Kyc'))))});
 test('D03','Agent with no steps has an empty state',async p=>{assert.equal(await p.locator('.agent').count(),1);assert.equal(await p.locator('svg').count(),0)}, {data:()=>{const a=agent();a.steps=[];return one(a)}});
 test('D04','Legacy dependency-only catalog keeps all controls usable',async p=>{
     assert.equal(await p.getByRole('tab').count(),0);await fit(p);await allInside(p);assert.equal(await active(p).locator('.view-resize').count(),1,'legacy canvas has no resizer');

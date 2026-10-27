@@ -1,21 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.patbaumgartner.embabel</groupId>
-    <artifactId>embabel-workflow-visualizer-parent</artifactId>
-    <version>1.6.0-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.2</version>
+    <relativePath></relativePath>
   </parent>
 
+  <groupId>com.patbaumgartner.embabel</groupId>
   <artifactId>embabel-sample-application</artifactId>
+  <version>1.6.0-SNAPSHOT</version>
   <name>embabel-sample-application</name>
   <description>Sample Embabel application that uses embabel-workflow-visualizer-starter</description>
 
   <properties>
+    <argLine></argLine>
+    <embabel-agent.version>1.5.3</embabel-agent.version>
+    <embabel-workflow-visualizer.version>1.6.0-SNAPSHOT</embabel-workflow-visualizer.version>
+    <jacoco.version>0.8.15</jacoco.version>
+    <java.version>21</java.version>
+    <maven-enforcer.version>3.6.3</maven-enforcer.version>
     <!-- This module is a runnable application, not a deployable library artifact. -->
     <maven.deploy.skip>true</maven.deploy.skip>
+    <spring-javaformat.version>0.0.48</spring-javaformat.version>
   </properties>
 
   <dependencyManagement>
@@ -35,7 +46,7 @@
     <dependency>
       <groupId>com.patbaumgartner.embabel</groupId>
       <artifactId>embabel-workflow-visualizer-starter</artifactId>
-      <version>${project.version}</version>
+      <version>${embabel-workflow-visualizer.version}</version>
     </dependency>
 
     <dependency>
@@ -84,6 +95,85 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>${maven-enforcer.version}</version>
+        <executions>
+          <execution>
+            <id>enforce-build-environment</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <phase>validate</phase>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[${java.version},)</version>
+                </requireJavaVersion>
+                <requireMavenVersion>
+                  <version>[3.9.0,)</version>
+                </requireMavenVersion>
+                <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>io.spring.javaformat</groupId>
+        <artifactId>spring-javaformat-maven-plugin</artifactId>
+        <version>${spring-javaformat.version}</version>
+        <executions>
+          <execution>
+            <id>checkstyle-validate</id>
+            <goals>
+              <goal>validate</goal>
+            </goals>
+            <phase>validate</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>resolve-dependency-properties</id>
+            <goals>
+              <goal>properties</goal>
+            </goals>
+            <phase>process-test-resources</phase>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar} -Xshare:off</argLine>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <executions>
+          <execution>
+            <id>prepare-agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <goals>
+              <goal>report</goal>
+            </goals>
+            <phase>test</phase>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

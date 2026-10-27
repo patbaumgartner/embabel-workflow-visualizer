@@ -26,15 +26,31 @@ OPENAI_API_KEY=dummy ./mvnw verify
 ## Running the visualizer locally
 
 ```bash
-./mvnw install -DskipTests -Djacoco.skip=true -pl embabel-workflow-visualizer-starter
-OPENAI_API_KEY=dummy ./mvnw -pl embabel-sample-application spring-boot:run
+./mvnw install -DskipTests -Djacoco.skip=true -pl embabel-workflow-visualizer-starter -am
+OPENAI_API_KEY=dummy ./mvnw -f embabel-sample-application/pom.xml spring-boot:run
 ```
 
-Both lines matter. `-pl embabel-sample-application` builds that module alone, so
+Both lines matter. `-f embabel-sample-application/pom.xml` builds the sample alone, so
 it resolves the starter from your local repository rather than from your working
 tree — without the `install` first you will be looking at the last starter you
 installed, and a change to the page or the scanner will appear to have done
 nothing. Re-run the `install` after every starter change.
+
+The sample inherits directly from Spring Boot, not the visualizer's parent. Its
+Java, Embabel, visualizer, and build-tool versions are declared in its own POM.
+`-am` includes the starter's build parent in the local build and installation.
+
+To build and test just the sample after installing the starter:
+
+```bash
+OPENAI_API_KEY=dummy ./mvnw -f embabel-sample-application/pom.xml verify
+```
+
+You can also copy the sample directory elsewhere and run `mvn verify` there
+with Maven 3.9+ and Java 21+. Set `OPENAI_API_KEY=dummy` for tests; running agents
+that call OpenAI requires a real key. The current snapshot starter must first be
+installed locally as above; to use a published release instead, set
+`embabel-workflow-visualizer.version` in the sample POM to that release.
 
 The `install` skips the tests and the coverage gate because neither says
 anything about a jar you are building to run locally; `./mvnw verify` is where

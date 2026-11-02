@@ -19,7 +19,7 @@
 
   <properties>
     <argLine></argLine>
-    <embabel-agent.version>1.5.3</embabel-agent.version>
+    <embabel-agent.version>1.5.4</embabel-agent.version>
     <embabel-workflow-visualizer.version>1.6.0-SNAPSHOT</embabel-workflow-visualizer.version>
     <jacoco.version>0.8.15</jacoco.version>
     <java.version>21</java.version>

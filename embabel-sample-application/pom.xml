@@ -23,7 +23,7 @@
     <embabel-workflow-visualizer.version>1.6.0-SNAPSHOT</embabel-workflow-visualizer.version>
     <jacoco.version>0.8.15</jacoco.version>
     <java.version>21</java.version>
-    <maven-enforcer.version>3.6.3</maven-enforcer.version>
+    <maven-enforcer.version>3.7.0</maven-enforcer.version>
     <!-- This module is a runnable application, not a deployable library artifact. -->
     <maven.deploy.skip>true</maven.deploy.skip>
     <spring-javaformat.version>0.0.48</spring-javaformat.version>

@@ -1,17 +1,11 @@
 version: 2
-# `include: scope` appends (deps) or (deps-dev) to the prefix, so the prefix must
-# not spell the scope itself — doing both is what produced the ci(deps)(deps):
-# titles on every pull request so far, which the conventional-commits changelog
-# preset cannot group. The types match the ones CONTRIBUTING.md lists: a
-# dependency bump is `build` by the Conventional Commits definition, and a
-# workflow bump is `ci`.
 updates:
 - package-ecosystem: maven
   directory: /
   schedule:
     interval: weekly
     day: monday
-    time: "06:00"
+    time: 06:00
     timezone: Europe/Zurich
   open-pull-requests-limit: 10
   labels:
@@ -24,12 +18,13 @@ updates:
 - package-ecosystem: github-actions
   groups:
     codeql-action:
-      patterns: ["github/codeql-action*"]
+      patterns:
+      - github/codeql-action*
   directory: /
   schedule:
     interval: weekly
     day: monday
-    time: "06:00"
+    time: 06:00
     timezone: Europe/Zurich
   open-pull-requests-limit: 10
   labels:
@@ -38,3 +33,7 @@ updates:
   commit-message:
     prefix: ci
     include: scope
+groups:
+  multi-step-actions:
+    patterns:
+    - github/codeql-action/*

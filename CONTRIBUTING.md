@@ -126,7 +126,7 @@ fixtures, so no application server or model credentials are needed.
 
 ```shell
 # Install the browser tools outside the application modules.
-npm install --prefix /tmp/visualizer-browser-tools playwright@1.61.1
+npm install --prefix /tmp/visualizer-browser-tools playwright@1.65.1
 /tmp/visualizer-browser-tools/node_modules/.bin/playwright install --with-deps chromium firefox webkit
 NODE_PATH=/tmp/visualizer-browser-tools/node_modules node embabel-workflow-visualizer-starter/src/test/browser/functional.cjs
 ```
